@@ -35,7 +35,8 @@ func (t *RootCommand) Commands() map[string]command.Command {
 	commands["verify"] = &VerifyOp{}
 	commands["parse"] = &ParseOp{}
 	commands["shorewall"] = &ShorewallCommand{}
-	commands["zfsroot"] = (&command.SimpleCommand{}).Method(t.ZFSRoot)
+	commands["zfsroot"] = (&command.SimpleCommand{}).RunMethodArgs(t.ZFSRoot)
+	commands["version"] = (&command.SimpleCommand{}).RunMethod(t.Version)
 	return commands
 }
 
@@ -45,6 +46,10 @@ func (t *RootCommand) ZFSRoot(args []string) error {
 		fmt.Println(path)
 	}
 	return err
+}
+
+func (t *RootCommand) Version() {
+	fmt.Println(Version)
 }
 
 type ShorewallCommand struct {
