@@ -201,7 +201,7 @@ func (config *Config) CreateProfile(name string, profileDir string, zfsRoot stri
 }
 
 func (t *Config) Merge(c *Config) error {
-	//fmt.Printf("Merge %p %p\n", t, c)
+	//fmt.Printf("Merge %p %v %p %v\n", t, t.OS, c, c.OS)
 	if t.OS == nil {
 		t.OS = c.OS
 	} else if c.OS == nil {
@@ -211,6 +211,8 @@ func (t *Config) Merge(c *Config) error {
 	} else if t.OS.Version != c.OS.Version {
 		if t.OS.Version == "" {
 			t.OS.Version = c.OS.Version
+		} else if c.OS.Version == "" {
+			// keep the one we have
 		} else {
 			return errors.New("cannot merge incompatible os versions: " + t.OS.Version + ", " + c.OS.Version)
 		}
@@ -282,15 +284,16 @@ func ReadConfigs1(files ...string) (*Config, error) {
 		if i == 0 {
 			result = c
 		} else {
-			fmt.Printf("before merge %p %p %d\n", result, c, len(result.Devices))
+			//fmt.Printf("before merge %p %p %d\n", result, c, len(result.Devices))
 			result.Merge(c)
-			fmt.Printf("after merge %p %p %d\n", result, c, len(result.Devices))
+			//fmt.Printf("after merge %p %p %d\n", result, c, len(result.Devices))
 		}
 	}
 	return result, nil
 }
 
 func (t *Config) merge(file string, included map[string]bool) error {
+	//fmt.Printf("merge %s\n", file)
 	if _, found := included[file]; found {
 		return errors.New("include loop, file=" + file)
 	}

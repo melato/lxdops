@@ -97,7 +97,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 
 		osVersion := config.OS.Version
 		if osVersion == "" {
-			osVersion = osType.DefaultVersion()
+			return errors.New("Missing version")
 		}
 		if config.OS.IsUbuntu() {
 			opt, err := t.Ops.GetPath("opt")
