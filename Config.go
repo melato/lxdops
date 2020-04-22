@@ -168,6 +168,9 @@ func (config *Config) ProfileName(name string) string {
 }
 
 func (config *Config) CreateProfile(name string, profileDir string, zfsRoot string) error {
+	if len(config.Devices) == 0 {
+		return nil
+	}
 	err := os.Mkdir(profileDir, 0755)
 	if err != nil && !os.IsExist(err) {
 		return err
