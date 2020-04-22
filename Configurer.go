@@ -144,12 +144,28 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 	return nil
 }
 
+type Sudo struct {
+	didSudoers bool
+}
+
+func (t *Sudo) Configure(user string) []string {
+	var lines []string
+	if !t.didSudoers {
+		t.didSudoers = true
+		lines = append(lines, "mkdir -p /etc/sudoers.d")
+	}
+	sudoerFile := "/etc/sudoers.d/" + user
+	lines = append(lines, "echo '"+user+" ALL=(ALL) NOPASSWD:ALL' > "+sudoerFile)
+	lines = append(lines, "chmod 440 "+sudoerFile)
+	return lines
+}
+
 func (t *Configurer) createUsers(config *Config, name string) error {
 	if config.Users == nil {
 		return nil
 	}
 	var err error
-	var didSudoers bool
+	var sudo Sudo
 	var lines []string
 	hasSsh := false
 	for _, user := range config.Users {
@@ -176,13 +192,7 @@ func (t *Configurer) createUsers(config *Config, name string) error {
 				lines = append(lines, "adduser "+user.Name+" "+group)
 			}
 			if user.Sudo {
-				if !didSudoers {
-					didSudoers = true
-					lines = append(lines, "mkdir -p /etc/sudoers.d")
-				}
-				sudoerFile := "/etc/sudoers.d/" + user.Name
-				lines = append(lines, "echo '"+user.Name+" ALL=(ALL) NOPASSWD:ALL' > "+sudoerFile)
-				lines = append(lines, "chmod 440 "+sudoerFile)
+				lines = append(lines, sudo.Configure(user.Name)...)
 			}
 		}
 		if user.Ssh {
