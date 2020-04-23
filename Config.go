@@ -172,8 +172,19 @@ func (config *Config) ProfileName(name string) string {
 	return name + ".host"
 }
 
+func (config *Config) profileExists(profile string) bool {
+	// Not sure what profile get does, but it returns an error if the profile doesn't exist.
+	// "x" is a key.  It doesn't matter what key we use for our purpose.
+	err := program.NewProgram("lxc").Run("profile", "get", profile, "x")
+	return err == nil
+}
+
 func (config *Config) CreateProfile(name string, profileDir string, zfsRoot string) error {
 	if len(config.Devices) == 0 {
+		return nil
+	}
+	profileName := config.ProfileName(name)
+	if config.profileExists(profileName) {
 		return nil
 	}
 	err := os.Mkdir(profileDir, 0755)
@@ -188,7 +199,6 @@ func (config *Config) CreateProfile(name string, profileDir string, zfsRoot stri
 	lines = append(lines, "description: container disk devices")
 	lines = append(lines, "devices:")
 
-	profileName := config.ProfileName(name)
 	err = program.NewProgram("lxc").Run("profile", "create", profileName)
 	if err != nil {
 		return err
