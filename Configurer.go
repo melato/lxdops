@@ -283,13 +283,9 @@ func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 			continue
 		}
 		if script.File != "" {
-			file, err := t.ops.GetPath(script.File)
+			err := t.prog.NewProgram("lxc").Run("file", "push", script.File, name+"/root/")
 			if err != nil {
-				return err
-			}
-			err = t.prog.NewProgram("lxc").Run("file", "push", file, name+"/root/")
-			if err != nil {
-				fmt.Println(file, err)
+				fmt.Println(script.File, err)
 				failedFiles = append(failedFiles, script.File)
 			}
 		}

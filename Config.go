@@ -66,19 +66,24 @@ type Script struct {
 	Name string `xml:"name,attr" yaml:"name"`
 
 	/** The file to run.  This is a file on the host, that is copied to the container in /root/ and run there.
-	  Must be an absolute path or a path relative to the ZFS root (the parent of the default storage pool's zfs pool)
-	*/
+	 */
 	File string `xml:"file,attr" yaml:"file,omitempty"`
+
 	/** If true, run before packages and users, otherwise after packages and users. */
 	First bool `yaml:"first,omitempty"`
+
 	/** Reboot after running this script */
 	Reboot bool `xml:"reboot,attr" yaml:"reboot,omitempty"`
+
 	/** The content of the script. */
 	Body string `xml:",cdata" yaml:"body,omitempty"`
+
 	/** The directory to run the script in. */
 	Dir string `xml:"dir,attr" yaml:"dir,omitempty"`
+
 	/** The uid to run as */
 	Uid int `xml:"uid,attr" yaml:"uid,omitempty"`
+
 	/** The gid to run as */
 	Gid int `xml:"gid,attr" yaml:"gid,omitempty"`
 }
