@@ -160,12 +160,25 @@ func (t *Sudo) Configure(user string) []string {
 	return lines
 }
 
+type Doas struct {
+	didSudoers bool
+}
+
+func (t *Doas) Configure(user string) []string {
+	var lines []string
+	lines = append(lines,
+		fmt.Sprintf(`if [ -f /etc/doas.conf ]; then  grep "^permit nopass %s$" /etc/doas.conf  || echo "permit nopass %s" >> /etc/doas.conf; fi`,
+			user, user))
+	return lines
+}
+
 func (t *Configurer) createUsers(config *Config, name string) error {
 	if config.Users == nil {
 		return nil
 	}
 	var err error
 	var sudo Sudo
+	var doas Doas
 	var lines []string
 	hasSsh := false
 	for _, user := range config.Users {
@@ -193,6 +206,9 @@ func (t *Configurer) createUsers(config *Config, name string) error {
 			}
 			if user.Sudo {
 				lines = append(lines, sudo.Configure(user.Name)...)
+				if config.OS.IsAlpine() {
+					lines = append(lines, doas.Configure(user.Name)...)
+				}
 			}
 		}
 		if user.Ssh {
