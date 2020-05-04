@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"melato.org/export/program"
 )
@@ -62,7 +61,9 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		return errors.New("unsupported OS type.  must be ubuntu or alpine")
 	}
 
-	err = t.CreateDeviceDirs(config, name)
+	dev := &DeviceConfigurer{Ops: t.Ops, DeviceTemplate: t.DeviceTemplate, ProfileDir: t.ProfileDir, DryRun: t.DryRun}
+	dev.Configured()
+	err = dev.CreateDeviceDirs(config, name)
 	if err != nil {
 		return err
 	}
@@ -149,57 +150,4 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		}
 	}
 	return err
-}
-
-func (t *Launcher) CreateDeviceDirs(config *Config, name string) error {
-	if config.Devices == nil {
-		return nil
-	}
-	var err error
-	zfsroot, err := t.Ops.ZFSRoot()
-	if err != nil {
-		return err
-	}
-	fs := filepath.Join(zfsroot, config.GetHostFS(), name)
-	dir := filepath.Join("/", fs)
-	if !DirExists(dir) {
-		if t.DeviceTemplate != "" && !strings.Contains(t.DeviceTemplate, "@") {
-			sname := time.Now().Format("20060102150405")
-			t.DeviceTemplate = t.DeviceTemplate + "@" + name + "-" + sname
-			err = t.Ops.ZFS().Run("snapshot", t.DeviceTemplate)
-			if err != nil {
-				return err
-			}
-		}
-		if t.DeviceTemplate == "" {
-			err = t.Ops.ZFS().Run("create", fs)
-			for _, device := range config.Devices {
-				deviceDir := filepath.Join(dir, device.Name)
-				if device.Recordsize != "" {
-					err := t.Ops.ZFS().Run("create", "-o", "recordsize="+device.Recordsize, filepath.Join(fs, device.Name))
-					if err != nil {
-						return err
-					}
-				} else {
-					err = t.prog.NewProgram("mkdir").Sudo(true).Run("-p", deviceDir)
-					//err = os.Mkdir(deviceDir, 0755)
-					if err != nil {
-						return err
-					}
-				}
-				err = t.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", deviceDir)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			err = t.Ops.ZFS().Run("clone", t.DeviceTemplate, fs)
-		}
-		if err != nil {
-			return err
-		}
-	} else {
-		fmt.Println("reusing", dir)
-	}
-	return t.Ops.ZFS().Run("list", "-r", fs)
 }

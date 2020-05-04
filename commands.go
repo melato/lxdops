@@ -36,6 +36,8 @@ func (t *RootCommand) Commands() map[string]command.Command {
 	commands["parse"] = &ParseOp{}
 	commands["shorewall"] = &ShorewallCommand{}
 	commands["zfsroot"] = (&command.SimpleCommand{}).RunMethodArgs(t.ZFSRoot)
+	device := &DeviceConfigurer{Ops: t.Ops}
+	commands["create-devices"] = (&command.SimpleCommand{}).Flags(device).RunMethodArgs(device.Run).Use("{name} {configfile}...").Short("create devices")
 	commands["version"] = (&command.SimpleCommand{}).RunMethod(t.Version)
 	return commands
 }
