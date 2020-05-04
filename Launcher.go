@@ -12,7 +12,6 @@ import (
 
 type Launcher struct {
 	Ops               *Ops   `name:""`
-	ApkCache          bool   `xml:"usage:use APK cache volume, for Alpine containers"`
 	ContainerTemplate string `name:"c" usage:"container to use as template"`
 	DeviceTemplate    string `name:"d" usage:"device to use as template for devices"`
 	ProfileDir        string `name:"profile-dir" usage:"directory to save profile files"`
@@ -21,7 +20,6 @@ type Launcher struct {
 }
 
 func (t *Launcher) Init() error {
-	t.ApkCache = false
 	t.ProfileDir = "target"
 	return nil
 }
@@ -116,7 +114,6 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 			}
 		}
 		lxcArgs = append(lxcArgs, osType.ImageName(osVersion))
-		//profiles = append(profiles, osType.Profiles(osVersion, t.ApkCache)...)
 		for _, profile := range profiles {
 			lxcArgs = append(lxcArgs, "-p", profile)
 		}

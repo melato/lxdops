@@ -5,7 +5,6 @@ type OSType interface {
 	ImageName(version string) string
 	InstallPackageCommand(pkg string) string
 	AddUserCommand(u *User) []string
-	Profiles(version string, apkCache bool) []string
 }
 
 func (t *OS) Type() OSType {

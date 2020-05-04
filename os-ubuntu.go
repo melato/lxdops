@@ -26,6 +26,3 @@ func (t *OsTypeUbuntu) AddUserCommand(u *User) []string {
 func (t *OsTypeUbuntu) ImageName(version string) string {
 	return "ubuntu:" + version
 }
-func (t *OsTypeUbuntu) Profiles(version string, apkCache bool) []string {
-	return []string{"ubuntu"}
-}

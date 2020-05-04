@@ -26,10 +26,3 @@ func (t *OsTypeAlpine) AddUserCommand(u *User) []string {
 func (t *OsTypeAlpine) ImageName(version string) string {
 	return "images:alpine/" + version
 }
-func (t *OsTypeAlpine) Profiles(version string, apkCache bool) []string {
-	if apkCache {
-		return []string{"alpine-" + version}
-	} else {
-		return nil
-	}
-}
