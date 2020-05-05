@@ -88,33 +88,6 @@ func (t *Ops) CloneRepository(rep string) error {
 	return nil
 }
 
-/** copy certain host files to a shared directory where the guest can see them:
-  authorized_keys
-  hostname
-*/
-func (t *Ops) copyHostInfo() error {
-	var err error
-	path, err := t.GetPath("opt")
-	if err != nil {
-		return err
-	}
-	dir := filepath.Join(path, "host")
-	sudo := false
-	err = program.NewProgram("mkdir").Sudo(sudo).Run("-p", dir)
-	if err != nil {
-		return err
-	}
-	err = program.NewProgram("cp").Sudo(sudo).Run(os.ExpandEnv("${HOME}/.ssh/authorized_keys"), dir)
-	if err != nil {
-		return err
-	}
-	err = program.NewProgram("cp").Sudo(sudo).Run("/etc/hostname", dir+"/name")
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (t *Ops) waitForNetwork(name string) error {
 	for i := 0; i < 30; i++ {
 		lines, err := program.NewProgram("lxc").Lines("list", name, "--format=csv", "-c4")

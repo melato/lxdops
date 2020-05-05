@@ -3,7 +3,6 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"melato.org/export/program"
@@ -89,7 +88,6 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	}
 	fmt.Println("profiles", profiles)
 	containerTemplate := t.ContainerTemplate
-	t.Ops.copyHostInfo()
 	if containerTemplate == "" {
 		var lxcArgs []string
 		lxcArgs = append(lxcArgs, "launch")
@@ -97,22 +95,6 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		osVersion := config.OS.Version
 		if osVersion == "" {
 			return errors.New("Missing version")
-		}
-		if config.OS.IsUbuntu() {
-			opt, err := t.Ops.GetPath("opt")
-			if err != nil {
-				return err
-			}
-			t.prog.NewProgram("mkdir").Sudo(true).Run("-p", filepath.Join(opt, "ubuntu"))
-			lsb, err := ReadProperties("/etc/lsb-release")
-			if err != nil {
-				return err
-			}
-			release := lsb["DISTRIB_RELEASE"]
-			if release != "" {
-				file := filepath.Join(opt, "ubuntu", "ubuntu-"+release+".list")
-				err = t.prog.NewProgram("cp").Sudo(true).Run("/etc/apt/sources.list", file)
-			}
 		}
 		lxcArgs = append(lxcArgs, osType.ImageName(osVersion))
 		for _, profile := range profiles {

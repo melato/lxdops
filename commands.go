@@ -38,6 +38,8 @@ func (t *RootCommand) Commands() map[string]command.Command {
 	commands["zfsroot"] = (&command.SimpleCommand{}).RunMethodArgs(t.ZFSRoot)
 	device := &DeviceConfigurer{Ops: t.Ops}
 	commands["create-devices"] = (&command.SimpleCommand{}).Flags(device).RunMethodArgs(device.Run).Use("{name} {configfile}...").Short("create devices")
+	host := &HostConfigurer{Ops: t.Ops}
+	commands["host"] = (&command.SimpleCommand{}).Flags(host).RunMethodE(host.RunE).Short("configure host files for container use")
 	commands["version"] = (&command.SimpleCommand{}).RunMethod(t.Version)
 	return commands
 }
