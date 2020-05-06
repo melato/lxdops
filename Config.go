@@ -24,6 +24,7 @@ type Config struct {
 	Profiles      []string  `yaml:"profiles,omitempty"`
 	Packages      []string  `yaml:"packages,omitempty"`
 	Users         []*User   `yaml:"users,omitempty"`
+	Files         []*File   `yaml:"files,omitempty"`
 	Scripts       []*Script `yaml:"scripts,omitempty"`
 	Passwords     []string  `yaml:"passwords,omitempty"`
 }
@@ -59,6 +60,22 @@ type Device struct {
 	Path       string `xml:"path,attr"`
 	Name       string `xml:"name,attr"`
 	Recordsize string `xml:"recordsize,attr" yaml:",omitempty"`
+}
+
+type File struct {
+	/** The destination path.
+	 */
+	Path string
+
+	/** The source path.
+	 */
+	Source string
+
+	Recursive bool
+
+	Uid int
+
+	Gid int
 }
 
 type Script struct {
@@ -241,6 +258,7 @@ func (t *Config) Merge(c *Config) error {
 	t.Packages = append(t.Packages, c.Packages...)
 	t.Profiles = append(t.Profiles, c.Profiles...)
 	t.Users = append(t.Users, c.Users...)
+	t.Files = append(t.Files, c.Files...)
 	t.Scripts = append(t.Scripts, c.Scripts...)
 	t.Passwords = append(t.Passwords, c.Passwords...)
 

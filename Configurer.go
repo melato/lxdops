@@ -18,6 +18,7 @@ type Configurer struct {
 	Components []string `name:"components" usage:"which components to configure: packages, scripts, users"`
 	Packages   bool     `name:"packages" usage:"whether to install packages"`
 	Scripts    bool     `name:"scripts" usage:"whether to run scripts"`
+	Files      bool     `name:"files" usage:"whether to copy files"`
 	Users      bool     `name:"users" usage:"whether to create users and change passwords"`
 	prog       program.Params
 }
@@ -327,6 +328,38 @@ func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 	}
 }
 
+func (t *Configurer) copyFiles(config *Config, name string) error {
+	// copy any files
+	var failedFiles []string
+	for _, f := range config.Files {
+		var path string
+		if strings.HasPrefix(f.Path, "/") {
+			path = name + f.Path
+		} else {
+			path = name + "/" + f.Path
+		}
+		args := []string{"file", "push", f.Source, path, "-p"}
+		if f.Recursive {
+			args = append(args, "-r")
+		}
+		if f.Uid != -1 {
+			args = append(args, "--uid", strconv.Itoa(f.Uid))
+		}
+		if f.Gid != -1 {
+			args = append(args, "--gid", strconv.Itoa(f.Gid))
+		}
+		err := t.prog.NewProgram("lxc").Run(args...)
+		if err != nil {
+			fmt.Println(f.Source, err)
+			failedFiles = append(failedFiles, f.Source)
+		}
+	}
+	if failedFiles != nil {
+		return errors.New("failed to copy files: " + strings.Join(failedFiles, ","))
+	}
+	return nil
+}
+
 /** run things inside the container:  install packages, create users, run scripts */
 func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 	var err error
@@ -366,6 +399,12 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 	}
 	if t.Scripts {
 		err = t.runScripts(config, name, false)
+		if err != nil {
+			return err
+		}
+	}
+	if t.Files {
+		err = t.copyFiles(config, name)
 		if err != nil {
 			return err
 		}
