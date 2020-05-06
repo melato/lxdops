@@ -50,6 +50,7 @@ func (t *Launcher) NewConfigurer() *Configurer {
 	c.Packages = true
 	c.Users = true
 	c.Scripts = true
+	c.Files = true
 	return c
 }
 
