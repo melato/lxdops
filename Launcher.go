@@ -9,11 +9,12 @@ import (
 )
 
 type Launcher struct {
-	Ops               *Ops   `name:""`
-	ContainerTemplate string `name:"c" usage:"container to use as template"`
-	DeviceTemplate    string `name:"d" usage:"device to use as template for devices"`
-	ProfileDir        string `name:"profile-dir" usage:"directory to save profile files"`
-	DryRun            bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	Ops               *Ops     `name:""`
+	ContainerTemplate string   `name:"c" usage:"container to use as template"`
+	DeviceTemplate    string   `name:"d" usage:"device to use as template for devices"`
+	ProfileDir        string   `name:"profile-dir" usage:"directory to save profile files"`
+	DryRun            bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	Options           []string `name:"X" usage:"additional options to pass to lxc"`
 	prog              program.Params
 }
 
@@ -100,6 +101,9 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		lxcArgs = append(lxcArgs, osType.ImageName(osVersion))
 		for _, profile := range profiles {
 			lxcArgs = append(lxcArgs, "-p", profile)
+		}
+		for _, option := range t.Options {
+			lxcArgs = append(lxcArgs, option)
 		}
 		lxcArgs = append(lxcArgs, name)
 		err = t.prog.NewProgram("lxc").Run(lxcArgs...)
