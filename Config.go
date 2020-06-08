@@ -331,7 +331,8 @@ func ReadConfigs1(files ...string) (*Config, error) {
 func (t *Config) merge(file string, included map[string]bool) error {
 	//fmt.Printf("merge %s\n", file)
 	if _, found := included[file]; found {
-		return errors.New("include loop, file=" + file)
+		fmt.Printf("ignoring duplicate include: %s\n", file)
+		return nil
 	}
 	included[file] = true
 	config, err := ReadRawConfig(file)

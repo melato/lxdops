@@ -16,7 +16,8 @@ type Configurer struct {
 	ops        *Ops
 	DryRun     bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	Components []string `name:"components" usage:"which components to configure: packages, scripts, users"`
-	Packages   bool     `name:"packages" usage:"whether to install packages"`
+	All        bool     `name:"all" usage:"If true, configure all parts, except those that are mentioned explicitly, otherwise configure only parts that are mentioned"`
+	Packages   bool     `name:"packages" usage:"whether to install packages "`
 	Scripts    bool     `name:"scripts" usage:"whether to run scripts"`
 	Files      bool     `name:"files" usage:"whether to copy files"`
 	Users      bool     `name:"users" usage:"whether to create users and change passwords"`
@@ -360,6 +361,14 @@ func (t *Configurer) copyFiles(config *Config, name string) error {
 	return nil
 }
 
+func (t *Configurer) includes(flag bool) bool {
+	if t.All {
+		return !flag
+	} else {
+		return flag
+	}
+}
+
 /** run things inside the container:  install packages, create users, run scripts */
 func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 	var err error
@@ -369,14 +378,14 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 			return err
 		}
 	}
-	if t.Scripts {
+	if t.includes(t.Scripts) {
 		err = t.runScripts(config, name, true)
 		if err != nil {
 			return err
 		}
 	}
 
-	if t.Packages {
+	if t.includes(t.Packages) {
 		err = t.installPackages(config, name)
 		if err != nil {
 			return err
@@ -387,7 +396,7 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 		}
 	}
 
-	if t.Users {
+	if t.includes(t.Users) {
 		err = t.createUsers(config, name)
 		if err != nil {
 			return err
@@ -397,19 +406,19 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 			return err
 		}
 	}
-	if t.Scripts {
+	if t.includes(t.Scripts) {
 		err = t.runScripts(config, name, false)
 		if err != nil {
 			return err
 		}
 	}
-	if t.Files {
+	if t.includes(t.Files) {
 		err = t.copyFiles(config, name)
 		if err != nil {
 			return err
 		}
 	}
-	if t.Users {
+	if t.includes(t.Users) {
 		err = t.changePasswords(config, name, config.Passwords)
 		if err != nil {
 			return err

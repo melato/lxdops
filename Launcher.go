@@ -47,11 +47,7 @@ func (op *Launcher) Run(args []string) error {
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
-	var c = &Configurer{ops: t.Ops, DryRun: t.DryRun, prog: t.prog}
-	c.Packages = true
-	c.Users = true
-	c.Scripts = true
-	c.Files = true
+	var c = &Configurer{ops: t.Ops, DryRun: t.DryRun, prog: t.prog, All: true}
 	return c
 }
 
