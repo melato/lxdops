@@ -3,6 +3,7 @@ package lxdops
 import (
 	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"strings"
 
@@ -30,9 +31,9 @@ func ParseAddress(addr string) string {
 	return ""
 }
 
-func (t *ShorewallRulesOp) GetAddresses() ([]*shorewall.HostAddress, error) {
+func (t *ShorewallRulesOp) GetProjectAddresses(project string) ([]*shorewall.HostAddress, error) {
 	// lxc list -c ns4 --format=csv
-	cmd, err := program.NewProgram("lxc").Cmd("list", "-c", "n4", "--format=csv")
+	cmd, err := program.NewProgram("lxc").Cmd("list", "--project", project, "-c", "n4", "--format=csv")
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +55,43 @@ func (t *ShorewallRulesOp) GetAddresses() ([]*shorewall.HostAddress, error) {
 				addresses = append(addresses, &shorewall.HostAddress{Name: fields[0], Address: address})
 			}
 		}
+	}
+	return addresses, nil
+}
+
+func (t *ShorewallRulesOp) GetProjects() ([]string, error) {
+	cmd, err := program.NewProgram("lxc").Cmd("project", "list", "--format=json")
+	if err != nil {
+		return nil, err
+	}
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	var projects []*Project
+	err = json.Unmarshal(output, &projects)
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, project := range projects {
+		names = append(names, project.Name)
+	}
+	return names, nil
+}
+
+func (t *ShorewallRulesOp) GetAddresses() ([]*shorewall.HostAddress, error) {
+	projects, err := t.GetProjects()
+	if err != nil {
+		return nil, err
+	}
+	var addresses []*shorewall.HostAddress
+	for _, project := range projects {
+		paddresses, err := t.GetProjectAddresses(project)
+		if err != nil {
+			return nil, err
+		}
+		addresses = append(addresses, paddresses...)
 	}
 	return addresses, nil
 }
