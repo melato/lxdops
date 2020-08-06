@@ -14,6 +14,7 @@ type Launcher struct {
 	DeviceTemplate    string   `name:"d" usage:"device to use as template for devices"`
 	ProfileDir        string   `name:"profile-dir" usage:"directory to save profile files"`
 	DryRun            bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	Profiles          []string `name:"profile,p" usage:"profiles to add to lxc launch"`
 	Options           []string `name:"X" usage:"additional options to pass to lxc"`
 	prog              program.Params
 }
@@ -96,6 +97,9 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		}
 		lxcArgs = append(lxcArgs, osType.ImageName(osVersion))
 		for _, profile := range profiles {
+			lxcArgs = append(lxcArgs, "-p", profile)
+		}
+		for _, profile := range t.Profiles {
 			lxcArgs = append(lxcArgs, "-p", profile)
 		}
 		for _, option := range t.Options {
