@@ -6,5 +6,5 @@ import (
 )
 
 func main() {
-	command.Main(&lxdops.RootCommand{})
+	command.Main(lxdops.RootCommand())
 }

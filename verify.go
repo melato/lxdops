@@ -7,7 +7,6 @@ import (
 )
 
 type VerifyOp struct {
-	command.Base
 }
 
 func (t *VerifyOp) Run(args []string) error {

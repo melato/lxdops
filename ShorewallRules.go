@@ -7,13 +7,11 @@ import (
 	"errors"
 	"strings"
 
-	"melato.org/export/command"
 	"melato.org/export/program"
 	"melato.org/shorewall"
 )
 
 type ShorewallRulesOp struct {
-	command.Base
 	RulesFile    string `name:"f,rules-file" usage:"rules file"`
 	FirstSshPort int    `name:"ssh,p" usage:"first ssh port"`
 }
@@ -96,7 +94,7 @@ func (t *ShorewallRulesOp) GetAddresses() ([]*shorewall.HostAddress, error) {
 	return addresses, nil
 }
 
-func (t *ShorewallRulesOp) Run(args []string) error {
+func (t *ShorewallRulesOp) Run() error {
 	if t.RulesFile == "" {
 		return errors.New("Missing rules file")
 	}
@@ -108,10 +106,4 @@ func (t *ShorewallRulesOp) Run(args []string) error {
 
 	sw := shorewall.Shorewall{FirstSshPort: t.FirstSshPort}
 	return sw.GenerateRules(containers, t.RulesFile)
-}
-
-func (op *ShorewallRulesOp) Usage() *command.Usage {
-	return &command.Usage{
-		Short: "generate shorewall rules",
-	}
 }

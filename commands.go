@@ -2,49 +2,96 @@ package lxdops
 
 import (
 	"fmt"
+	"errors"
 
 	"melato.org/export/command"
 	shorewall_commands "melato.org/shorewall/commands"
 )
 
-type RootCommand struct {
-	command.Base
+type LxdOps struct {
 	Ops *Ops
 }
 
-func (t *RootCommand) Init() error {
+func (t *LxdOps) Init() error {
 	t.Ops = &Ops{}
 	return t.Ops.Init()
 }
 
-func (t *RootCommand) Configured() error {
+func (t *LxdOps) Configured() error {
 	return t.Ops.Configured()
 }
 
-func (t *RootCommand) Usage() *command.Usage {
+func (t *LxdOps) Usage() *command.Usage {
 	return &command.Usage{
 		Short:   "launch and configure containers using xml configuration files",
 		Example: "launch -c php/php -d z/template/drupal7@x",
 	}
 }
 
-func (t *RootCommand) Commands() map[string]command.Command {
-	commands := make(map[string]command.Command)
-	commands["launch"] = &LaunchOp{Launcher: &Launcher{Ops: t.Ops}}
-	commands["configure"] = &ConfigureOp{Configurer: NewConfigurer(t.Ops)}
-	commands["verify"] = &VerifyOp{}
-	commands["parse"] = &ParseOp{}
-	commands["shorewall"] = &ShorewallCommand{}
-	commands["zfsroot"] = (&command.SimpleCommand{}).RunMethodArgs(t.ZFSRoot)
-	device := &DeviceConfigurer{Ops: t.Ops}
-	commands["create-devices"] = (&command.SimpleCommand{}).Flags(device).RunMethodArgs(device.Run).Use("{name} {configfile}...").Short("create devices")
-	host := &HostConfigurer{Ops: t.Ops}
-	commands["host"] = (&command.SimpleCommand{}).Flags(host).RunMethodE(host.RunE).Short("configure host files for container use")
-	commands["version"] = (&command.SimpleCommand{}).RunMethod(t.Version)
-	return commands
+func RootCommand() command.Command {
+	var ops LxdOps
+	var cmd command.SimpleCommand
+	launcher := &Launcher{Ops: ops.Ops}
+	cmd.Command("launch").Flags(launcher).RunMethodArgs(launcher.Run).
+		Use("<container> <config-file> ...").
+		Short("launch a container").
+		Example("launch php php.yaml")
+
+	configurer := NewConfigurer(ops.Ops)
+	cmd.Command("configure").Flags(configurer).RunMethodArgs(configurer.Run).
+		Use("<container> <config-file> ...").
+		Short("configure an existing container").
+		Example("configure c1 demo.yaml")
+	
+	cmd.Command("verify").RunMethodArgs(ops.Verify).
+		Use("<config-file> ...").
+		Short("verify config files").
+		Example("verify *.yaml")
+	cmd.Command("version").RunMethod(ops.Version)
+	device := &DeviceConfigurer{Ops: ops.Ops}
+	cmd.Command("create-devices").Flags(device).RunMethodArgs(device.Run).Use("{name} {configfile}...").Short("create devices")
+	cmd.Command("zfsroot").RunMethodArgs(ops.ZFSRoot)
+	host := &HostConfigurer{Ops: ops.Ops}
+	cmd.Command("host").Flags(host).RunMethodE(host.RunE).Short("configure host files for container use")
+
+	parse := &ParseOp{}
+	cmd.Command("parse").Flags(parse).RunMethodArgs(parse.Run).
+		Short("parse a config file").
+		Use("<config-file>").
+		Example("parse test.yaml")	
+
+	cmd.Command("description").RunMethodArgs(ops.Description).
+		Short("print the description of a config file").
+		Use("<config-file>").
+		Example("test.yaml")	
+
+	shorewallCmd := cmd.Command("shorewall")
+	
+	var interfacesCmd shorewall_commands.InterfacesCmd
+	shorewallCmd.Command("interfaces").Flags(&interfacesCmd).RunMethodE(interfacesCmd.Run)
+	var rulesOp ShorewallRulesOp
+	shorewallCmd.Command("rules").Flags(&rulesOp).RunMethodE(rulesOp.Run).Short("generate shorewall rules")
+	return &cmd
 }
 
-func (t *RootCommand) ZFSRoot(args []string) error {
+func (t *LxdOps) Verify(args []string) error {
+	for _, configFile := range args {
+		var err error
+		var config *Config
+		config, err = ReadConfig(configFile)
+		isValid := false
+		if err != nil {
+			fmt.Println(err)
+		}
+		if err == nil {
+			isValid = config.Verify()
+		}
+		fmt.Println(configFile, isValid)
+	}
+	return nil
+}
+
+func (t *LxdOps) ZFSRoot(args []string) error {
 	path, err := t.Ops.ZFSRoot()
 	if err == nil {
 		fmt.Println(path)
@@ -52,17 +99,23 @@ func (t *RootCommand) ZFSRoot(args []string) error {
 	return err
 }
 
-func (t *RootCommand) Version() {
+func (t *LxdOps) Version() {
 	fmt.Println(Version)
 }
 
-type ShorewallCommand struct {
-	command.Base
+
+/** Print the description of a config file. */
+func (t *LxdOps) Description(args []string) error {
+	if len(args) != 1 {
+		return errors.New("Usage: <config.yaml>")
+	}
+	var err error
+	var config *Config
+	config, err = ReadConfig(args[0])
+	if err != nil {
+		return err
+	}
+	fmt.Println(config.Description)
+	return nil
 }
 
-func (t *ShorewallCommand) Commands() map[string]command.Command {
-	commands := make(map[string]command.Command)
-	commands["interfaces"] = &shorewall_commands.InterfacesCmd{}
-	commands["rules"] = &ShorewallRulesOp{}
-	return commands
-}

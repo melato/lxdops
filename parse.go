@@ -3,12 +3,9 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-
-	"melato.org/export/command"
 )
 
 type ParseOp struct {
-	command.Base
 	Raw    bool   `usage:"do not process includes"`
 	Script string `usage:"print the body of the script with the specified name"`
 }
@@ -38,12 +35,4 @@ func (t *ParseOp) Run(args []string) error {
 		config.Print()
 	}
 	return nil
-}
-
-func (op *ParseOp) Usage() *command.Usage {
-	return &command.Usage{
-		Short:   "parse a config file",
-		Use:     "<config-file>",
-		Example: "ops parse test.xml",
-	}
 }

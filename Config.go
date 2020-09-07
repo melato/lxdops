@@ -15,6 +15,7 @@ import (
 type Config struct {
 	OS *OS
 	/** Include other configs */
+	Description string		`yaml:"description,omitempty"`
 	Includes []string `yaml:"include,omitempty"`
 	/** Files or directories that must exist on the host */
 	RequiredFiles []string  `yaml:"require,omitempty"`
@@ -70,7 +71,7 @@ type File struct {
 	/** The source path.
 	 */
 	Source string
-
+	
 	Recursive bool
 
 	Uid int
@@ -196,6 +197,9 @@ func (config *Config) profileExists(profile string) bool {
 	return err == nil
 }
 
+/** CreateProfile -- Create a profile that contains all the devices in the configuration.
+	For a container with name {name}, each device is mapped to a subdirectory of /{zfs-root}/host/{name}/.
+*/
 func (config *Config) CreateProfile(name string, profileDir string, zfsRoot string) error {
 	if len(config.Devices) == 0 {
 		return nil
@@ -209,12 +213,6 @@ func (config *Config) CreateProfile(name string, profileDir string, zfsRoot stri
 		return err
 	}
 	dir := filepath.Join("/", zfsRoot, config.GetHostFS(), name)
-
-	var lines []string
-
-	lines = append(lines, "config: {}")
-	lines = append(lines, "description: container disk devices")
-	lines = append(lines, "devices:")
 
 	err = program.NewProgram("lxc").Run("profile", "create", profileName)
 	if err != nil {
@@ -251,6 +249,9 @@ func (t *Config) Merge(c *Config) error {
 		} else {
 			return errors.New("cannot merge incompatible os versions: " + t.OS.Version + ", " + c.OS.Version)
 		}
+	}
+	if t.Description == "" {
+		t.Description = c.Description
 	}
 	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
 	t.Devices = append(t.Devices, c.Devices...)
