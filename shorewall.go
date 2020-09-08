@@ -7,9 +7,9 @@ import (
 	"errors"
 	"strings"
 
+	"melato.org/export/command"
 	"melato.org/export/program"
 	"melato.org/shorewall"
-	"melato.org/export/command"
 	shorewall_commands "melato.org/shorewall/commands"
 )
 
@@ -115,5 +115,5 @@ func AddShorewallCommands(parent *command.SimpleCommand) {
 	var interfacesCmd shorewall_commands.InterfacesCmd
 	cmd.Command("interfaces").Flags(&interfacesCmd).RunMethodE(interfacesCmd.Run)
 	var rulesOp ShorewallRulesOp
-	cmd.Command("rules").Flags(&rulesOp).RunMethodE(rulesOp.Run).Short("generate shorewall rules")	
+	cmd.Command("rules").Flags(&rulesOp).RunMethodE(rulesOp.Run).Short("generate shorewall rules")
 }

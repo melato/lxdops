@@ -1,8 +1,8 @@
 package lxdops
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 
 	"melato.org/export/command"
 )
@@ -43,7 +43,7 @@ func RootCommand() *command.SimpleCommand {
 		Use("<container> <config-file> ...").
 		Short("configure an existing container").
 		Example("configure c1 demo.yaml")
-	
+
 	cmd.Command("verify").RunMethodArgs(ops.Verify).
 		Use("<config-file> ...").
 		Short("verify config files").
@@ -57,12 +57,12 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("parse").Flags(parse).RunMethodArgs(parse.Run).
 		Short("parse a config file").
 		Use("<config-file>").
-		Example("parse test.yaml")	
+		Example("parse test.yaml")
 
 	cmd.Command("description").RunMethodArgs(ops.Description).
 		Short("print the description of a config file").
 		Use("<config-file>").
-		Example("test.yaml")	
+		Example("test.yaml")
 
 	return &cmd
 }
@@ -96,7 +96,6 @@ func (t *LxdOps) Version() {
 	fmt.Println(Version)
 }
 
-
 /** Print the description of a config file. */
 func (t *LxdOps) Description(args []string) error {
 	if len(args) != 1 {
@@ -111,4 +110,3 @@ func (t *LxdOps) Description(args []string) error {
 	fmt.Println(config.Description)
 	return nil
 }
-

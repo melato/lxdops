@@ -14,9 +14,9 @@ import (
 
 type Config struct {
 	OS *OS
+	Description string   `yaml:"description,omitempty"`
 	/** Include other configs */
-	Description string		`yaml:"description,omitempty"`
-	Includes []string `yaml:"include,omitempty"`
+	Includes    []string `yaml:"include,omitempty"`
 	/** Files or directories that must exist on the host */
 	RequiredFiles []string  `yaml:"require,omitempty"`
 	HostFS        string    `yaml:"host-fs,omitempty"`
@@ -71,7 +71,7 @@ type File struct {
 	/** The source path.
 	 */
 	Source string
-	
+
 	Recursive bool
 
 	Uid int
@@ -198,7 +198,7 @@ func (config *Config) profileExists(profile string) bool {
 }
 
 /** CreateProfile -- Create a profile that contains all the devices in the configuration.
-	For a container with name {name}, each device is mapped to a subdirectory of /{zfs-root}/host/{name}/.
+For a container with name {name}, each device is mapped to a subdirectory of /{zfs-root}/host/{name}/.
 */
 func (config *Config) CreateProfile(name string, profileDir string, zfsRoot string) error {
 	if len(config.Devices) == 0 {

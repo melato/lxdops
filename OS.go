@@ -33,4 +33,3 @@ func (t *OS) IsDebian() bool {
 func (t *OS) IsUbuntu() bool {
 	return t.Name == "ubuntu"
 }
-
