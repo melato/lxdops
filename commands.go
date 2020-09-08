@@ -53,8 +53,6 @@ func RootCommand() command.Command {
 	device := &DeviceConfigurer{Ops: ops.Ops}
 	cmd.Command("create-devices").Flags(device).RunMethodArgs(device.Run).Use("{name} {configfile}...").Short("create devices")
 	cmd.Command("zfsroot").RunMethodArgs(ops.ZFSRoot)
-	host := &HostConfigurer{Ops: ops.Ops}
-	cmd.Command("host").Flags(host).RunMethodE(host.RunE).Short("configure host files for container use")
 
 	parse := &ParseOp{}
 	cmd.Command("parse").Flags(parse).RunMethodArgs(parse.Run).
