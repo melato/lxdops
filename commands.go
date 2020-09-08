@@ -30,6 +30,8 @@ func (t *LxdOps) Usage() *command.Usage {
 
 func RootCommand() command.Command {
 	var ops LxdOps
+	ops.Ops = &Ops{}
+	ops.Ops.Init()
 	var cmd command.SimpleCommand
 	launcher := &Launcher{Ops: ops.Ops}
 	cmd.Command("launch").Flags(launcher).RunMethodArgs(launcher.Run).
