@@ -6,5 +6,7 @@ import (
 )
 
 func main() {
-	command.Main(lxdops.RootCommand())
+	cmd := lxdops.RootCommand()
+	lxdops.AddShorewallCommands(cmd)
+	command.Main(cmd)
 }

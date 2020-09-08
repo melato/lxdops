@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"melato.org/export/command"
-	shorewall_commands "melato.org/shorewall/commands"
 )
 
 type LxdOps struct {
@@ -28,7 +27,7 @@ func (t *LxdOps) Usage() *command.Usage {
 	}
 }
 
-func RootCommand() command.Command {
+func RootCommand() *command.SimpleCommand {
 	var ops LxdOps
 	ops.Ops = &Ops{}
 	ops.Ops.Init()
@@ -65,12 +64,6 @@ func RootCommand() command.Command {
 		Use("<config-file>").
 		Example("test.yaml")	
 
-	shorewallCmd := cmd.Command("shorewall")
-	
-	var interfacesCmd shorewall_commands.InterfacesCmd
-	shorewallCmd.Command("interfaces").Flags(&interfacesCmd).RunMethodE(interfacesCmd.Run)
-	var rulesOp ShorewallRulesOp
-	shorewallCmd.Command("rules").Flags(&rulesOp).RunMethodE(rulesOp.Run).Short("generate shorewall rules")
 	return &cmd
 }
 

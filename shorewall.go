@@ -9,6 +9,8 @@ import (
 
 	"melato.org/export/program"
 	"melato.org/shorewall"
+	"melato.org/export/command"
+	shorewall_commands "melato.org/shorewall/commands"
 )
 
 type ShorewallRulesOp struct {
@@ -106,4 +108,12 @@ func (t *ShorewallRulesOp) Run() error {
 
 	sw := shorewall.Shorewall{FirstSshPort: t.FirstSshPort}
 	return sw.GenerateRules(containers, t.RulesFile)
+}
+
+func AddShorewallCommands(parent *command.SimpleCommand) {
+	cmd := parent.Command("shorewall")
+	var interfacesCmd shorewall_commands.InterfacesCmd
+	cmd.Command("interfaces").Flags(&interfacesCmd).RunMethodE(interfacesCmd.Run)
+	var rulesOp ShorewallRulesOp
+	cmd.Command("rules").Flags(&rulesOp).RunMethodE(rulesOp.Run).Short("generate shorewall rules")	
 }
