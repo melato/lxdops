@@ -13,10 +13,10 @@ import (
 )
 
 type Config struct {
-	OS *OS
-	Description string   `yaml:"description,omitempty"`
+	OS          *OS
+	Description string `yaml:"description,omitempty"`
 	/** Include other configs */
-	Includes    []string `yaml:"include,omitempty"`
+	Includes []string `yaml:"include,omitempty"`
 	/** Files or directories that must exist on the host */
 	RequiredFiles []string  `yaml:"require,omitempty"`
 	HostFS        string    `yaml:"host-fs,omitempty"`
@@ -278,7 +278,7 @@ func (t *Config) removeDuplicates() {
 func ReadConfig(file string) (*Config, error) {
 	result := &Config{}
 	included := make(map[string]bool)
-	err := result.merge(file, included)
+	err := result.merge("", file, included)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func ReadConfigs(files ...string) (*Config, error) {
 	result := &Config{}
 	included := make(map[string]bool)
 	for _, file := range files {
-		err := result.merge(file, included)
+		err := result.merge("", file, included)
 		if err != nil {
 			return nil, err
 		}
@@ -329,8 +329,11 @@ func ReadConfigs1(files ...string) (*Config, error) {
 	return result, nil
 }
 
-func (t *Config) merge(file string, included map[string]bool) error {
-	//fmt.Printf("merge %s\n", file)
+func (t *Config) merge(dir, ifile string, included map[string]bool) error {
+	file := ifile
+	if !filepath.IsAbs(ifile) {
+		file = filepath.Join(dir, ifile)
+	}
 	if _, found := included[file]; found {
 		fmt.Printf("ignoring duplicate include: %s\n", file)
 		return nil
@@ -340,8 +343,9 @@ func (t *Config) merge(file string, included map[string]bool) error {
 	if err != nil {
 		return err
 	}
-	for _, file := range config.Includes {
-		err := t.merge(file, included)
+	d := filepath.Dir(file)
+	for _, f := range config.Includes {
+		err := t.merge(d, f, included)
 		if err != nil {
 			return err
 		}
