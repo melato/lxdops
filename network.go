@@ -46,7 +46,7 @@ func (t *NetworkManager) GetProjectAddresses(project string) ([]*HostAddress, er
 			break
 		}
 		if fields[1] != "" {
-			address := ParseAddress((fields[1]))
+			address := t.ParseAddress((fields[1]))
 			if address != "" {
 				addresses = append(addresses, &HostAddress{Name: fields[0], Address: address})
 			}
