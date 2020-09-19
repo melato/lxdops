@@ -92,19 +92,20 @@ func (t *NetworkManager) GetAddresses() ([]*HostAddress, error) {
 	return addresses, nil
 }
 
-func (t *NetworkManager) WriteAddresses(addresses []*HostAddress, file string) error {
+func (t *NetworkManager) WriteAddresses(addresses []*HostAddress, file string, headers bool) error {
 	f, err := os.Create(file)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 	var csv = csv.NewWriter(f)
-	row := []string{"address", "name"}
-	csv.Write(row)
+	if headers {
+		csv.Write([]string{"address", "name"})
+	}
 	for _, a := range addresses {
 		row[0] = a.Address
 		row[1] = a.Name
-		csv.Write(row)
+		csv.Write([]string{a.Address, a.Name})
 	}
 	csv.Flush()
 	return csv.Error()
@@ -112,6 +113,7 @@ func (t *NetworkManager) WriteAddresses(addresses []*HostAddress, file string) e
 
 type NetworkOp struct {
 	OutputFile string `name:"o" usage:"output file"`
+	Headers    bool   `name:"headers" usage:"include headers"`
 }
 
 func (t *NetworkOp) ExportAddresses() error {
@@ -125,5 +127,5 @@ func (t *NetworkOp) ExportAddresses() error {
 		return err
 	}
 
-	return net.WriteAddresses(containers, t.OutputFile)
+	return net.WriteAddresses(containers, t.OutputFile, t.Headers)
 }
