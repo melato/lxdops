@@ -103,8 +103,6 @@ func (t *NetworkManager) WriteAddresses(addresses []*HostAddress, file string, h
 		csv.Write([]string{"address", "name"})
 	}
 	for _, a := range addresses {
-		row[0] = a.Address
-		row[1] = a.Name
 		csv.Write([]string{a.Address, a.Name})
 	}
 	csv.Flush()
