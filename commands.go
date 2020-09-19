@@ -64,6 +64,9 @@ func RootCommand() *command.SimpleCommand {
 		Use("<config-file>").
 		Example("test.yaml")
 
+	var networkOp NetworkOp
+	cmd.Command("addresses").Flags(&networkOp).RunMethodE(networkOp.ExportAddresses).Short("export container addresses")
+
 	return &cmd
 }
 
