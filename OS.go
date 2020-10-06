@@ -1,5 +1,15 @@
 package lxdops
 
+import (
+	"fmt"
+)
+
+var OSTypes map[string]OSType
+
+func init() {
+	OSTypes = make(map[string]OSType)
+}
+
 type OSType interface {
 	NeedPasswords() bool
 	ImageName(version string) string
@@ -9,14 +19,11 @@ type OSType interface {
 
 func (t *OS) Type() OSType {
 	if t.osType == nil {
-		if t.IsAlpine() {
-			t.osType = &OsTypeAlpine{}
-		} else if t.IsDebian() {
-			t.osType = &OsTypeDebian{}
-		} else if t.IsUbuntu() {
-			t.osType = &OsTypeUbuntu{}
+		osType, exists := OSTypes[t.Name]
+		if exists {
+			t.osType = osType
 		} else {
-			t.osType = nil
+			fmt.Println("Unknown OS type: " + t.Name)
 		}
 	}
 	return t.osType
@@ -24,12 +31,4 @@ func (t *OS) Type() OSType {
 
 func (t *OS) IsAlpine() bool {
 	return t.Name == "alpine"
-}
-
-func (t *OS) IsDebian() bool {
-	return t.Name == "debian"
-}
-
-func (t *OS) IsUbuntu() bool {
-	return t.Name == "ubuntu"
 }

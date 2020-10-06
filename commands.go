@@ -51,6 +51,12 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("version").RunMethod(ops.Version)
 	device := &DeviceConfigurer{Ops: ops.Ops}
 	cmd.Command("create-devices").Flags(device).RunMethodArgs(device.Run).Use("{name} {configfile}...").Short("create devices")
+	/* add devices:
+	lxdops device add -p a.host -d /z/host/a -s 1 {configfile}...
+	- create subdirectories
+	- change ownership
+	- add devices to profile, with optional suffix
+	*/
 	cmd.Command("zfsroot").RunMethodArgs(ops.ZFSRoot)
 
 	parse := &ParseOp{}
