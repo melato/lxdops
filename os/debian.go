@@ -1,15 +1,19 @@
-package lxdops
+package os
 
-type OsTypeDebian struct {
+import (
+	"melato.org/lxdops"	
+)
+
+type Debian struct {
 }
 
-func (t *OsTypeDebian) NeedPasswords() bool { return false }
+func (t *Debian) NeedPasswords() bool { return false }
 
-func (t *OsTypeDebian) InstallPackageCommand(pkg string) string {
+func (t *Debian) InstallPackageCommand(pkg string) string {
 	return "DEBIAN_FRONTEND=noninteractive apt-get -y install " + pkg
 }
 
-func (t *OsTypeDebian) AddUserCommand(u *User) []string {
+func (t *Debian) AddUserCommand(u *lxdops.User) []string {
 	args := []string{"adduser", u.Name, "--disabled-password", "--gecos", ""}
 	if u.Uid != "" {
 		args = append(args, "--uid", u.Uid)
@@ -23,6 +27,6 @@ func (t *OsTypeDebian) AddUserCommand(u *User) []string {
 	return args
 }
 
-func (t *OsTypeDebian) ImageName(version string) string {
+func (t *Debian) ImageName(version string) string {
 	return "images:debian/" + version
 }
