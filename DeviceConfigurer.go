@@ -84,6 +84,9 @@ func (t *DeviceConfigurer) CreateDeviceDirs(config *Config, name string) error {
 		}
 		if t.DeviceTemplate == "" {
 			err = t.Ops.ZFS().Run("create", fs)
+			if err != nil {
+				return err
+			}
 			for _, device := range config.Devices {
 				deviceDir := filepath.Join(dir, device.Name)
 				if device.Recordsize != "" {
