@@ -17,8 +17,8 @@ Configuration sections are applied in this order:
 - Scripts with First = true
 - Packages
 - Users
-- Scripts with First = false
 - Files
+- Scripts with First = false
 - Passwords
 */
 type Config struct {

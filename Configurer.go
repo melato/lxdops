@@ -402,14 +402,14 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 			return err
 		}
 	}
-	if t.includes(t.Scripts) {
-		err = t.runScripts(config, name, false)
+	if t.includes(t.Files) {
+		err = t.copyFiles(config, name)
 		if err != nil {
 			return err
 		}
 	}
-	if t.includes(t.Files) {
-		err = t.copyFiles(config, name)
+	if t.includes(t.Scripts) {
+		err = t.runScripts(config, name, false)
 		if err != nil {
 			return err
 		}
