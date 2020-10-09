@@ -1,7 +1,7 @@
 package os
 
 import (
-	"melato.org/lxdops"	
+	"melato.org/lxdops"
 )
 
 type Debian struct {
