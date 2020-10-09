@@ -12,6 +12,15 @@ import (
 	"melato.org/export/program"
 )
 
+/** Config - Container configuration
+Configuration sections are applied in this order:
+- Scripts with First = true
+- Packages
+- Users
+- Scripts with First = false
+- Files
+- Passwords
+*/
 type Config struct {
 	OS          *OS
 	Description string `yaml:"description,omitempty"`
@@ -23,11 +32,12 @@ type Config struct {
 	Devices       []*Device `yaml:"devices,omitempty"`
 	Repositories  []string  `yaml:"repositories,omitempty"`
 	Profiles      []string  `yaml:"profiles,omitempty"`
-	Packages      []string  `yaml:"packages,omitempty"`
-	Users         []*User   `yaml:"users,omitempty"`
-	Files         []*File   `yaml:"files,omitempty"`
-	Scripts       []*Script `yaml:"scripts,omitempty"`
-	Passwords     []string  `yaml:"passwords,omitempty"`
+
+	Packages  []string  `yaml:"packages,omitempty"`
+	Users     []*User   `yaml:"users,omitempty"`
+	Files     []*File   `yaml:"files,omitempty"`
+	Scripts   []*Script `yaml:"scripts,omitempty"`
+	Passwords []string  `yaml:"passwords,omitempty"`
 }
 
 type OS struct {
@@ -278,7 +288,7 @@ func (t *Config) removeDuplicates() {
 func ReadConfig(file string) (*Config, error) {
 	result := &Config{}
 	included := make(map[string]bool)
-	err := result.merge("", file, included)
+	err := result.merge(file, included)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +302,7 @@ func ReadConfigs(files ...string) (*Config, error) {
 	result := &Config{}
 	included := make(map[string]bool)
 	for _, file := range files {
-		err := result.merge("", file, included)
+		err := result.merge(file, included)
 		if err != nil {
 			return nil, err
 		}
@@ -329,11 +339,29 @@ func ReadConfigs1(files ...string) (*Config, error) {
 	return result, nil
 }
 
-func (t *Config) merge(dir, ifile string, included map[string]bool) error {
-	file := ifile
-	if !filepath.IsAbs(ifile) {
-		file = filepath.Join(dir, ifile)
+func (t *Config) ResolvePath(dir string, file string) string {
+	if file == "" {
+		return ""
 	}
+	if filepath.IsAbs(file) {
+		return file
+	}
+	return filepath.Join(dir, file)
+}
+
+func (t *Config) ResolvePaths(dir string) {
+	for i, f := range t.Includes {
+		t.Includes[i] = t.ResolvePath(dir, f)
+	}
+	for _, f := range t.Files {
+		f.Source = t.ResolvePath(dir, f.Source)
+	}
+	for _, s := range t.Scripts {
+		s.File = t.ResolvePath(dir, s.File)
+	}
+}
+
+func (t *Config) merge(file string, included map[string]bool) error {
 	if _, found := included[file]; found {
 		fmt.Printf("ignoring duplicate include: %s\n", file)
 		return nil
@@ -343,9 +371,10 @@ func (t *Config) merge(dir, ifile string, included map[string]bool) error {
 	if err != nil {
 		return err
 	}
-	d := filepath.Dir(file)
+	dir := filepath.Dir(file)
+	config.ResolvePaths(dir)
 	for _, f := range config.Includes {
-		err := t.merge(d, f, included)
+		err := t.merge(f, included)
 		if err != nil {
 			return err
 		}
