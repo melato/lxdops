@@ -9,14 +9,12 @@ import (
 )
 
 type Launcher struct {
-	Ops               *Ops     `name:""`
-	ContainerTemplate string   `name:"c" usage:"container to use as template"`
-	DeviceTemplate    string   `name:"d" usage:"device to use as template for devices"`
-	ProfileDir        string   `name:"profile-dir" usage:"directory to save profile files"`
-	DryRun            bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	Profiles          []string `name:"profile,p" usage:"profiles to add to lxc launch"`
-	Options           []string `name:"X" usage:"additional options to pass to lxc"`
-	prog              program.Params
+	Ops        *Ops     `name:""`
+	ProfileDir string   `name:"profile-dir" usage:"directory to save profile files"`
+	DryRun     bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	Profiles   []string `name:"profile,p" usage:"profiles to add to lxc launch"`
+	Options    []string `name:"X" usage:"additional options to pass to lxc"`
+	prog       program.Params
 }
 
 func (t *Launcher) Init() error {
@@ -56,10 +54,10 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	var err error
 	osType := config.OS.Type()
 	if osType == nil {
-		return errors.New("unsupported OS type.  must be ubuntu or alpine")
+		return errors.New("unsupported OS type: " + config.OS.Name)
 	}
 
-	dev := &DeviceConfigurer{Ops: t.Ops, DeviceTemplate: t.DeviceTemplate, ProfileDir: t.ProfileDir, DryRun: t.DryRun}
+	dev := &DeviceConfigurer{Ops: t.Ops, ProfileDir: t.ProfileDir, DryRun: t.DryRun}
 	dev.Configured()
 	err = dev.CreateDeviceDirs(config, name)
 	if err != nil {
@@ -86,7 +84,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		profiles = append(profiles, config.ProfileName(name))
 	}
 	fmt.Println("profiles", profiles)
-	containerTemplate := t.ContainerTemplate
+	containerTemplate := config.Origin
 	if containerTemplate == "" {
 		var lxcArgs []string
 		lxcArgs = append(lxcArgs, "launch")
@@ -110,7 +108,6 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		if err != nil {
 			return err
 		}
-		t.NewConfigurer().ConfigureContainer(config, name)
 	} else {
 		copyArgs := []string{"copy"}
 		if !strings.Contains(containerTemplate, "/") {
@@ -135,6 +132,10 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		if err != nil {
 			return err
 		}
+	}
+	t.NewConfigurer().ConfigureContainer(config, name)
+	if config.Snapshot != "" {
+		err = t.prog.NewProgram("lxc").Run("snapshot", name, config.Snapshot)
 	}
 	return err
 }

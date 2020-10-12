@@ -27,17 +27,21 @@ type Config struct {
 	/** Include other configs */
 	Includes []string `yaml:"include,omitempty"`
 	/** Files or directories that must exist on the host */
-	RequiredFiles []string  `yaml:"require,omitempty"`
-	HostFS        string    `yaml:"host-fs,omitempty"`
-	Devices       []*Device `yaml:"devices,omitempty"`
-	Repositories  []string  `yaml:"repositories,omitempty"`
-	Profiles      []string  `yaml:"profiles,omitempty"`
+	RequiredFiles []string `yaml:"require,omitempty"`
+	HostFS        string   `yaml:"host-fs,omitempty"`
+	Repositories  []string `yaml:"repositories,omitempty"`
+
+	Origin         string    `yaml:"origin,omitempty"`
+	DeviceTemplate string    `yaml:"device-template,omitempty"`
+	Devices        []*Device `yaml:"devices,omitempty"`
+	Profiles       []string  `yaml:"profiles,omitempty"`
 
 	Packages  []string  `yaml:"packages,omitempty"`
 	Users     []*User   `yaml:"users,omitempty"`
 	Files     []*File   `yaml:"files,omitempty"`
 	Scripts   []*Script `yaml:"scripts,omitempty"`
 	Passwords []string  `yaml:"passwords,omitempty"`
+	Snapshot  string    `yaml:"snapshot,omitempty"`
 }
 
 type OS struct {
@@ -262,6 +266,15 @@ func (t *Config) Merge(c *Config) error {
 	}
 	if t.Description == "" {
 		t.Description = c.Description
+	}
+	if t.Origin == "" {
+		t.Origin = c.Origin
+	}
+	if t.DeviceTemplate == "" {
+		t.DeviceTemplate = c.DeviceTemplate
+	}
+	if t.Snapshot == "" {
+		t.Snapshot = c.Snapshot
 	}
 	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
 	t.Devices = append(t.Devices, c.Devices...)
