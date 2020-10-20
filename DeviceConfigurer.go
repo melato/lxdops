@@ -101,8 +101,12 @@ func (t *DeviceConfigurer) CreateDeviceDirs(config *Config, name string) error {
 		if err != nil {
 			return err
 		}
-		for _, device := range config.Devices {
-			deviceDir := filepath.Join(dir, device.Name)
+	} else {
+		fmt.Println("reusing", dir)
+	}
+	for _, device := range config.Devices {
+		deviceDir := filepath.Join(dir, device.Name)
+		if !DirExists(deviceDir) {
 			if device.Recordsize != "" {
 				err := t.Ops.ZFS().Run("create", "-o", "recordsize="+device.Recordsize, filepath.Join(fs, device.Name))
 				if err != nil {
@@ -119,13 +123,13 @@ func (t *DeviceConfigurer) CreateDeviceDirs(config *Config, name string) error {
 			if err != nil {
 				return err
 			}
+		} else {
+			fmt.Println("reusing", deviceDir)
 		}
-		err = t.CopyTemplate(config, name)
-		if err != nil {
-			return err
-		}
-	} else {
-		fmt.Println("reusing", dir)
+	}
+	err = t.CopyTemplate(config, name)
+	if err != nil {
+		return err
 	}
 	return t.Ops.ZFS().Run("list", "-r", fs)
 }
