@@ -274,6 +274,9 @@ func (t *Config) Merge(c *Config) error {
 	if t.DeviceTemplate == "" {
 		t.DeviceTemplate = c.DeviceTemplate
 	}
+	if t.DeviceOrigin == "" {
+		t.DeviceOrigin = c.DeviceOrigin
+	}
 	if t.Snapshot == "" {
 		t.Snapshot = c.Snapshot
 	}
