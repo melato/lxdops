@@ -85,6 +85,8 @@ func (t *DeviceConfigurer) CopyTemplate(config *Config, name string) error {
 	return t.prog.NewProgram("rsync").Sudo(true).Run("-a", templateDir+"/", dir+"/")
 }
 
+//			err = t.Ops.ZFS().Run("clone", t.DeviceTemplate, fs)
+
 func (t *DeviceConfigurer) CreateDeviceDirs(config *Config, name string) error {
 	if config.Devices == nil {
 		return nil
@@ -96,40 +98,53 @@ func (t *DeviceConfigurer) CreateDeviceDirs(config *Config, name string) error {
 	}
 	fs := filepath.Join(zfsroot, config.GetHostFS(), name)
 	dir := filepath.Join("/", fs)
-	if !DirExists(dir) {
-		err = t.Ops.ZFS().Run("create", fs)
-		if err != nil {
-			return err
-		}
-	} else {
-		fmt.Println("reusing", dir)
-	}
-	for _, device := range config.Devices {
-		deviceDir := filepath.Join(dir, device.Name)
-		if !DirExists(deviceDir) {
-			if device.Recordsize != "" {
-				err := t.Ops.ZFS().Run("create", "-o", "recordsize="+device.Recordsize, filepath.Join(fs, device.Name))
-				if err != nil {
-					return err
-				}
-			} else {
-				err = t.prog.NewProgram("mkdir").Sudo(true).Run("-p", deviceDir)
-				//err = os.Mkdir(deviceDir, 0755)
-				if err != nil {
-					return err
-				}
-			}
-			err = t.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", deviceDir)
+
+	if config.DeviceOrigin == "" {
+		if !DirExists(dir) {
+			err = t.Ops.ZFS().Run("create", fs)
 			if err != nil {
 				return err
 			}
 		} else {
-			fmt.Println("reusing", deviceDir)
+			fmt.Println("reusing", dir)
 		}
-	}
-	err = t.CopyTemplate(config, name)
-	if err != nil {
-		return err
+		for _, device := range config.Devices {
+			deviceDir := filepath.Join(dir, device.Name)
+			if !DirExists(deviceDir) {
+				if device.Recordsize != "" {
+					err := t.Ops.ZFS().Run("create", "-o", "recordsize="+device.Recordsize, filepath.Join(fs, device.Name))
+					if err != nil {
+						return err
+					}
+				} else {
+					err = t.prog.NewProgram("mkdir").Sudo(true).Run("-p", deviceDir)
+					//err = os.Mkdir(deviceDir, 0755)
+					if err != nil {
+						return err
+					}
+				}
+				err = t.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", deviceDir)
+				if err != nil {
+					return err
+				}
+			} else {
+				fmt.Println("reusing", deviceDir)
+			}
+		}
+		err = t.CopyTemplate(config, name)
+		if err != nil {
+			return err
+		}
+	} else {
+		if !DirExists(dir) {
+			originFS := filepath.Join(zfsroot, config.GetHostFS(), config.DeviceOrigin)
+			err = t.Ops.ZFS().Run("clone", originFS, fs)
+			if err != nil {
+				return err
+			}
+		} else {
+			fmt.Println("reusing", dir)
+		}
 	}
 	return t.Ops.ZFS().Run("list", "-r", fs)
 }

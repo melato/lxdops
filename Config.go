@@ -33,6 +33,7 @@ type Config struct {
 
 	Origin         string    `yaml:"origin,omitempty"`
 	DeviceTemplate string    `yaml:"device-template,omitempty"`
+	DeviceOrigin   string    `yaml:"device-origin,omitempty"`
 	Devices        []*Device `yaml:"devices,omitempty"`
 	Profiles       []string  `yaml:"profiles,omitempty"`
 

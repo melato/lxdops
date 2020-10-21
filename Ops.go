@@ -51,7 +51,9 @@ func (t *Ops) GetPath(dir string) (string, error) {
 
 func (t *Ops) ZFS() program.Program {
 	if t.zfs == nil {
-		t.zfs = program.NewProgram("zfs").Sudo(true)
+		var params program.Params
+		params.Trace = t.Trace
+		t.zfs = params.NewProgram("zfs").Sudo(true)
 	}
 	return t.zfs
 }

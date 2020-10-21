@@ -13,6 +13,7 @@ type Launcher struct {
 	ProfileDir     string   `name:"profile-dir" usage:"directory to save profile files"`
 	Origin         string   `name:"origin" usage:"container to copy, overrides config"`
 	DeviceTemplate string   `name:"device-template" usage:"device dir or dataset to copy, overrides config"`
+	DeviceOrigin   string   `name:"device-origin" usage:"zfs snapshot to clone into target device, overrides config"`
 	DryRun         bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	Profiles       []string `name:"profile,p" usage:"profiles to add to lxc launch"`
 	Options        []string `name:"X" usage:"additional options to pass to lxc"`
@@ -49,6 +50,9 @@ func (op *Launcher) Run(args []string) error {
 	}
 	if op.DeviceTemplate != "" {
 		config.DeviceTemplate = op.DeviceTemplate
+	}
+	if op.DeviceOrigin != "" {
+		config.DeviceOrigin = op.DeviceOrigin
 	}
 	return op.LaunchContainer(config, name)
 }
