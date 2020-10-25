@@ -171,6 +171,11 @@ func (config *Config) Verify() bool {
 			valid = false
 		}
 	}
+	for _, file := range config.Files {
+		if !config.VerifyFileExists(file.Source) {
+			valid = false
+		}
+	}
 	return valid
 }
 
