@@ -61,8 +61,9 @@ func RootCommand() *command.SimpleCommand {
 	- change ownership
 	- add devices to profile, with optional suffix
 	*/
-	cmd.Command("profile-exists").RunMethodArgs(ops.ProfileExists).Use("<profile>").Short("check if a profile exists")
-	cmd.Command("add-disk").RunMethodArgs(ops.AddDiskDevice).Use("{profile} {source} {path}").Short("add a disk device to a profile")
+	profile := cmd.Command("profile").Short("profile utilities")
+	profile.Command("exists").RunMethodArgs(ops.ProfileExists).Use("<profile>").Short("check if a profile exists")
+	profile.Command("add-disk").RunMethodArgs(ops.AddDiskDevice).Use("<profile> <source> <path>").Short("add a disk device to a profile")
 	cmd.Command("zfsroot").RunMethodArgs(ops.ZFSRoot).Short("print zfs parent of lxd dataset")
 
 	parse := &ParseOp{}
