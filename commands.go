@@ -3,8 +3,11 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"io"
+	"os"
 
 	"melato.org/export/command"
+	"melato.org/script"
 )
 
 type LxdOps struct {
@@ -32,6 +35,7 @@ func RootCommand() *command.SimpleCommand {
 	ops.Ops = &Ops{}
 	ops.Ops.Init()
 	var cmd command.SimpleCommand
+	cmd.Flags(ops.Ops)
 	launcher := &Launcher{Ops: ops.Ops}
 	cmd.Command("launch").Flags(launcher).RunMethodArgs(launcher.Run).
 		Use("<container> <config-file> ...").
@@ -48,7 +52,7 @@ func RootCommand() *command.SimpleCommand {
 		Use("<config-file> ...").
 		Short("verify config files").
 		Example("verify *.yaml")
-	cmd.Command("version").RunMethod(ops.Version)
+	cmd.Command("version").RunMethod(ops.Version).Short("print program version")
 	device := &DeviceConfigurer{Ops: ops.Ops}
 	cmd.Command("create-devices").Flags(device).RunMethodArgs(device.Run).Use("{name} {configfile}...").Short("create devices")
 	/* add devices:
@@ -57,7 +61,9 @@ func RootCommand() *command.SimpleCommand {
 	- change ownership
 	- add devices to profile, with optional suffix
 	*/
-	cmd.Command("zfsroot").RunMethodArgs(ops.ZFSRoot)
+	cmd.Command("profile-exists").RunMethodArgs(ops.ProfileExists).Use("<profile>").Short("check if a profile exists")
+	cmd.Command("add-disk").RunMethodArgs(ops.AddDiskDevice).Use("{profile} {source} {path}").Short("add a disk device to a profile")
+	cmd.Command("zfsroot").RunMethodArgs(ops.ZFSRoot).Short("print zfs parent of lxd dataset")
 
 	parse := &ParseOp{}
 	cmd.Command("parse").Flags(parse).RunMethodArgs(parse.Run).
@@ -118,4 +124,45 @@ func (t *LxdOps) Description(args []string) error {
 	}
 	fmt.Println(config.Description)
 	return nil
+}
+
+func (t *LxdOps) AddDiskDevice(args []string) error {
+	if len(args) != 3 {
+		return errors.New("Usage: <profile> <source> <path>")
+	}
+	profile := args[0]
+	source := args[1]
+	path := args[2]
+	device := RandomDeviceName()
+	script := &script.Script{Trace: t.Ops.Trace}
+	script.Run("lxc", "profile", "device", "add", profile, device, "disk", "path="+path, "source="+source)
+	return script.Error
+}
+
+type NullWriter struct{ io.Writer }
+
+func (t *NullWriter) Write(p []byte) (n int, err error) { return len(p), nil }
+
+func (t *LxdOps) ProfileExists(args []string) error {
+	if len(args) != 1 {
+		return errors.New("Usage: <profile>")
+	}
+	profile := args[0]
+	script := &script.Script{Trace: t.Ops.Trace}
+	cmd := script.Cmd("lxc", "profile", "get", profile, "x")
+	cmd.Cmd.Stdout = &NullWriter{}
+	cmd.MergeStderr()
+	cmd.Run()
+	if script.Error == nil {
+		if t.Ops.Trace {
+			fmt.Printf("profile %s exists\n", profile)
+		}
+		os.Exit(0)
+	} else {
+		if t.Ops.Trace {
+			fmt.Printf("profile %s does not exist\n", profile)
+		}
+		os.Exit(1)
+	}
+	return script.Error
 }

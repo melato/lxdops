@@ -14,6 +14,7 @@ import (
 type Ops struct {
 	ZFSRootFlag string `name:"zfs-root" usage:"base zfs filesystem" default:"parent of default storage zfs.pool_name"`
 	Trace       bool   `usage:"print exec arguments"`
+	Quiet       bool   `name:"q" usage:"no trace"`
 	zfs         program.Program
 }
 
@@ -23,6 +24,9 @@ func (t *Ops) Init() error {
 }
 
 func (t *Ops) Configured() error {
+	if t.Quiet {
+		t.Trace = false
+	}
 	program.DefaultParams.Trace = t.Trace
 	return nil
 }
