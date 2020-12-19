@@ -43,6 +43,7 @@ type Config struct {
 	Scripts   []*Script `yaml:"scripts,omitempty"`
 	Passwords []string  `yaml:"passwords,omitempty"`
 	Snapshot  string    `yaml:"snapshot,omitempty"`
+	Stop      bool      `yaml:"stop,omitempty"`
 }
 
 type OS struct {
@@ -285,6 +286,7 @@ func (t *Config) Merge(c *Config) error {
 	if t.Snapshot == "" {
 		t.Snapshot = c.Snapshot
 	}
+	t.Stop = t.Stop || c.Stop
 	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
 	t.Devices = append(t.Devices, c.Devices...)
 	t.Repositories = append(t.Repositories, c.Repositories...)

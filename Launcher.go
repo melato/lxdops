@@ -149,5 +149,8 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	if config.Snapshot != "" {
 		err = t.prog.NewProgram("lxc").Run("snapshot", name, config.Snapshot)
 	}
+	if config.Stop {
+		err = t.prog.NewProgram("lxc").Run("stop", name)
+	}
 	return err
 }
