@@ -3,6 +3,7 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"melato.org/export/program"
@@ -16,6 +17,7 @@ type Launcher struct {
 	DeviceOrigin   string   `name:"device-origin" usage:"zfs snapshot to clone into target device, overrides config"`
 	DryRun         bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	Profiles       []string `name:"profile,p" usage:"profiles to add to lxc launch"`
+	Multiple       bool     `name:"m" usage:"launch each yaml file as a separate container with derived name"`
 	Options        []string `name:"X" usage:"additional options to pass to lxc"`
 	prog           program.Params
 }
@@ -31,20 +33,7 @@ func (t *Launcher) Configured() error {
 	return nil
 }
 
-func (op *Launcher) Run(args []string) error {
-	if len(args) < 2 {
-		return errors.New("Usage: {name} {configfile}...")
-	}
-	name := args[0]
-	var err error
-	var config *Config
-	config, err = ReadConfigs(args[1:]...)
-	if err != nil {
-		return err
-	}
-	if !config.Verify() {
-		return errors.New("prerequisites not met")
-	}
+func (op *Launcher) updateConfig(config *Config) {
 	if op.Origin != "" {
 		config.Origin = op.Origin
 	}
@@ -54,7 +43,56 @@ func (op *Launcher) Run(args []string) error {
 	if op.DeviceOrigin != "" {
 		config.DeviceOrigin = op.DeviceOrigin
 	}
+}
+
+func (op *Launcher) LaunchOne(name string, configFiles []string) error {
+	var err error
+	var config *Config
+	config, err = ReadConfigs(configFiles...)
+	if err != nil {
+		return err
+	}
+	op.updateConfig(config)
 	return op.LaunchContainer(config, name)
+}
+
+func ContainerName(file string) string {
+	name := filepath.Base(file)
+	ext := filepath.Ext(name)
+	if len(ext) == 0 {
+		return file
+	}
+	return name[0 : len(name)-len(ext)]
+}
+
+func (op *Launcher) LaunchMultiple(configFiles []string) error {
+	for _, file := range configFiles {
+		fmt.Println(file)
+		var err error
+		var config *Config
+		config, err = ReadConfigs(file)
+		if err != nil {
+			return err
+		}
+		op.updateConfig(config)
+		name := ContainerName(file)
+		err = op.LaunchContainer(config, name)
+		if err != nil {
+			fmt.Println("failed:", file)
+			return err
+		}
+	}
+	return nil
+}
+
+func (op *Launcher) Run(args []string) error {
+	if op.Multiple {
+		return op.LaunchMultiple(args)
+	}
+	if len(args) < 2 {
+		return errors.New("Usage: {name} {configfile}...")
+	}
+	return op.LaunchOne(args[0], args[1:])
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
@@ -63,6 +101,9 @@ func (t *Launcher) NewConfigurer() *Configurer {
 }
 
 func (t *Launcher) LaunchContainer(config *Config, name string) error {
+	if !config.Verify() {
+		return errors.New("prerequisites not met")
+	}
 	var err error
 	osType := config.OS.Type()
 	if osType == nil {
