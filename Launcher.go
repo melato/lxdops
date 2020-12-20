@@ -18,6 +18,7 @@ type Launcher struct {
 	DryRun         bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	Profiles       []string `name:"profile,p" usage:"profiles to add to lxc launch"`
 	Multiple       bool     `name:"m" usage:"launch each yaml file as a separate container with derived name"`
+	Ext            string   `name:"ext" usage:"extension for config files with -m option"`
 	Options        []string `name:"X" usage:"additional options to pass to lxc"`
 	prog           program.Params
 }
@@ -56,7 +57,7 @@ func (op *Launcher) LaunchOne(name string, configFiles []string) error {
 	return op.LaunchContainer(config, name)
 }
 
-func ContainerName(file string) string {
+func BaseName(file string) string {
 	name := filepath.Base(file)
 	ext := filepath.Ext(name)
 	if len(ext) == 0 {
@@ -65,9 +66,17 @@ func ContainerName(file string) string {
 	return name[0 : len(name)-len(ext)]
 }
 
-func (op *Launcher) LaunchMultiple(configFiles []string) error {
-	for _, file := range configFiles {
-		fmt.Println(file)
+func (op *Launcher) LaunchMultiple(args []string) error {
+	for _, arg := range args {
+		var name, file string
+		if op.Ext == "" {
+			file = arg
+			name = BaseName(arg)
+		} else {
+			name = filepath.Base(arg)
+			file = arg + "." + op.Ext
+		}
+		fmt.Println(name, file)
 		var err error
 		var config *Config
 		config, err = ReadConfigs(file)
@@ -75,7 +84,6 @@ func (op *Launcher) LaunchMultiple(configFiles []string) error {
 			return err
 		}
 		op.updateConfig(config)
-		name := ContainerName(file)
 		err = op.LaunchContainer(config, name)
 		if err != nil {
 			fmt.Println("failed:", file)

@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-func TestContainerName(t *testing.T) {
-	name := ContainerName("a.yaml")
+func TestBaseName(t *testing.T) {
+	name := BaseName("a.yaml")
 	if name != "a" {
 		t.Errorf("name: %s expected:%s", name, "a")
 	}
