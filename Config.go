@@ -44,6 +44,8 @@ type Config struct {
 	Passwords []string  `yaml:"passwords,omitempty"`
 	Snapshot  string    `yaml:"snapshot,omitempty"`
 	Stop      bool      `yaml:"stop,omitempty"`
+
+	Properties map[string]string `yaml:"properties,omitempty"`
 }
 
 type OS struct {
@@ -77,6 +79,8 @@ type Device struct {
 	Path       string `xml:"path,attr"`
 	Name       string `xml:"name,attr"`
 	Recordsize string `xml:"recordsize,attr" yaml:",omitempty"`
+
+	Zfsproperties map[string]string `yaml:",omitempty"`
 }
 
 type File struct {
@@ -270,6 +274,12 @@ func (t *Config) Merge(c *Config) error {
 		} else {
 			return errors.New("cannot merge incompatible os versions: " + t.OS.Version + ", " + c.OS.Version)
 		}
+	}
+	for key, value := range c.Properties {
+		if t.Properties == nil {
+			t.Properties = make(map[string]string)
+		}
+		t.Properties[key] = value
 	}
 	if t.Description == "" {
 		t.Description = c.Description

@@ -111,8 +111,16 @@ func (t *DeviceConfigurer) CreateDeviceDirs(config *Config, name string) error {
 		for _, device := range config.Devices {
 			deviceDir := filepath.Join(dir, device.Name)
 			if !DirExists(deviceDir) {
-				if device.Recordsize != "" {
-					err := t.Ops.ZFS().Run("create", "-o", "recordsize="+device.Recordsize, filepath.Join(fs, device.Name))
+				if device.Recordsize != "" || len(device.Zfsproperties) != 0 {
+					args := []string{"create"}
+					if device.Recordsize != "" {
+						args = append(args, "-o", "recordsize="+device.Recordsize)
+					}
+					for key, value := range device.Zfsproperties {
+						args = append(args, "-o", key+"="+value)
+					}
+					args = append(args, filepath.Join(fs, device.Name))
+					err := t.Ops.ZFS().Run(args...)
 					if err != nil {
 						return err
 					}
