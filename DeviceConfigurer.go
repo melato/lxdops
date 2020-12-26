@@ -99,28 +99,43 @@ func (t *DeviceConfigurer) NewDeviceInfo(config *Config, device *Device, contain
 	return info, nil
 }
 
-func (t *DeviceInfo) CreateDataset() error {
+func (t *DeviceInfo) CreateDataset(isNewDataset bool) error {
 	if t.Dataset == "" {
 		return nil
 	}
-	args := []string{"create", "-p"}
-	if t.Device.Recordsize != "" {
-		args = append(args, "-o", "recordsize="+t.Device.Recordsize)
-	}
-	for key, value := range t.Device.Zfsproperties {
-		args = append(args, "-o", key+"="+value)
-	}
-	args = append(args, t.Dataset)
-	err := t.Configurer.Ops.ZFS().Run(args...)
-	if err != nil {
-		return err
+	if t.Config.DeviceOrigin == "" {
+		args := []string{"create", "-p"}
+		if t.Device.Recordsize != "" {
+			args = append(args, "-o", "recordsize="+t.Device.Recordsize)
+		}
+		for key, value := range t.Device.Zfsproperties {
+			args = append(args, "-o", key+"="+value)
+		}
+		args = append(args, t.Dataset)
+		err := t.Configurer.Ops.ZFS().Run(args...)
+		if err != nil {
+			return err
+		}
+	} else if isNewDataset {
+		parts := strings.Split(t.Config.DeviceOrigin, "@")
+		if len(parts) != 2 {
+			return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
+		}
+		originInfo, err := t.Configurer.NewDeviceInfo(t.Config, t.Device, parts[0])
+		if err != nil {
+			return err
+		}
+		err = t.Configurer.Ops.ZFS().Run("clone", "-p", originInfo.Dataset+"@"+parts[1], t.Dataset)
+		if err != nil {
+			return err
+		}
 	}
 	return t.Configurer.Ops.ZFS().Run("list", "-r", t.Dataset)
 }
 
-func (t *DeviceInfo) Create() error {
+func (t *DeviceInfo) Create(isNewDataset bool) error {
 	if !DirExists(t.Dir) {
-		err := t.CreateDataset()
+		err := t.CreateDataset(isNewDataset)
 		if err != nil {
 			return err
 		}
@@ -171,63 +186,56 @@ func (t *DeviceInfo) Substitute(pattern string) (string, error) {
 func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 	var profileName string
 	var useProfile bool
-	if config.DeviceOrigin == "" {
-		for _, device := range config.Devices {
-			if profileName == "" {
-				profileName = t.ProfileName(name)
-				if !ProfileExists(profileName) {
-					useProfile = true
-					err := program.NewProgram("lxc").Run("profile", "create", profileName)
-					if err != nil {
-						return err
-					}
-				}
-			}
-			info, err := t.NewDeviceInfo(config, device, name)
-			if err != nil {
-				return err
-			}
-			err = info.Create()
-			if err != nil {
-				return err
-			}
-			if config.DeviceTemplate != "" {
-				templateInfo, err := t.NewDeviceInfo(config, device, config.DeviceTemplate)
-				if err != nil {
-					return err
-				}
-				if !DirExists(templateInfo.Dir) {
-					return errors.New("Device Template does not exist: " + templateInfo.Dir)
-				}
-				err = t.prog.NewProgram("rsync").Sudo(true).Run("-a", templateInfo.Dir+"/", info.Dir+"/")
-				if err != nil {
-					return err
-				}
-			}
-			// lxc profile device add a1.host etc disk source=/z/host/a1/etc path=/etc/opt
-			if useProfile {
-				err := program.NewProgram("lxc").Run("profile", "device", "add", profileName,
-					device.Name,
-					"disk",
-					"path="+device.Path,
-					"source="+info.Dir)
+	datasets := make(map[string]bool)
+	for _, device := range config.Devices {
+		if profileName == "" {
+			profileName = t.ProfileName(name)
+			if !ProfileExists(profileName) {
+				useProfile = true
+				err := program.NewProgram("lxc").Run("profile", "create", profileName)
 				if err != nil {
 					return err
 				}
 			}
 		}
-	} else {
-		/*
-			if !DirExists(dir) {
-				originFS := filepath.Join(zfsroot, config.GetHostFS(), config.DeviceOrigin)
-				err = t.Ops.ZFS().Run("clone", originFS, fs)
-				if err != nil {
-					return err
-				}
-			} else {
-				fmt.Println("reusing", dir)
+		info, err := t.NewDeviceInfo(config, device, name)
+		if err != nil {
+			return err
+		}
+		isNew := true
+		if datasets[info.Dataset] {
+			isNew = false
+		} else {
+			datasets[info.Dataset] = true
+		}
+		err = info.Create(isNew)
+		if err != nil {
+			return err
+		}
+		if config.DeviceTemplate != "" {
+			templateInfo, err := t.NewDeviceInfo(config, device, config.DeviceTemplate)
+			if err != nil {
+				return err
 			}
-		*/
+			if !DirExists(templateInfo.Dir) {
+				return errors.New("Device Template does not exist: " + templateInfo.Dir)
+			}
+			err = t.prog.NewProgram("rsync").Sudo(true).Run("-a", templateInfo.Dir+"/", info.Dir+"/")
+			if err != nil {
+				return err
+			}
+		}
+		// lxc profile device add a1.host etc disk source=/z/host/a1/etc path=/etc/opt
+		if useProfile {
+			err := program.NewProgram("lxc").Run("profile", "device", "add", profileName,
+				device.Name,
+				"disk",
+				"path="+device.Path,
+				"source="+info.Dir)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
