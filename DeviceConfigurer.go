@@ -11,14 +11,14 @@ import (
 )
 
 type DeviceConfigurer struct {
-	Ops        *Ops   `name:""`
-	ProfileDir string `name:"profile-dir" usage:"directory to save profile files"`
-	DryRun     bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	prog       program.Params
+	Ops           *Ops   `name:""`
+	ProfileSuffix string `name:"profile-suffix" usage:"suffix for device profiles"`
+	DryRun        bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	prog          program.Params
 }
 
 func (t *DeviceConfigurer) Init() error {
-	t.ProfileDir = "target"
+	t.ProfileSuffix = "devices"
 	return nil
 }
 
@@ -45,114 +45,189 @@ func (t *DeviceConfigurer) Run(args []string) error {
 	return t.ConfigureDevices(config, name)
 }
 
-func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
-	err := t.CreateDeviceDirs(config, name)
-	if err != nil {
-		return err
+func (t *DeviceConfigurer) ProfileName(name string) string {
+	if t.ProfileSuffix != "" {
+		return name + "." + t.ProfileSuffix
 	}
-	zfsroot, err := t.Ops.ZFSRoot()
-	if err != nil {
-		return err
-	}
-	err = config.CreateProfile(name, t.ProfileDir, zfsroot)
-	if err != nil {
-		return err
-	}
-	return err
+	return name
 }
 
-func (t *DeviceConfigurer) CopyTemplate(config *Config, name string) error {
-	if config.DeviceTemplate == "" {
-		return nil
-	}
-	var err error
-	zfsroot, err := t.Ops.ZFSRoot()
-	if err != nil {
-		return err
-	}
-	var templateDir string
-	if strings.HasPrefix(config.DeviceTemplate, "/") {
-		templateDir = config.DeviceTemplate
-	} else {
-		templateFS := filepath.Join(zfsroot, config.GetHostFS(), config.DeviceTemplate)
-		templateDir = filepath.Join("/", templateFS)
-	}
-	if !DirExists(templateDir) {
-		return errors.New("Device Template does not exist: " + templateDir)
-	}
-	fs := filepath.Join(zfsroot, config.GetHostFS(), name)
-	dir := filepath.Join("/", fs)
-	return t.prog.NewProgram("rsync").Sudo(true).Run("-a", templateDir+"/", dir+"/")
+func ProfileExists(profile string) bool {
+	// Not sure what profile get does, but it returns an error if the profile doesn't exist.
+	// "x" is a key.  It doesn't matter what key we use for our purpose.
+	err := program.NewProgram("lxc").Run("profile", "get", profile, "x")
+	return err == nil
 }
 
-//			err = t.Ops.ZFS().Run("clone", t.DeviceTemplate, fs)
+type DeviceInfo struct {
+	Configurer *DeviceConfigurer
+	Config     *Config
+	Device     *Device
+	Container  string
+	Dataset    string
+	Dir        string
+}
 
-func (t *DeviceConfigurer) CreateDeviceDirs(config *Config, name string) error {
-	if config.Devices == nil {
-		return nil
-	}
+func (t *DeviceInfo) init() error {
 	var err error
-	zfsroot, err := t.Ops.ZFSRoot()
+	t.Dataset, err = t.Substitute(t.Device.Dataset)
 	if err != nil {
 		return err
 	}
-	fs := filepath.Join(zfsroot, config.GetHostFS(), name)
-	dir := filepath.Join("/", fs)
+	dir, err := t.Substitute(t.Device.Dir)
+	if err != nil {
+		return err
+	}
+	if t.Dataset == "" && dir == "" {
+		t.Dataset, err = t.Substitute("{.host}/{.container}")
+		if err != nil {
+			return err
+		}
+		dir = t.Device.Name
 
-	if config.DeviceOrigin == "" {
-		if !DirExists(dir) {
-			err = t.Ops.ZFS().Run("create", fs)
-			if err != nil {
-				return err
-			}
-		} else {
-			fmt.Println("reusing", dir)
+	}
+	t.Dir = filepath.Join("/", t.Dataset, dir)
+	return nil
+}
+
+func (t *DeviceConfigurer) NewDeviceInfo(config *Config, device *Device, container string) (*DeviceInfo, error) {
+	info := &DeviceInfo{Configurer: t, Config: config, Container: container, Device: device}
+	err := info.init()
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+func (t *DeviceInfo) CreateDataset() error {
+	if t.Dataset == "" {
+		return nil
+	}
+	args := []string{"create", "-p"}
+	if t.Device.Recordsize != "" {
+		args = append(args, "-o", "recordsize="+t.Device.Recordsize)
+	}
+	for key, value := range t.Device.Zfsproperties {
+		args = append(args, "-o", key+"="+value)
+	}
+	args = append(args, t.Dataset)
+	err := t.Configurer.Ops.ZFS().Run(args...)
+	if err != nil {
+		return err
+	}
+	return t.Configurer.Ops.ZFS().Run("list", "-r", t.Dataset)
+}
+
+func (t *DeviceInfo) Create() error {
+	if !DirExists(t.Dir) {
+		err := t.CreateDataset()
+		if err != nil {
+			return err
 		}
-		for _, device := range config.Devices {
-			deviceDir := filepath.Join(dir, device.Name)
-			if !DirExists(deviceDir) {
-				if device.Recordsize != "" || len(device.Zfsproperties) != 0 {
-					args := []string{"create"}
-					if device.Recordsize != "" {
-						args = append(args, "-o", "recordsize="+device.Recordsize)
-					}
-					for key, value := range device.Zfsproperties {
-						args = append(args, "-o", key+"="+value)
-					}
-					args = append(args, filepath.Join(fs, device.Name))
-					err := t.Ops.ZFS().Run(args...)
-					if err != nil {
-						return err
-					}
-				} else {
-					err = t.prog.NewProgram("mkdir").Sudo(true).Run("-p", deviceDir)
-					//err = os.Mkdir(deviceDir, 0755)
-					if err != nil {
-						return err
-					}
-				}
-				err = t.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", deviceDir)
-				if err != nil {
-					return err
-				}
-			} else {
-				fmt.Println("reusing", deviceDir)
-			}
+		err = t.Configurer.prog.NewProgram("mkdir").Sudo(true).Run("-p", t.Dir)
+		//err = os.Mkdir(t.Dir, 0755)
+		if err != nil {
+			return err
 		}
-		err = t.CopyTemplate(config, name)
+		err = t.Configurer.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", t.Dir)
 		if err != nil {
 			return err
 		}
 	} else {
-		if !DirExists(dir) {
-			originFS := filepath.Join(zfsroot, config.GetHostFS(), config.DeviceOrigin)
-			err = t.Ops.ZFS().Run("clone", originFS, fs)
+		fmt.Println("reusing", t.Dir)
+	}
+	return nil
+}
+
+func (t *DeviceInfo) Get(key string) (string, bool) {
+	if !strings.HasPrefix(key, ".") {
+		value, found := t.Config.Properties[key]
+		return value, found
+	}
+	if key == ".container" {
+		return t.Container, true
+	}
+	if key == ".zfsroot" {
+		zfsroot, err := t.Configurer.Ops.ZFSRoot()
+		if err != nil {
+			return "", false
+		}
+		return zfsroot, true
+	}
+	if key == ".host" {
+		zfsroot, err := t.Configurer.Ops.ZFSRoot()
+		if err != nil {
+			return "", false
+		}
+		return filepath.Join(zfsroot, t.Config.GetHostFS()), true
+	}
+	return "", false
+}
+
+func (t *DeviceInfo) Substitute(pattern string) (string, error) {
+	return Substitute(pattern, t.Get)
+}
+
+func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
+	var profileName string
+	var useProfile bool
+	if config.DeviceOrigin == "" {
+		for _, device := range config.Devices {
+			if profileName == "" {
+				profileName = t.ProfileName(name)
+				if !ProfileExists(profileName) {
+					useProfile = true
+					err := program.NewProgram("lxc").Run("profile", "create", profileName)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			info, err := t.NewDeviceInfo(config, device, name)
 			if err != nil {
 				return err
 			}
-		} else {
-			fmt.Println("reusing", dir)
+			err = info.Create()
+			if err != nil {
+				return err
+			}
+			if config.DeviceTemplate != "" {
+				templateInfo, err := t.NewDeviceInfo(config, device, config.DeviceTemplate)
+				if err != nil {
+					return err
+				}
+				if !DirExists(templateInfo.Dir) {
+					return errors.New("Device Template does not exist: " + templateInfo.Dir)
+				}
+				err = t.prog.NewProgram("rsync").Sudo(true).Run("-a", templateInfo.Dir+"/", info.Dir+"/")
+				if err != nil {
+					return err
+				}
+			}
+			// lxc profile device add a1.host etc disk source=/z/host/a1/etc path=/etc/opt
+			if useProfile {
+				err := program.NewProgram("lxc").Run("profile", "device", "add", profileName,
+					device.Name,
+					"disk",
+					"path="+device.Path,
+					"source="+info.Dir)
+				if err != nil {
+					return err
+				}
+			}
 		}
+	} else {
+		/*
+			if !DirExists(dir) {
+				originFS := filepath.Join(zfsroot, config.GetHostFS(), config.DeviceOrigin)
+				err = t.Ops.ZFS().Run("clone", originFS, fs)
+				if err != nil {
+					return err
+				}
+			} else {
+				fmt.Println("reusing", dir)
+			}
+		*/
 	}
-	return t.Ops.ZFS().Run("list", "-r", fs)
+	return nil
 }

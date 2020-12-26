@@ -3,13 +3,10 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-	"os"
 	"os/user"
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"melato.org/export/program"
 )
 
 /** Config - Container configuration
@@ -45,7 +42,8 @@ type Config struct {
 	Snapshot  string    `yaml:"snapshot,omitempty"`
 	Stop      bool      `yaml:"stop,omitempty"`
 
-	Properties map[string]string `yaml:"properties,omitempty"`
+	Properties    map[string]string `yaml:"properties,omitempty"`
+	ProfileSuffix string            `name:"profile-suffix" usage:"suffix for device profiles"`
 }
 
 type OS struct {
@@ -81,6 +79,16 @@ type Device struct {
 	Recordsize string `xml:"recordsize,attr" yaml:",omitempty"`
 
 	Zfsproperties map[string]string `yaml:",omitempty"`
+
+	/** A zfs dataset pattern (optional) */
+	Dataset string
+	/** A (sub) directory pattern (optional).
+	If both Dataset and Dir are provided, the disk device source directory is /{Dataset}/{Dir}, after pattern substitution.
+	If only Dataset is provided, the disk device source directory is /{Dataset}, after pattern substitution.
+	If only Dir is provided, it is used as the source directory, after pattern substitution.
+	If neither is provided, Dataset is set to "{.host}/{.container}" and Dir is set to the device name, for backward compatibility.
+	*/
+	Dir string `yaml:",omitempty"`
 }
 
 type File struct {
@@ -209,53 +217,6 @@ func ReadRawConfig(file string) (*Config, error) {
 		return ReadConfigXml(file)
 	}
 	return ReadConfigYaml(file)
-}
-
-func (config *Config) ProfileName(name string) string {
-	return name + ".host"
-}
-
-func (config *Config) profileExists(profile string) bool {
-	// Not sure what profile get does, but it returns an error if the profile doesn't exist.
-	// "x" is a key.  It doesn't matter what key we use for our purpose.
-	err := program.NewProgram("lxc").Run("profile", "get", profile, "x")
-	return err == nil
-}
-
-/** CreateProfile -- Create a profile that contains all the devices in the configuration.
-For a container with name {name}, each device is mapped to a subdirectory of /{zfs-root}/host/{name}/.
-*/
-func (config *Config) CreateProfile(name string, profileDir string, zfsRoot string) error {
-	if len(config.Devices) == 0 {
-		return nil
-	}
-	profileName := config.ProfileName(name)
-	if config.profileExists(profileName) {
-		return nil
-	}
-	err := os.Mkdir(profileDir, 0755)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-	dir := filepath.Join("/", zfsRoot, config.GetHostFS(), name)
-
-	err = program.NewProgram("lxc").Run("profile", "create", profileName)
-	if err != nil {
-		return err
-	}
-
-	for _, device := range config.Devices {
-		// lxc profile device add a1.host etc disk source=/z/host/a1/etc path=/etc/opt
-		err := program.NewProgram("lxc").Run("profile", "device", "add", profileName,
-			device.Name,
-			"disk",
-			"path="+device.Path,
-			"source="+filepath.Join(dir, device.Name))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (t *Config) Merge(c *Config) error {

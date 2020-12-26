@@ -11,7 +11,7 @@ import (
 
 type Launcher struct {
 	Ops            *Ops     `name:""`
-	ProfileDir     string   `name:"profile-dir" usage:"directory to save profile files"`
+	ProfileSuffix  string   `name:"profile-suffix" usage:"suffix for device profiles"`
 	Origin         string   `name:"origin" usage:"container to copy, overrides config"`
 	DeviceTemplate string   `name:"device-template" usage:"device dir or dataset to copy, overrides config"`
 	DeviceOrigin   string   `name:"device-origin" usage:"zfs snapshot to clone into target device, overrides config"`
@@ -24,7 +24,7 @@ type Launcher struct {
 }
 
 func (t *Launcher) Init() error {
-	t.ProfileDir = "target"
+	t.ProfileSuffix = "devices"
 	return nil
 }
 
@@ -118,17 +118,9 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		return errors.New("unsupported OS type: " + config.OS.Name)
 	}
 
-	dev := &DeviceConfigurer{Ops: t.Ops, ProfileDir: t.ProfileDir, DryRun: t.DryRun}
+	dev := &DeviceConfigurer{Ops: t.Ops, ProfileSuffix: t.ProfileSuffix, DryRun: t.DryRun}
 	dev.Configured()
-	err = dev.CreateDeviceDirs(config, name)
-	if err != nil {
-		return err
-	}
-	zfsroot, err := t.Ops.ZFSRoot()
-	if err != nil {
-		return err
-	}
-	err = config.CreateProfile(name, t.ProfileDir, zfsroot)
+	err = dev.ConfigureDevices(config, name)
 	if err != nil {
 		return err
 	}
@@ -142,7 +134,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		if len(profiles) == 0 {
 			profiles = append(profiles, "default")
 		}
-		profiles = append(profiles, config.ProfileName(name))
+		profiles = append(profiles, dev.ProfileName(name))
 	}
 	fmt.Println("profiles", profiles)
 	containerTemplate := config.Origin
