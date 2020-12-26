@@ -11,14 +11,12 @@ import (
 )
 
 type DeviceConfigurer struct {
-	Ops           *Ops   `name:""`
-	ProfileSuffix string `name:"profile-suffix" usage:"suffix for device profiles"`
-	DryRun        bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	prog          program.Params
+	Ops    *Ops `name:""`
+	DryRun bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	prog   program.Params
 }
 
 func (t *DeviceConfigurer) Init() error {
-	t.ProfileSuffix = "devices"
 	return nil
 }
 
@@ -43,13 +41,6 @@ func (t *DeviceConfigurer) Run(args []string) error {
 		return errors.New("prerequisites not met")
 	}
 	return t.ConfigureDevices(config, name)
-}
-
-func (t *DeviceConfigurer) ProfileName(name string) string {
-	if t.ProfileSuffix != "" {
-		return name + "." + t.ProfileSuffix
-	}
-	return name
 }
 
 func ProfileExists(profile string) bool {
@@ -189,7 +180,7 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 	datasets := make(map[string]bool)
 	for _, device := range config.Devices {
 		if profileName == "" {
-			profileName = t.ProfileName(name)
+			profileName = config.ProfileName(name)
 			if !ProfileExists(profileName) {
 				useProfile = true
 				err := program.NewProgram("lxc").Run("profile", "create", profileName)

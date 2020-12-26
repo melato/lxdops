@@ -24,7 +24,6 @@ type Launcher struct {
 }
 
 func (t *Launcher) Init() error {
-	t.ProfileSuffix = "devices"
 	return nil
 }
 
@@ -44,6 +43,12 @@ func (op *Launcher) updateConfig(config *Config) {
 	if op.DeviceOrigin != "" {
 		config.DeviceOrigin = op.DeviceOrigin
 	}
+	if op.ProfileSuffix != "" {
+		config.ProfileSuffix = op.ProfileSuffix
+	}
+	if config.ProfileSuffix == "" {
+		config.ProfileSuffix = "devices"
+	}
 }
 
 func (op *Launcher) LaunchOne(name string, configFiles []string) error {
@@ -53,7 +58,9 @@ func (op *Launcher) LaunchOne(name string, configFiles []string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("suffix", config.ProfileSuffix, op.ProfileSuffix)
 	op.updateConfig(config)
+	fmt.Println("updated", config.ProfileSuffix, op.ProfileSuffix)
 	return op.LaunchContainer(config, name)
 }
 
@@ -118,7 +125,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		return errors.New("unsupported OS type: " + config.OS.Name)
 	}
 
-	dev := &DeviceConfigurer{Ops: t.Ops, ProfileSuffix: t.ProfileSuffix, DryRun: t.DryRun}
+	dev := &DeviceConfigurer{Ops: t.Ops, DryRun: t.DryRun}
 	dev.Configured()
 	err = dev.ConfigureDevices(config, name)
 	if err != nil {
@@ -134,7 +141,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		if len(profiles) == 0 {
 			profiles = append(profiles, "default")
 		}
-		profiles = append(profiles, dev.ProfileName(name))
+		profiles = append(profiles, config.ProfileName(name))
 	}
 	fmt.Println("profiles", profiles)
 	containerTemplate := config.Origin

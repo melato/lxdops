@@ -43,7 +43,7 @@ type Config struct {
 	Stop      bool      `yaml:"stop,omitempty"`
 
 	Properties    map[string]string `yaml:"properties,omitempty"`
-	ProfileSuffix string            `name:"profile-suffix" usage:"suffix for device profiles"`
+	ProfileSuffix string            `yaml:"profile-suffix,omitempty"`
 }
 
 type OS struct {
@@ -242,6 +242,9 @@ func (t *Config) Merge(c *Config) error {
 		}
 		t.Properties[key] = value
 	}
+	if t.ProfileSuffix == "" {
+		t.ProfileSuffix = c.ProfileSuffix
+	}
 	if t.Description == "" {
 		t.Description = c.Description
 	}
@@ -379,4 +382,11 @@ func (t *Config) merge(file string, included map[string]bool) error {
 		return err
 	}
 	return nil
+}
+
+func (t *Config) ProfileName(name string) string {
+	if t.ProfileSuffix != "" {
+		return name + "." + t.ProfileSuffix
+	}
+	return name
 }
