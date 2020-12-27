@@ -130,14 +130,24 @@ func (t *DeviceInfo) Create(isNewDataset bool) error {
 		if err != nil {
 			return err
 		}
-		err = t.Configurer.prog.NewProgram("mkdir").Sudo(true).Run("-p", t.Dir)
-		//err = os.Mkdir(t.Dir, 0755)
-		if err != nil {
-			return err
+		chown := false
+		if !DirExists(t.Dir) {
+			err = t.Configurer.prog.NewProgram("mkdir").Sudo(true).Run("-p", t.Dir)
+			//err = os.Mkdir(t.Dir, 0755)
+			if err != nil {
+				return err
+			}
+			chown = true
+		} else if t.Config.DeviceOrigin == "" {
+			// the device directory is the dataset directory we just created, so change the ownership.
+			chown = true
 		}
-		err = t.Configurer.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", t.Dir)
-		if err != nil {
-			return err
+		// do not change the ownership of a directory that was cloned
+		if chown {
+			err = t.Configurer.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", t.Dir)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		fmt.Println("reusing", t.Dir)
