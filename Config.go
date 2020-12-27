@@ -81,7 +81,7 @@ type Device struct {
 	Zfsproperties map[string]string `yaml:",omitempty"`
 
 	/** A zfs dataset pattern (optional) */
-	Dataset string
+	Dataset string `yaml:",omitempty"`
 	/** A (sub) directory pattern (optional).
 	If both Dataset and Dir are provided, the disk device source directory is /{Dataset}/{Dir}, after pattern substitution.
 	If only Dataset is provided, the disk device source directory is /{Dataset}, after pattern substitution.
