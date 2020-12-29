@@ -2,8 +2,6 @@ package lxdops
 
 import (
 	"errors"
-
-	"melato.org/export/program"
 )
 
 type DeviceCmd struct {
