@@ -11,7 +11,7 @@ import (
 
 type Launcher struct {
 	Ops            *Ops     `name:""`
-	ProfileSuffix  string   `name:"profile-suffix" usage:"suffix for device profiles"`
+	ProfileSuffix  string   `name:"profile-suffix" usage:"suffix for device profiles, if not specified in config"`
 	Origin         string   `name:"origin" usage:"container to copy, overrides config"`
 	DeviceTemplate string   `name:"device-template" usage:"device dir or dataset to copy, overrides config"`
 	DeviceOrigin   string   `name:"device-origin" usage:"zfs snapshot to clone into target device, overrides config"`
@@ -24,6 +24,7 @@ type Launcher struct {
 }
 
 func (t *Launcher) Init() error {
+	t.ProfileSuffix = "devices"
 	return nil
 }
 
@@ -43,11 +44,8 @@ func (op *Launcher) updateConfig(config *Config) {
 	if op.DeviceOrigin != "" {
 		config.DeviceOrigin = op.DeviceOrigin
 	}
-	if op.ProfileSuffix != "" {
-		config.ProfileSuffix = op.ProfileSuffix
-	}
 	if config.ProfileSuffix == "" {
-		config.ProfileSuffix = "devices"
+		config.ProfileSuffix = op.ProfileSuffix
 	}
 }
 

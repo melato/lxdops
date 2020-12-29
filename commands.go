@@ -54,7 +54,7 @@ func RootCommand() *command.SimpleCommand {
 		Example("verify *.yaml")
 	cmd.Command("version").RunMethod(ops.Version).Short("print program version")
 	device := &DeviceConfigurer{Ops: ops.Ops}
-	cmd.Command("create-devices").Flags(device).RunMethodArgs(device.Run).Use("{name} {configfile}...").Short("create devices")
+	cmd.Command("create-devices").Flags(device).RunMethodArgs(device.Run).Use("{container-name} {configfile}...").Short("create devices")
 	/* add devices:
 	lxdops device add -p a.host -d /z/host/a -s 1 {configfile}...
 	- create subdirectories

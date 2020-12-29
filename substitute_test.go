@@ -1,13 +1,17 @@
 package lxdops
 
 import (
+	"errors"
 	"testing"
 )
 
-func SubstituteTestMapFunc(properties map[string]string) func(key string) (string, bool) {
-	return func(key string) (string, bool) {
+func SubstituteTestMapFunc(properties map[string]string) func(key string) (string, error) {
+	return func(key string) (string, error) {
 		value, found := properties[key]
-		return value, found
+		if found {
+			return value, nil
+		}
+		return "", errors.New("property not found: " + key)
 	}
 }
 
@@ -34,7 +38,7 @@ func TestSubstitute2(t *testing.T) {
 }
 
 func TestSubstitute0(t *testing.T) {
-	s, err := Substitute("", func(key string) (string, bool) { return "", false })
+	s, err := Substitute("", func(key string) (string, error) { return "", errors.New("x") })
 	if err != nil {
 		t.Fail()
 	}

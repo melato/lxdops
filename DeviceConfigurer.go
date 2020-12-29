@@ -11,12 +11,14 @@ import (
 )
 
 type DeviceConfigurer struct {
-	Ops    *Ops `name:""`
-	DryRun bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	prog   program.Params
+	Ops           *Ops   `name:""`
+	DryRun        bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	ProfileSuffix string `name:"profile-suffix" usage:"suffix for device profiles, if not specified in config"`
+	prog          program.Params
 }
 
 func (t *DeviceConfigurer) Init() error {
+	t.ProfileSuffix = "devices"
 	return nil
 }
 
@@ -28,7 +30,7 @@ func (t *DeviceConfigurer) Configured() error {
 
 func (t *DeviceConfigurer) Run(args []string) error {
 	if len(args) < 2 {
-		return errors.New("Usage: {profile-name} {configfile}...")
+		return errors.New("Usage: {container-name} {configfile}...")
 	}
 	name := args[0]
 	var err error
@@ -39,6 +41,9 @@ func (t *DeviceConfigurer) Run(args []string) error {
 	}
 	if !config.Verify() {
 		return errors.New("prerequisites not met")
+	}
+	if config.ProfileSuffix == "" {
+		config.ProfileSuffix = t.ProfileSuffix
 	}
 	return t.ConfigureDevices(config, name)
 }
@@ -155,32 +160,38 @@ func (t *DeviceInfo) Create(isNewDataset bool) error {
 	return nil
 }
 
-func (t *DeviceInfo) Get(key string) (string, bool) {
+func (t *DeviceInfo) Get(key string) (string, error) {
 	if !strings.HasPrefix(key, ".") {
 		value, found := t.Config.Properties[key]
-		return value, found
+		if found {
+			return value, nil
+		}
+		return "", errors.New("property not found: " + key)
 	}
 	if key == ".container" {
-		return t.Container, true
+		return t.Container, nil
 	}
 	if key == ".zfsroot" {
 		zfsroot, err := t.Configurer.Ops.ZFSRoot()
 		if err != nil {
-			return "", false
+			return "", nil
 		}
-		return zfsroot, true
+		return zfsroot, err
 	}
 	if key == ".host" {
 		zfsroot, err := t.Configurer.Ops.ZFSRoot()
 		if err != nil {
-			return "", false
+			return "", nil
 		}
-		return filepath.Join(zfsroot, t.Config.GetHostFS()), true
+		return filepath.Join(zfsroot, t.Config.GetHostFS()), nil
 	}
-	return "", false
+	return "", errors.New("unknown special key: " + key)
 }
 
 func (t *DeviceInfo) Substitute(pattern string) (string, error) {
+	if strings.IndexAny(pattern, "{}") >= 0 {
+		return "", errors.New(`pattern contains {}, please replace with (): ` + pattern)
+	}
 	return Substitute(pattern, t.Get)
 }
 
