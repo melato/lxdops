@@ -83,10 +83,10 @@ type Device struct {
 	/** A zfs dataset pattern (optional) */
 	Dataset string `yaml:",omitempty"`
 	/** A (sub) directory pattern (optional).
-	If both Dataset and Dir are provided, the disk device source directory is /{Dataset}/{Dir}, after pattern substitution.
-	If only Dataset is provided, the disk device source directory is /{Dataset}, after pattern substitution.
+	If both Dataset and Dir are provided, the disk device source directory is /(Dataset)/(Dir), after pattern substitution.
+	If only Dataset is provided, the disk device source directory is /(Dataset), after pattern substitution.
 	If only Dir is provided, it is used as the source directory, after pattern substitution.
-	If neither is provided, Dataset is set to "{.host}/{.container}" and Dir is set to the device name, for backward compatibility.
+	If neither is provided, Dataset is set to "(.host)/(.container)" and Dir is set to the device name, for backward compatibility.
 	*/
 	Dir string `yaml:",omitempty"`
 }

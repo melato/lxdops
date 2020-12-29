@@ -7,7 +7,7 @@ import (
 )
 
 func Substitute(pattern string, properties func(key string) (string, bool)) (string, error) {
-	re := regexp.MustCompile(`\{([^{}]+)\}`)
+	re := regexp.MustCompile(`\(([^()]+)\)`)
 	ind := re.FindAllStringSubmatchIndex(pattern, -1)
 	var pieces []string
 	start := 0

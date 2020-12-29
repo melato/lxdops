@@ -15,7 +15,7 @@ func TestSubstitute(t *testing.T) {
 	properties := make(map[string]string)
 	properties["host"] = "z/host"
 	properties[".container"] = "a"
-	s, err := Substitute("{host}/{.container}", SubstituteTestMapFunc(properties))
+	s, err := Substitute("(host)/(.container)", SubstituteTestMapFunc(properties))
 	if err != nil {
 		t.Errorf("%v", err)
 	}
@@ -27,14 +27,14 @@ func TestSubstitute(t *testing.T) {
 func TestSubstitute2(t *testing.T) {
 	properties := make(map[string]string)
 	properties["host"] = "z/host"
-	_, err := Substitute("{host}/{.container}", SubstituteTestMapFunc(properties))
+	_, err := Substitute("(host)/(.container)", SubstituteTestMapFunc(properties))
 	if err == nil {
 		t.Errorf("should have caught missing property")
 	}
 }
 
 func TestSubstitute0(t *testing.T) {
-	s, err := Substitute("", func(key string) { return "", false })
+	s, err := Substitute("", func(key string) (string, bool) { return "", false })
 	if err != nil {
 		t.Fail()
 	}

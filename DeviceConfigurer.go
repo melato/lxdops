@@ -70,7 +70,7 @@ func (t *DeviceInfo) init() error {
 		return err
 	}
 	if t.Dataset == "" && dir == "" {
-		t.Dataset, err = t.Substitute("{.host}/{.container}")
+		t.Dataset, err = t.Substitute("(.host)/(.container)")
 		if err != nil {
 			return err
 		}
