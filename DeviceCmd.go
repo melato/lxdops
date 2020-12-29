@@ -10,7 +10,6 @@ type DeviceCmd struct {
 	Ops           *Ops   `name:""`
 	DryRun        bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	ProfileSuffix string `name:"profile-suffix" usage:"suffix for device profiles, if not specified in config"`
-	prog          program.Params
 }
 
 func (t *DeviceCmd) Init() error {
@@ -19,8 +18,6 @@ func (t *DeviceCmd) Init() error {
 }
 
 func (t *DeviceCmd) Configured() error {
-	t.prog.DryRun = t.DryRun
-	t.prog.Trace = t.Ops.Trace
 	return nil
 }
 
