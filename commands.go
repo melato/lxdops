@@ -53,7 +53,7 @@ func RootCommand() *command.SimpleCommand {
 		Short("verify config files").
 		Example("verify *.yaml")
 	cmd.Command("version").RunMethod(ops.Version).Short("print program version")
-	device := &DeviceConfigurer{Ops: ops.Ops}
+	device := &DeviceCmd{Ops: ops.Ops}
 	cmd.Command("create-devices").Flags(device).RunMethodArgs(device.Run).Use("{container-name} {configfile}...").Short("create devices")
 	/* add devices:
 	lxdops device add -p a.host -d /z/host/a -s 1 {configfile}...

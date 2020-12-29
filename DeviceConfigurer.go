@@ -11,41 +11,18 @@ import (
 )
 
 type DeviceConfigurer struct {
-	Ops           *Ops   `name:""`
-	DryRun        bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	ProfileSuffix string `name:"profile-suffix" usage:"suffix for device profiles, if not specified in config"`
-	prog          program.Params
+	Ops  *Ops
+	prog program.Params
 }
 
-func (t *DeviceConfigurer) Init() error {
-	t.ProfileSuffix = "devices"
-	return nil
-}
-
-func (t *DeviceConfigurer) Configured() error {
-	t.prog.DryRun = t.DryRun
+func NewDeviceConfigurer(ops *Ops) *DeviceConfigurer {
+	t := &DeviceConfigurer{Ops: ops}
 	t.prog.Trace = t.Ops.Trace
-	return nil
+	return t
 }
 
-func (t *DeviceConfigurer) Run(args []string) error {
-	if len(args) < 2 {
-		return errors.New("Usage: {container-name} {configfile}...")
-	}
-	name := args[0]
-	var err error
-	var config *Config
-	config, err = ReadConfigs(args[1:]...)
-	if err != nil {
-		return err
-	}
-	if !config.Verify() {
-		return errors.New("prerequisites not met")
-	}
-	if config.ProfileSuffix == "" {
-		config.ProfileSuffix = t.ProfileSuffix
-	}
-	return t.ConfigureDevices(config, name)
+func (t *DeviceConfigurer) SetDryRun(dryRun bool) {
+	t.prog.DryRun = dryRun
 }
 
 func ProfileExists(profile string) bool {

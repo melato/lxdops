@@ -123,8 +123,8 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		return errors.New("unsupported OS type: " + config.OS.Name)
 	}
 
-	dev := &DeviceConfigurer{Ops: t.Ops, DryRun: t.DryRun}
-	dev.Configured()
+	dev := NewDeviceConfigurer(t.Ops)
+	dev.SetDryRun(t.DryRun)
 	err = dev.ConfigureDevices(config, name)
 	if err != nil {
 		return err
