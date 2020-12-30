@@ -52,7 +52,7 @@ func (t *DeviceInfo) init() error {
 		return err
 	}
 	if t.Dataset == "" && dir == "" {
-		t.Dataset, err = t.Substitute("(.host)/(.container)")
+		t.Dataset, err = t.Substitute("(host)/(container)")
 		if err != nil {
 			return err
 		}
@@ -138,31 +138,32 @@ func (t *DeviceInfo) Create(isNewDataset bool) error {
 }
 
 func (t *DeviceInfo) Get(key string) (string, error) {
-	if !strings.HasPrefix(key, ".") {
-		value, found := t.Config.Properties[key]
+	if strings.HasPrefix(key, ".") {
+		pkey := key[1:]
+		value, found := t.Config.Properties[pkey]
 		if found {
 			return value, nil
 		}
-		return "", errors.New("property not found: " + key)
+		return "", errors.New("property not found: " + pkey)
 	}
-	if key == ".container" {
+	if key == "container" {
 		return t.Container, nil
 	}
-	if key == ".zfsroot" {
+	if key == "zfsroot" {
 		zfsroot, err := t.Configurer.Ops.ZFSRoot()
 		if err != nil {
 			return "", nil
 		}
 		return zfsroot, err
 	}
-	if key == ".host" {
+	if key == "host" {
 		zfsroot, err := t.Configurer.Ops.ZFSRoot()
 		if err != nil {
 			return "", nil
 		}
 		return filepath.Join(zfsroot, t.Config.GetHostFS()), nil
 	}
-	return "", errors.New("unknown special key: " + key)
+	return "", errors.New("unknown key: " + key)
 }
 
 func (t *DeviceInfo) Substitute(pattern string) (string, error) {
