@@ -68,48 +68,54 @@ func (t *PatternInfo) Substitute(pattern string) (string, error) {
 
 func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name string) error {
 	pattern := &PatternInfo{Configurer: t, Config: config, Container: name}
-	dataset, err := pattern.Substitute(fs.Pattern)
+	path, err := pattern.Substitute(fs.Pattern)
 	if err != nil {
 		return err
 	}
-	if config.DeviceOrigin == "" {
-		args := []string{"create", "-p"}
-		for key, value := range fs.Zfsproperties {
-			args = append(args, "-o", key+"="+value)
-		}
-		args = append(args, dataset)
-		err := t.Ops.ZFS().Run(args...)
-		if err != nil {
-			return err
-		}
+	if strings.HasPrefix(path, "/") {
+		return t.CreateDir(path, false)
 	} else {
-		parts := strings.Split(config.DeviceOrigin, "@")
-		if len(parts) != 2 {
-			return errors.New("device origin should be a snapshot: " + config.DeviceOrigin)
-		}
-		originPattern := &PatternInfo{Configurer: t, Config: config, Container: parts[0]}
-		originDataset, err := originPattern.Substitute(fs.Pattern)
-		if err != nil {
-			return err
-		}
-		err = t.Ops.ZFS().Run("clone", "-p", originDataset+"@"+parts[1], dataset)
-		if err != nil {
-			return err
+		if config.DeviceOrigin == "" {
+			args := []string{"create", "-p"}
+			for key, value := range fs.Zfsproperties {
+				args = append(args, "-o", key+"="+value)
+			}
+			args = append(args, path)
+			err := t.Ops.ZFS().Run(args...)
+			if err != nil {
+				return err
+			}
+		} else {
+			parts := strings.Split(config.DeviceOrigin, "@")
+			if len(parts) != 2 {
+				return errors.New("device origin should be a snapshot: " + config.DeviceOrigin)
+			}
+			originPattern := &PatternInfo{Configurer: t, Config: config, Container: parts[0]}
+			originDataset, err := originPattern.Substitute(fs.Pattern)
+			if err != nil {
+				return err
+			}
+			err = t.Ops.ZFS().Run("clone", "-p", originDataset+"@"+parts[1], path)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (t *DeviceConfigurer) CreateDir(dir string) error {
+func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 	if !DirExists(dir) {
 		err := t.prog.NewProgram("mkdir").Sudo(true).Run("-p", dir)
 		//err = os.Mkdir(dir, 0755)
 		if err != nil {
 			return err
 		}
-		err = t.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", dir)
-		if err != nil {
-			return err
+		if chown {
+			err = t.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", dir)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -119,11 +125,14 @@ func (t *DeviceConfigurer) FilesystemPaths(config *Config, name string) (map[str
 	pattern := &PatternInfo{Configurer: t, Config: config, Container: name}
 	filesystems := make(map[string]string)
 	for _, fs := range config.Filesystems {
-		dataset, err := pattern.Substitute(fs.Pattern)
+		path, err := pattern.Substitute(fs.Pattern)
 		if err != nil {
 			return nil, err
 		}
-		filesystems[fs.Id] = filepath.Join("/", dataset)
+		if !strings.HasPrefix(path, "/") {
+			path = filepath.Join("/", path)
+		}
+		filesystems[fs.Id] = path
 	}
 	return filesystems, nil
 }
@@ -182,7 +191,7 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 		if err != nil {
 			return err
 		}
-		err = t.CreateDir(dir)
+		err = t.CreateDir(dir, true)
 		if err != nil {
 			return err
 		}

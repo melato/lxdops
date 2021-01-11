@@ -12,6 +12,10 @@ type Container struct {
 	Profiles []string `json:"profiles"`
 }
 
+type Project struct {
+	Name string `json:name`
+}
+
 func ListContainer(name string) (*Container, error) {
 	var scr script.Script
 	output := scr.Cmd("lxc", "list", name, "--format=json").ToBytes()
