@@ -1,7 +1,7 @@
 package main
 
 import (
-	"melato.org/export/command"
+	"melato.org/command"
 	"melato.org/lxdops"
 	"melato.org/lxdops/os"
 )

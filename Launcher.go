@@ -24,7 +24,7 @@ type Launcher struct {
 }
 
 func (t *Launcher) Init() error {
-	t.ProfileSuffix = "devices"
+	t.ProfileSuffix = DefaultProfileSuffix
 	return nil
 }
 
@@ -56,9 +56,7 @@ func (op *Launcher) LaunchOne(name string, configFiles []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("suffix", config.ProfileSuffix, op.ProfileSuffix)
 	op.updateConfig(config)
-	fmt.Println("updated", config.ProfileSuffix, op.ProfileSuffix)
 	return op.LaunchContainer(config, name)
 }
 

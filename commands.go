@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"melato.org/export/command"
+	"melato.org/command"
 	"melato.org/script"
 )
 
@@ -47,7 +47,6 @@ func RootCommand() *command.SimpleCommand {
 		Use("<container> <config-file> ...").
 		Short("configure an existing container").
 		Example("configure c1 demo.yaml")
-
 	cmd.Command("verify").RunMethodArgs(ops.Verify).
 		Use("<config-file> ...").
 		Short("verify config files").
@@ -62,6 +61,11 @@ func RootCommand() *command.SimpleCommand {
 	- add devices to profile, with optional suffix
 	*/
 	profile := cmd.Command("profile").Short("profile utilities")
+	profileConfigurer := NewProfileConfigurer(ops.Ops)
+	profile.Command("apply").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Apply)
+	profile.Command("list").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.List)
+	profile.Command("diff").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Diff)
+
 	profile.Command("exists").RunMethodArgs(ops.ProfileExists).Use("<profile>").Short("check if a profile exists")
 	profile.Command("add-disk").RunMethodArgs(ops.AddDiskDevice).Use("<profile> <source> <path>").Short("add a disk device to a profile")
 	cmd.Command("zfsroot").RunMethodArgs(ops.ZFSRoot).Short("print zfs parent of lxd dataset")
@@ -79,6 +83,10 @@ func RootCommand() *command.SimpleCommand {
 
 	var networkOp NetworkOp
 	cmd.Command("addresses").Flags(&networkOp).RunMethodE(networkOp.ExportAddresses).Short("export container addresses")
+
+	var containerOps ContainerOps
+	containerCmd := cmd.Command("container")
+	containerCmd.Command("profiles").RunMethodArgs(containerOps.Profiles)
 
 	return &cmd
 }

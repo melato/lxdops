@@ -80,3 +80,15 @@ func RemoveDuplicates(slice []string) []string {
 	}
 	return result
 }
+
+func EqualArrays(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, s := range a {
+		if s != b[i] {
+			return false
+		}
+	}
+	return true
+}

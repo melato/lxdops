@@ -3,7 +3,7 @@ package lxdops
 import (
 	"errors"
 
-	"melato.org/export/command"
+	"melato.org/command"
 	"melato.org/shorewall"
 	shorewall_commands "melato.org/shorewall/commands"
 )

@@ -2,7 +2,6 @@ package lxdops
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 
 	"strings"
@@ -32,112 +31,13 @@ func ProfileExists(profile string) bool {
 	return err == nil
 }
 
-type DeviceInfo struct {
+type PatternInfo struct {
 	Configurer *DeviceConfigurer
 	Config     *Config
-	Device     *Device
 	Container  string
-	Dataset    string
-	Dir        string
 }
 
-func (t *DeviceInfo) init() error {
-	var err error
-	t.Dataset, err = t.Substitute(t.Device.Dataset)
-	if err != nil {
-		return err
-	}
-	dir, err := t.Substitute(t.Device.Dir)
-	if err != nil {
-		return err
-	}
-	if t.Dataset == "" && dir == "" {
-		t.Dataset, err = t.Substitute("(host)/(container)")
-		if err != nil {
-			return err
-		}
-		dir = t.Device.Name
-
-	}
-	t.Dir = filepath.Join("/", t.Dataset, dir)
-	return nil
-}
-
-func (t *DeviceConfigurer) NewDeviceInfo(config *Config, device *Device, container string) (*DeviceInfo, error) {
-	info := &DeviceInfo{Configurer: t, Config: config, Container: container, Device: device}
-	err := info.init()
-	if err != nil {
-		return nil, err
-	}
-	return info, nil
-}
-
-func (t *DeviceInfo) CreateDataset(isNewDataset bool) error {
-	if t.Dataset == "" {
-		return nil
-	}
-	if t.Config.DeviceOrigin == "" {
-		args := []string{"create", "-p"}
-		if t.Device.Recordsize != "" {
-			args = append(args, "-o", "recordsize="+t.Device.Recordsize)
-		}
-		for key, value := range t.Device.Zfsproperties {
-			args = append(args, "-o", key+"="+value)
-		}
-		args = append(args, t.Dataset)
-		err := t.Configurer.Ops.ZFS().Run(args...)
-		if err != nil {
-			return err
-		}
-	} else if isNewDataset {
-		parts := strings.Split(t.Config.DeviceOrigin, "@")
-		if len(parts) != 2 {
-			return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
-		}
-		originInfo, err := t.Configurer.NewDeviceInfo(t.Config, t.Device, parts[0])
-		if err != nil {
-			return err
-		}
-		err = t.Configurer.Ops.ZFS().Run("clone", "-p", originInfo.Dataset+"@"+parts[1], t.Dataset)
-		if err != nil {
-			return err
-		}
-	}
-	return t.Configurer.Ops.ZFS().Run("list", "-r", t.Dataset)
-}
-
-func (t *DeviceInfo) Create(isNewDataset bool) error {
-	if !DirExists(t.Dir) {
-		err := t.CreateDataset(isNewDataset)
-		if err != nil {
-			return err
-		}
-		chown := false
-		if !DirExists(t.Dir) {
-			err = t.Configurer.prog.NewProgram("mkdir").Sudo(true).Run("-p", t.Dir)
-			//err = os.Mkdir(t.Dir, 0755)
-			if err != nil {
-				return err
-			}
-			chown = true
-		} else if t.Config.DeviceOrigin == "" {
-			// the device directory is the dataset directory we just created, so change the ownership.
-			chown = true
-		}
-		// do not change the ownership of a directory that was cloned
-		if chown {
-			err = t.Configurer.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", t.Dir)
-			if err != nil {
-				return err
-			}
-		}
-	} else {
-		fmt.Println("reusing", t.Dir)
-	}
-	return nil
-}
-
-func (t *DeviceInfo) Get(key string) (string, error) {
+func (t *PatternInfo) Get(key string) (string, error) {
 	if strings.HasPrefix(key, ".") {
 		pkey := key[1:]
 		value, found := t.Config.Properties[pkey]
@@ -156,27 +56,117 @@ func (t *DeviceInfo) Get(key string) (string, error) {
 		}
 		return zfsroot, err
 	}
-	if key == "host" {
-		zfsroot, err := t.Configurer.Ops.ZFSRoot()
-		if err != nil {
-			return "", nil
-		}
-		return filepath.Join(zfsroot, t.Config.GetHostFS()), nil
-	}
 	return "", errors.New("unknown key: " + key)
 }
 
-func (t *DeviceInfo) Substitute(pattern string) (string, error) {
+func (t *PatternInfo) Substitute(pattern string) (string, error) {
 	if strings.IndexAny(pattern, "{}") >= 0 {
 		return "", errors.New(`pattern contains {}, please replace with (): ` + pattern)
 	}
 	return Substitute(pattern, t.Get)
 }
 
+func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name string) error {
+	pattern := &PatternInfo{Configurer: t, Config: config, Container: name}
+	dataset, err := pattern.Substitute(fs.Pattern)
+	if err != nil {
+		return err
+	}
+	if config.DeviceOrigin == "" {
+		args := []string{"create", "-p"}
+		for key, value := range fs.Zfsproperties {
+			args = append(args, "-o", key+"="+value)
+		}
+		args = append(args, dataset)
+		err := t.Ops.ZFS().Run(args...)
+		if err != nil {
+			return err
+		}
+	} else {
+		parts := strings.Split(config.DeviceOrigin, "@")
+		if len(parts) != 2 {
+			return errors.New("device origin should be a snapshot: " + config.DeviceOrigin)
+		}
+		originPattern := &PatternInfo{Configurer: t, Config: config, Container: parts[0]}
+		originDataset, err := originPattern.Substitute(fs.Pattern)
+		if err != nil {
+			return err
+		}
+		err = t.Ops.ZFS().Run("clone", "-p", originDataset+"@"+parts[1], dataset)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *DeviceConfigurer) CreateDir(dir string) error {
+	if !DirExists(dir) {
+		err := t.prog.NewProgram("mkdir").Sudo(true).Run("-p", dir)
+		//err = os.Mkdir(dir, 0755)
+		if err != nil {
+			return err
+		}
+		err = t.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", dir)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *DeviceConfigurer) FilesystemPaths(config *Config, name string) (map[string]string, error) {
+	pattern := &PatternInfo{Configurer: t, Config: config, Container: name}
+	filesystems := make(map[string]string)
+	for _, fs := range config.Filesystems {
+		dataset, err := pattern.Substitute(fs.Pattern)
+		if err != nil {
+			return nil, err
+		}
+		filesystems[fs.Id] = filepath.Join("/", dataset)
+	}
+	return filesystems, nil
+}
+
+func (t *DeviceConfigurer) DeviceDir(config *Config, filesystems map[string]string, device *Device, name string) (string, error) {
+	pattern := &PatternInfo{Configurer: t, Config: config, Container: name}
+	dir, err := pattern.Substitute(device.Dir)
+	if err != nil {
+		return "", err
+	}
+	if device.Filesystem != "" {
+		fs, found := filesystems[device.Filesystem]
+		if !found {
+			return "", errors.New("missing filesystem: " + device.Filesystem)
+		}
+		dir = filepath.Join(fs, dir)
+	}
+	return dir, nil
+}
+
 func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
+	filesystems, err := t.FilesystemPaths(config, name)
+	if err != nil {
+		return err
+	}
+	for _, fs := range config.Filesystems {
+		fsDir, _ := filesystems[fs.Id]
+		if !DirExists(fsDir) {
+			err := t.CreateFilesystem(config, fs, name)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	var templateFilesystems map[string]string
+	if config.DeviceTemplate != "" {
+		templateFilesystems, err = t.FilesystemPaths(config, config.DeviceTemplate)
+		if err != nil {
+			return err
+		}
+	}
 	var profileName string
 	var useProfile bool
-	datasets := make(map[string]bool)
 	for _, device := range config.Devices {
 		if profileName == "" {
 			profileName = config.ProfileName(name)
@@ -188,40 +178,34 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 				}
 			}
 		}
-		info, err := t.NewDeviceInfo(config, device, name)
+		dir, err := t.DeviceDir(config, filesystems, device, name)
 		if err != nil {
 			return err
 		}
-		isNew := true
-		if datasets[info.Dataset] {
-			isNew = false
-		} else {
-			datasets[info.Dataset] = true
-		}
-		err = info.Create(isNew)
+		err = t.CreateDir(dir)
 		if err != nil {
 			return err
 		}
 		if config.DeviceTemplate != "" {
-			templateInfo, err := t.NewDeviceInfo(config, device, config.DeviceTemplate)
+			templateDir, err := t.DeviceDir(config, templateFilesystems, device, config.DeviceTemplate)
 			if err != nil {
 				return err
 			}
-			if !DirExists(templateInfo.Dir) {
-				return errors.New("Device Template does not exist: " + templateInfo.Dir)
+			if !DirExists(templateDir) {
+				return errors.New("Device Template does not exist: " + templateDir)
 			}
-			err = t.prog.NewProgram("rsync").Sudo(true).Run("-a", templateInfo.Dir+"/", info.Dir+"/")
+			err = t.prog.NewProgram("rsync").Sudo(true).Run("-a", templateDir+"/", dir+"/")
 			if err != nil {
 				return err
 			}
 		}
-		// lxc profile device add a1.host etc disk source=/z/host/a1/etc path=/etc/opt
+		// lxc profile device add a1.devices etc disk source=/z/host/a1/etc path=/etc/opt
 		if useProfile {
 			err := program.NewProgram("lxc").Run("profile", "device", "add", profileName,
 				device.Name,
 				"disk",
 				"path="+device.Path,
-				"source="+info.Dir)
+				"source="+dir)
 			if err != nil {
 				return err
 			}

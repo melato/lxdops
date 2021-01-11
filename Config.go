@@ -28,11 +28,12 @@ type Config struct {
 	HostFS        string   `yaml:"host-fs,omitempty"`
 	Repositories  []string `yaml:"repositories,omitempty"`
 
-	Origin         string    `yaml:"origin,omitempty"`
-	DeviceTemplate string    `yaml:"device-template,omitempty"`
-	DeviceOrigin   string    `yaml:"device-origin,omitempty"`
-	Devices        []*Device `yaml:"devices,omitempty"`
-	Profiles       []string  `yaml:"profiles,omitempty"`
+	Origin         string        `yaml:"origin,omitempty"`
+	DeviceTemplate string        `yaml:"device-template,omitempty"`
+	DeviceOrigin   string        `yaml:"device-origin,omitempty"`
+	Filesystems    []*Filesystem `yaml:"filesystems"`
+	Devices        []*Device     `yaml:"devices,omitempty"`
+	Profiles       []string      `yaml:"profiles,omitempty"`
 
 	Packages  []string  `yaml:"packages,omitempty"`
 	Users     []*User   `yaml:"users,omitempty"`
@@ -73,20 +74,23 @@ func (t *Config) VerifyFileExists(file string) bool {
 	return true
 }
 
-type Device struct {
-	Path       string `xml:"path,attr"`
-	Name       string `xml:"name,attr"`
-	Recordsize string `xml:"recordsize,attr" yaml:",omitempty"`
-
+type Filesystem struct {
+	Id string `xml:"name,attr"`
+	/** A zfs dataset pattern */
+	Pattern       string            `xml:"name,attr"`
 	Zfsproperties map[string]string `yaml:",omitempty"`
+}
 
-	/** A zfs dataset pattern (optional) */
-	Dataset string `yaml:",omitempty"`
+type Device struct {
+	Path string `xml:"path,attr"`
+	Name string `xml:"name,attr"`
+
+	Filesystem string `yaml:",omitempty"` // Filesystem.Id
 	/** A (sub) directory pattern (optional).
-	If both Dataset and Dir are provided, the disk device source directory is /(Dataset)/(Dir), after pattern substitution.
-	If only Dataset is provided, the disk device source directory is /(Dataset), after pattern substitution.
+	If both Filesystem and Dir are provided, the disk device source directory is /(Filesystem.Pattern)/(Dir), after pattern substitution.
+	If only Filesystem is provided, the disk device source directory is /(Filesystem.Pattern), after pattern substitution.
 	If only Dir is provided, it is used as the source directory, after pattern substitution.
-	If neither is provided, Dataset is set to "(.host)/(.container)" and Dir is set to the device name, for backward compatibility.
+	If neither is provided, Filesystem.Pattern is set to "(host)/(container)" and Dir is set to the device name, for backward compatibility.
 	*/
 	Dir string `yaml:",omitempty"`
 }
@@ -262,6 +266,7 @@ func (t *Config) Merge(c *Config) error {
 	}
 	t.Stop = t.Stop || c.Stop
 	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
+	t.Filesystems = append(t.Filesystems, c.Filesystems...)
 	t.Devices = append(t.Devices, c.Devices...)
 	t.Repositories = append(t.Repositories, c.Repositories...)
 	t.Packages = append(t.Packages, c.Packages...)
