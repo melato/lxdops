@@ -51,7 +51,6 @@ func RootCommand() *command.SimpleCommand {
 		Use("<config-file> ...").
 		Short("verify config files").
 		Example("verify *.yaml")
-	cmd.Command("version").RunMethod(ops.Version).Short("print program version")
 	device := &DeviceCmd{Ops: ops.Ops}
 	cmd.Command("create-devices").Flags(device).RunMethodArgs(device.Run).Use("{container-name} {configfile}...").Short("create devices")
 	/* add devices:
@@ -114,10 +113,6 @@ func (t *LxdOps) ZFSRoot(args []string) error {
 		fmt.Println(path)
 	}
 	return err
-}
-
-func (t *LxdOps) Version() {
-	fmt.Println(Version)
 }
 
 /** Print the description of a config file. */
