@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"melato.org/export/password"
-	"melato.org/export/program"
+	"melato.org/lxdops/password"
+	"melato.org/script"
 )
 
 type Configurer struct {
@@ -21,7 +21,6 @@ type Configurer struct {
 	Scripts    bool     `name:"scripts" usage:"whether to run scripts"`
 	Files      bool     `name:"files" usage:"whether to copy files"`
 	Users      bool     `name:"users" usage:"whether to create users and change passwords"`
-	prog       program.Params
 }
 
 func NewConfigurer(ops *Ops) *Configurer {
@@ -31,9 +30,11 @@ func NewConfigurer(ops *Ops) *Configurer {
 }
 
 func (t *Configurer) Configured() error {
-	t.prog.DryRun = t.DryRun
-	t.prog.Trace = t.ops.Trace
 	return nil
+}
+
+func (t *Configurer) NewScript() *script.Script {
+	return &script.Script{Trace: t.ops.Trace, DryRun: t.DryRun}
 }
 
 func (t *Configurer) runScriptLines(name string, lines []string) error {
@@ -81,22 +82,13 @@ func (s *execRunner) Run(name, content string, execArgs []string) error {
 	}
 	args = append(args, name)
 	args = append(args, execArgs...)
-	cmd, err := s.Op.prog.NewProgram("lxc").Cmd(args...)
-	if err != nil {
-		return err
-	}
-	if s.Op.DryRun {
-		return nil
-	}
+	script := s.Op.NewScript()
+	cmd := script.Cmd("lxc", args...)
 	if content != "" {
-		cmd.Stdin = strings.NewReader(content)
-	} else {
-		cmd.Stdin = os.Stdin
+		cmd.Cmd.Stdin = strings.NewReader(content)
 	}
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	cmd.Run()
+	return script.Error
 }
 
 func (t *Configurer) runScript(name string, content string) error {
@@ -117,7 +109,9 @@ func (t *Configurer) installPackages(config *Config, name string) error {
 }
 
 func (t *Configurer) createSnapshot(name, snapshot string) error {
-	return t.prog.NewProgram("lxc").Run("snapshot", name, snapshot)
+	script := t.NewScript()
+	script.Run("lxc", "snapshot", name, snapshot)
+	return script.Error
 }
 
 func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
@@ -134,13 +128,11 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		}
 		home := user.HomeDir()
 		guestFile := filepath.Join(home, ".ssh", "authorized_keys")
-		err := t.prog.NewProgram("lxc").Run("file", "push", hostFile, name+guestFile)
-		if err != nil {
-			return err
-		}
-		err = t.prog.NewProgram("lxc").Run("exec", name, "chown", user.Name+":"+user.Name, guestFile)
-		if err != nil {
-			return err
+		script := t.NewScript()
+		script.Run("lxc", "file", "push", hostFile, name+guestFile)
+		script.Run("lxc", "exec", name, "chown", user.Name+":"+user.Name, guestFile)
+		if script.Error != nil {
+			return script.Error
 		}
 	}
 	return nil
@@ -252,17 +244,11 @@ func (t *Configurer) changePasswords(config *Config, name string, users []string
 		lines = append(lines, user+":"+pass)
 	}
 	content := strings.Join(lines, "\n")
-	cmd, err := t.prog.NewProgram("lxc").Cmd("exec", name, "chpasswd")
-	if err != nil {
-		return err
-	}
-	if t.DryRun {
-		return nil
-	}
-	cmd.Stdin = strings.NewReader(content)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	script := t.NewScript()
+	cmd := script.Cmd("lxc", "exec", name, "chpasswd")
+	cmd.Cmd.Stdin = strings.NewReader(content)
+	cmd.Run()
+	return script.Error
 }
 
 func (t *Configurer) changeUserPasswords(config *Config, name string) error {
@@ -285,9 +271,10 @@ func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 			continue
 		}
 		if script.File != "" {
-			err := t.prog.NewProgram("lxc").Run("file", "push", script.File, name+"/root/")
-			if err != nil {
-				fmt.Println(script.File, err)
+			s := t.NewScript()
+			s.Run("lxc", "file", "push", script.File, name+"/root/")
+			if s.Error != nil {
+				fmt.Println(script.File, s.Error)
 				failedFiles = append(failedFiles, script.File)
 			}
 		}
@@ -313,13 +300,11 @@ func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 				}
 			}
 			if script.Reboot {
-				err := t.prog.NewProgram("lxc").Run("stop", name)
-				if err != nil {
-					return err
-				}
-				err = t.prog.NewProgram("lxc").Run("start", name)
-				if err != nil {
-					return err
+				s := t.NewScript()
+				s.Run("lxc", "stop", name)
+				s.Run("lxc", "start", name)
+				if s.Error != nil {
+					return s.Error
 				}
 			}
 		}
@@ -349,9 +334,10 @@ func (t *Configurer) copyFiles(config *Config, name string) error {
 		if f.Gid != -1 {
 			args = append(args, "--gid", strconv.Itoa(f.Gid))
 		}
-		err := t.prog.NewProgram("lxc").Run(args...)
-		if err != nil {
-			fmt.Println(f.Source, err)
+		s := t.NewScript()
+		s.Run("lxc", args...)
+		if s.Error != nil {
+			fmt.Println(f.Source, s.Error)
 			failedFiles = append(failedFiles, f.Source)
 		}
 	}

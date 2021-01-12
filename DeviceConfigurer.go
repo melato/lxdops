@@ -6,29 +6,33 @@ import (
 
 	"strings"
 
-	"melato.org/export/program"
+	"melato.org/script"
 )
 
 type DeviceConfigurer struct {
-	Ops  *Ops
-	prog program.Params
+	Ops    *Ops
+	Trace  bool
+	DryRun bool
 }
 
 func NewDeviceConfigurer(ops *Ops) *DeviceConfigurer {
-	t := &DeviceConfigurer{Ops: ops}
-	t.prog.Trace = t.Ops.Trace
+	t := &DeviceConfigurer{Ops: ops, Trace: ops.Trace}
 	return t
 }
 
+func (t *DeviceConfigurer) NewScript() *script.Script {
+	return &script.Script{Trace: t.Ops.Trace, DryRun: t.DryRun}
+}
+
 func (t *DeviceConfigurer) SetDryRun(dryRun bool) {
-	t.prog.DryRun = dryRun
+	t.DryRun = dryRun
 }
 
 func ProfileExists(profile string) bool {
 	// Not sure what profile get does, but it returns an error if the profile doesn't exist.
 	// "x" is a key.  It doesn't matter what key we use for our purpose.
-	err := program.NewProgram("lxc").Run("profile", "get", profile, "x")
-	return err == nil
+	script := script.Script{}
+	return script.Cmd("lxc", "profile", "get", profile, "x").MergeStderr().ToNull()
 }
 
 type PatternInfo struct {
@@ -72,19 +76,17 @@ func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name
 	if err != nil {
 		return err
 	}
+	script := t.NewScript()
 	if strings.HasPrefix(path, "/") {
 		return t.CreateDir(path, false)
 	} else {
 		if config.DeviceOrigin == "" {
-			args := []string{"create", "-p"}
+			args := []string{"zfs", "create", "-p"}
 			for key, value := range fs.Zfsproperties {
 				args = append(args, "-o", key+"="+value)
 			}
 			args = append(args, path)
-			err := t.Ops.ZFS().Run(args...)
-			if err != nil {
-				return err
-			}
+			script.Run("sudo", args...)
 		} else {
 			parts := strings.Split(config.DeviceOrigin, "@")
 			if len(parts) != 2 {
@@ -95,28 +97,21 @@ func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name
 			if err != nil {
 				return err
 			}
-			err = t.Ops.ZFS().Run("clone", "-p", originDataset+"@"+parts[1], path)
-			if err != nil {
-				return err
-			}
+			script.Run("sudo", "zfs", "clone", "-p", originDataset+"@"+parts[1], path)
 		}
 	}
-	return nil
+	return script.Error
 }
 
 func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 	if !DirExists(dir) {
-		err := t.prog.NewProgram("mkdir").Sudo(true).Run("-p", dir)
+		script := t.NewScript()
+		script.Run("sudo", "mkdir", "-p", dir)
 		//err = os.Mkdir(dir, 0755)
-		if err != nil {
-			return err
-		}
 		if chown {
-			err = t.prog.NewProgram("chown").Sudo(true).Run("-R", "1000000:1000000", dir)
-			if err != nil {
-				return err
-			}
+			script.Run("sudo", "chown", "-R", "1000000:1000000", dir)
 		}
+		return script.Error
 	}
 	return nil
 }
@@ -176,14 +171,15 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 	}
 	var profileName string
 	var useProfile bool
+	script := t.NewScript()
 	for _, device := range config.Devices {
 		if profileName == "" {
 			profileName = config.ProfileName(name)
 			if !ProfileExists(profileName) {
 				useProfile = true
-				err := program.NewProgram("lxc").Run("profile", "create", profileName)
-				if err != nil {
-					return err
+				script.Run("lxc", "profile", "create", profileName)
+				if script.Error != nil {
+					return script.Error
 				}
 			}
 		}
@@ -203,21 +199,18 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 			if !DirExists(templateDir) {
 				return errors.New("Device Template does not exist: " + templateDir)
 			}
-			err = t.prog.NewProgram("rsync").Sudo(true).Run("-a", templateDir+"/", dir+"/")
-			if err != nil {
-				return err
-			}
+			script.Run("sudo", "rsync", "-a", templateDir+"/", dir+"/")
 		}
 		// lxc profile device add a1.devices etc disk source=/z/host/a1/etc path=/etc/opt
 		if useProfile {
-			err := program.NewProgram("lxc").Run("profile", "device", "add", profileName,
+			script.Run("lxc", "profile", "device", "add", profileName,
 				device.Name,
 				"disk",
 				"path="+device.Path,
 				"source="+dir)
-			if err != nil {
-				return err
-			}
+		}
+		if script.Error != nil {
+			return script.Error
 		}
 	}
 	return nil

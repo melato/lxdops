@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"melato.org/export/program"
+	"melato.org/script"
 )
 
 type HostAddress struct {
@@ -28,16 +28,12 @@ func (t *NetworkManager) ParseAddress(addr string) string {
 }
 
 func (t *NetworkManager) GetProjectAddresses(project string) ([]*HostAddress, error) {
+	var s script.Script
 	// lxc list -c ns4 --format=csv
-	cmd, err := program.NewProgram("lxc").Cmd("list", "--project", project, "-c", "n4", "--format=csv")
-	if err != nil {
-		return nil, err
+	output := s.Cmd("lxc", "list", "--project", project, "-c", "n4", "--format=csv").ToBytes()
+	if s.Error != nil {
+		return nil, s.Error
 	}
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-
 	var addresses []*HostAddress
 	r := csv.NewReader(bytes.NewReader(output))
 	for {
@@ -56,16 +52,13 @@ func (t *NetworkManager) GetProjectAddresses(project string) ([]*HostAddress, er
 }
 
 func (t *NetworkManager) GetProjects() ([]string, error) {
-	cmd, err := program.NewProgram("lxc").Cmd("project", "list", "--format=json")
-	if err != nil {
-		return nil, err
-	}
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, err
+	var s script.Script
+	output := s.Cmd("lxc", "project", "list", "--format=json").ToBytes()
+	if s.Error != nil {
+		return nil, s.Error
 	}
 	var projects []*Project
-	err = json.Unmarshal(output, &projects)
+	err := json.Unmarshal(output, &projects)
 	if err != nil {
 		return nil, err
 	}

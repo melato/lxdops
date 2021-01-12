@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"melato.org/export/program"
+	"melato.org/script"
 )
 
 type Launcher struct {
@@ -20,7 +20,6 @@ type Launcher struct {
 	Multiple       bool     `name:"m" usage:"launch each yaml file as a separate container with derived name"`
 	Ext            string   `name:"ext" usage:"extension for config files with -m option"`
 	Options        []string `name:"X" usage:"additional options to pass to lxc"`
-	prog           program.Params
 }
 
 func (t *Launcher) Init() error {
@@ -29,9 +28,11 @@ func (t *Launcher) Init() error {
 }
 
 func (t *Launcher) Configured() error {
-	t.prog.DryRun = t.DryRun
-	t.prog.Trace = t.Ops.Trace
 	return nil
+}
+
+func (t *Launcher) NewScript() *script.Script {
+	return &script.Script{Trace: t.Ops.Trace, DryRun: t.DryRun}
 }
 
 func (op *Launcher) updateConfig(config *Config) {
@@ -107,7 +108,7 @@ func (op *Launcher) Run(args []string) error {
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
-	var c = &Configurer{ops: t.Ops, DryRun: t.DryRun, prog: t.prog, All: true}
+	var c = &Configurer{ops: t.Ops, DryRun: t.DryRun, All: true}
 	return c
 }
 
@@ -127,9 +128,6 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	if err != nil {
 		return err
 	}
-	for _, rep := range config.Repositories {
-		t.Ops.CloneRepository(rep)
-	}
 	var profiles []string
 	profiles = append(profiles, config.Profiles...)
 	//profiles := []string{"default", "dev", "opt", "tools"}
@@ -141,6 +139,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	}
 	fmt.Println("profiles", profiles)
 	containerTemplate := config.Origin
+	script := t.NewScript()
 	if containerTemplate == "" {
 		var lxcArgs []string
 		lxcArgs = append(lxcArgs, "launch")
@@ -160,8 +159,8 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 			lxcArgs = append(lxcArgs, option)
 		}
 		lxcArgs = append(lxcArgs, name)
-		err = t.prog.NewProgram("lxc").Run(lxcArgs...)
-		if err != nil {
+		script.Run("lxc", lxcArgs...)
+		if script.Error != nil {
 			return err
 		}
 	} else {
@@ -170,18 +169,14 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 			copyArgs = append(copyArgs, "--container-only")
 		}
 		copyArgs = append(copyArgs, containerTemplate, name)
-		err = t.prog.NewProgram("lxc").Run(copyArgs...)
-		if err != nil {
+		script.Run("lxc", copyArgs...)
+		if script.Error != nil {
 			return err
 		}
-		copyArgs = append(copyArgs, containerTemplate)
 
-		err = t.prog.NewProgram("lxc").Run("profile", "apply", name, strings.Join(profiles, ","))
-		if err != nil {
-			return err
-		}
-		err = t.prog.NewProgram("lxc").Run("start", name)
-		if err != nil {
+		script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
+		script.Run("lxc", "start", name)
+		if script.Error != nil {
 			return err
 		}
 		err = t.Ops.waitForNetwork(name)
@@ -191,10 +186,10 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	}
 	t.NewConfigurer().ConfigureContainer(config, name)
 	if config.Snapshot != "" {
-		err = t.prog.NewProgram("lxc").Run("snapshot", name, config.Snapshot)
+		script.Run("lxc", "snapshot", name, config.Snapshot)
 	}
 	if config.Stop {
-		err = t.prog.NewProgram("lxc").Run("stop", name)
+		script.Run("lxc", "stop", name)
 	}
-	return err
+	return script.Error
 }

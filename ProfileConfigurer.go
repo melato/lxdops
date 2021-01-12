@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"melato.org/export/program"
+	"melato.org/script"
 )
 
 type ProfileConfigurer struct {
 	ops           *Ops
 	ConfigOptions ConfigOptions
 	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	prog          program.Params
+	Script        script.Script
 }
 
 func NewProfileConfigurer(ops *Ops) *ProfileConfigurer {
@@ -26,8 +26,8 @@ func (t *ProfileConfigurer) Init() error {
 }
 
 func (t *ProfileConfigurer) Configured() error {
-	t.prog.DryRun = t.DryRun
-	t.prog.Trace = t.ops.Trace
+	t.Script.DryRun = t.DryRun
+	t.Script.Trace = t.ops.Trace
 	return nil
 }
 
@@ -50,7 +50,8 @@ func (t *ProfileConfigurer) diffProfiles(name string, config *Config) error {
 
 func (t *ProfileConfigurer) applyProfiles(name string, config *Config) error {
 	profiles := t.Profiles(name, config)
-	return t.prog.NewProgram("lxc").Run("profile", "apply", name, strings.Join(profiles, ","))
+	t.Script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
+	return t.Script.Error
 }
 
 func (t *ProfileConfigurer) listProfiles(name string, config *Config) error {

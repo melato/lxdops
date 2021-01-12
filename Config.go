@@ -6,7 +6,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
-	"strings"
 )
 
 /** Config - Container configuration
@@ -26,7 +25,6 @@ type Config struct {
 	/** Files or directories that must exist on the host */
 	RequiredFiles []string `yaml:"require,omitempty"`
 	HostFS        string   `yaml:"host-fs,omitempty"`
-	Repositories  []string `yaml:"repositories,omitempty"`
 
 	Origin         string        `yaml:"origin,omitempty"`
 	DeviceTemplate string        `yaml:"device-template,omitempty"`
@@ -217,9 +215,6 @@ func (t *Config) Print() error {
 
 /** Read config without includes */
 func ReadRawConfig(file string) (*Config, error) {
-	if strings.HasSuffix(file, ".xml") {
-		return ReadConfigXml(file)
-	}
 	return ReadConfigYaml(file)
 }
 
@@ -268,7 +263,6 @@ func (t *Config) Merge(c *Config) error {
 	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
 	t.Filesystems = append(t.Filesystems, c.Filesystems...)
 	t.Devices = append(t.Devices, c.Devices...)
-	t.Repositories = append(t.Repositories, c.Repositories...)
 	t.Packages = append(t.Packages, c.Packages...)
 	t.Profiles = append(t.Profiles, c.Profiles...)
 	t.Users = append(t.Users, c.Users...)
@@ -282,7 +276,6 @@ func (t *Config) Merge(c *Config) error {
 
 func (t *Config) removeDuplicates() {
 	// remove duplicate strings
-	t.Repositories = RemoveDuplicates(t.Repositories)
 	t.Packages = RemoveDuplicates(t.Packages)
 	t.Passwords = RemoveDuplicates(t.Passwords)
 	// how about Require, Devices, Users, Scripts?

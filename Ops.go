@@ -3,24 +3,24 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
-	"melato.org/export/program"
+	"melato.org/script"
 )
 
 type Ops struct {
 	ZFSRootFlag string `name:"zfs-root" usage:"base zfs filesystem" default:"parent of default storage zfs.pool_name"`
 	Trace       bool   `name:"trace,t" usage:"print exec arguments"`
-	zfs         program.Program
+}
+
+func (t *Ops) NewScript() *script.Script {
+	return &script.Script{Trace: t.Trace}
 }
 
 func (t *Ops) Init() error { return nil }
 
 func (t *Ops) Configured() error {
-	program.DefaultParams.Trace = t.Trace
 	return nil
 }
 
@@ -35,30 +35,11 @@ func (t *Ops) ZFSRoot() (string, error) {
 	return t.ZFSRootFlag, nil
 }
 
-func (t *Ops) GetPath(dir string) (string, error) {
-	if strings.HasPrefix(dir, "/") {
-		return dir, nil
-	}
-	zfsroot, err := t.ZFSRoot()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join("/", zfsroot, dir), nil
-}
-
-func (t *Ops) ZFS() program.Program {
-	if t.zfs == nil {
-		var params program.Params
-		params.Trace = t.Trace
-		t.zfs = params.NewProgram("zfs").Sudo(true)
-	}
-	return t.zfs
-}
-
 func (t *Ops) GetDefaultDataset() (string, error) {
-	lines, err := program.NewProgram("lxc").Lines("storage", "get", "default", "zfs.pool_name")
-	if err != nil {
-		return "", err
+	script := t.NewScript()
+	lines := script.Cmd("lxc", "storage", "get", "default", "zfs.pool_name").ToLines()
+	if script.Error != nil {
+		return "", script.Error
 	}
 	if len(lines) > 0 {
 		fs := lines[0]
@@ -67,31 +48,12 @@ func (t *Ops) GetDefaultDataset() (string, error) {
 	return "", errors.New("could not get default zfs.pool_name")
 }
 
-func (t *Ops) CloneRepository(rep string) error {
-	path, err := t.GetPath("dev")
-	if err != nil {
-		return err
-	}
-	dir := filepath.Join(path, rep)
-	if !DirExists(dir) {
-		fmt.Println("clone repository", rep)
-		err = os.MkdirAll(filepath.Dir(dir), 0755)
-		if err != nil {
-			return err
-		}
-		git := program.NewProgram("git")
-		git.Run("clone", "git:"+rep, dir)
-	} else if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (t *Ops) waitForNetwork(name string) error {
 	for i := 0; i < 30; i++ {
-		lines, err := program.NewProgram("lxc").Lines("list", name, "--format=csv", "-c4")
-		if err != nil {
-			return err
+		script := t.NewScript()
+		lines := script.Cmd("lxc", "list", name, "--format=csv", "-c4").ToLines()
+		if script.Error != nil {
+			return script.Error
 		}
 		if len(lines) > 0 {
 			ip := lines[0]
