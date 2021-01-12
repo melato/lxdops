@@ -2,7 +2,6 @@ package lxdops
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"melato.org/script"
@@ -39,20 +38,22 @@ func (t *ProfileConfigurer) diffProfiles(name string, config *Config) error {
 		return nil
 	}
 	profiles := t.Profiles(name, config)
-	if !EqualArrays(profiles, c.Profiles) {
-		fmt.Printf("%s profiles: %s\n", name, strings.Join(c.Profiles, ","))
-		fmt.Printf("%s config:   %s\n", name, strings.Join(profiles, ","))
+	if StringSlice(profiles).Equals(c.Profiles) {
+		return nil
+	}
+	onlyInConfig := StringSlice(profiles).Diff(c.Profiles)
+	onlyInContainer := StringSlice(c.Profiles).Diff(profiles)
+	sep := " "
+	if len(onlyInConfig) > 0 {
+		fmt.Printf("%s profiles only in config: %s\n", name, strings.Join(onlyInConfig, sep))
+	}
+	if len(onlyInContainer) > 0 {
+		fmt.Printf("%s profiles only in container: %s\n", name, strings.Join(onlyInContainer, sep))
+	}
+	if len(onlyInConfig) == 0 && len(onlyInContainer) == 0 {
+		fmt.Printf("%s profiles are in different order: %s\n", name, strings.Join(profiles, sep))
 	}
 	return nil
-}
-
-func (t *ProfileConfigurer) sorted(a []string) []string {
-	result := make([]string, len(a))
-	for i, s := range a {
-		result[i] = s
-	}
-	sort.Strings(result)
-	return result
 }
 
 func (t *ProfileConfigurer) reorderProfiles(name string, config *Config) error {
@@ -62,11 +63,13 @@ func (t *ProfileConfigurer) reorderProfiles(name string, config *Config) error {
 		return nil
 	}
 	profiles := t.Profiles(name, config)
-	if EqualArrays(profiles, c.Profiles) {
+	if StringSlice(profiles).Equals(c.Profiles) {
 		return nil
 	}
 
-	if EqualArrays(t.sorted(profiles), t.sorted(c.Profiles)) {
+	sortedProfiles := StringSlice(profiles).Sorted()
+	sortedContainer := StringSlice(c.Profiles).Sorted()
+	if StringSlice(sortedProfiles).Equals(sortedContainer) {
 		script := t.NewScript()
 		script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
 		return script.Error

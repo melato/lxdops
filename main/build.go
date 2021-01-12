@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"melato.org/command"
 	"melato.org/script"
 )
 
-func Build() error {
+func main() {
 	script := script.Script{Trace: true}
 	script.Run("mkversion", "-t", "version.tpl", "version.go")
 	if script.Error != nil {
@@ -22,11 +21,8 @@ func Build() error {
 		"lxdops.go", "version.go")
 	cmd.Cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	cmd.Run()
-	return script.Error
-}
-
-func main() {
-	cmd := &command.SimpleCommand{}
-	cmd.RunMethodE(Build)
-	command.Main(cmd)
+	if script.Error != nil {
+		fmt.Println(script.Error)
+		os.Exit(1)
+	}
 }
