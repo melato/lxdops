@@ -2,6 +2,7 @@ package lxdops
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 
 	"strings"
@@ -78,7 +79,7 @@ func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name
 	}
 	script := t.NewScript()
 	if strings.HasPrefix(path, "/") {
-		return t.CreateDir(path, false)
+		return t.CreateDir(path, true)
 	} else {
 		if config.DeviceOrigin == "" {
 			args := []string{"zfs", "create", "-p"}
@@ -99,6 +100,7 @@ func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name
 			}
 			script.Run("sudo", "zfs", "clone", "-p", originDataset+"@"+parts[1], path)
 		}
+		t.chownDir(script, filepath.Join("/", path))
 	}
 	return script.Error
 }
@@ -118,13 +120,17 @@ func (t *DeviceConfigurer) DestroyFilesystem(config *Config, fs *Filesystem, nam
 	return script.Error
 }
 
+func (t *DeviceConfigurer) chownDir(scr *script.Script, dir string) {
+	scr.Run("sudo", "chown", "-R", "1000000:1000000", dir)
+}
+
 func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 	if !DirExists(dir) {
 		script := t.NewScript()
 		script.Run("sudo", "mkdir", "-p", dir)
 		//err = os.Mkdir(dir, 0755)
 		if chown {
-			script.Run("sudo", "chown", "-R", "1000000:1000000", dir)
+			t.chownDir(script, dir)
 		}
 		return script.Error
 	}
@@ -211,10 +217,11 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 			if err != nil {
 				return err
 			}
-			if !DirExists(templateDir) {
-				return errors.New("Device Template does not exist: " + templateDir)
+			if DirExists(templateDir) {
+				script.Run("sudo", "rsync", "-a", templateDir+"/", dir+"/")
+			} else {
+				fmt.Println("skipping missing Device Template: " + templateDir)
 			}
-			script.Run("sudo", "rsync", "-a", templateDir+"/", dir+"/")
 		}
 		// lxc profile device add a1.devices etc disk source=/z/host/a1/etc path=/etc/opt
 		if useProfile {
@@ -239,10 +246,7 @@ func (t *DeviceConfigurer) DestroyDevices(config *Config, name string) error {
 	for _, fs := range config.ReferencedFilesystems() {
 		fsDir, _ := filesystems[fs.Id]
 		if DirExists(fsDir) {
-			err := t.DestroyFilesystem(config, fs, name)
-			if err != nil {
-				return err
-			}
+			t.DestroyFilesystem(config, fs, name)
 		}
 	}
 	return nil

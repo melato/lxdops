@@ -3,6 +3,7 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/user"
 	"path/filepath"
 	"regexp"
@@ -66,7 +67,7 @@ func (t *OS) Equals(x *OS) bool {
 /** Check that the requirements are met */
 func (t *Config) VerifyFileExists(file string) bool {
 	if file != "" && !FileExists(file) {
-		fmt.Println("file does not exist: " + file)
+		fmt.Fprintf(os.Stderr, "file does not exist: %s\n", file)
 		return false
 	}
 	return true
@@ -180,7 +181,7 @@ func (config *Config) Verify() bool {
 	for _, u := range config.Users {
 		if !u.IsValidName() {
 			valid = false
-			fmt.Println("invalid user name: " + u.Name)
+			fmt.Fprintf(os.Stderr, "invalid user name: %s\n", u.Name)
 		}
 	}
 	for _, file := range config.RequiredFiles {
@@ -318,7 +319,7 @@ func ReadConfigs1(files ...string) (*Config, error) {
 	}
 	var result *Config
 	for i, file := range files {
-		fmt.Println(file)
+		//fmt.Println(file)
 		c, err := ReadConfig(file)
 		if err != nil {
 			return nil, err
@@ -358,7 +359,7 @@ func (t *Config) ResolvePaths(dir string) {
 
 func (t *Config) merge(file string, included map[string]bool) error {
 	if _, found := included[file]; found {
-		fmt.Printf("ignoring duplicate include: %s\n", file)
+		fmt.Fprintf(os.Stderr, "ignoring duplicate include: %s\n", file)
 		return nil
 	}
 	included[file] = true

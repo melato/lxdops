@@ -146,16 +146,21 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 func (t *Launcher) deleteContainer(name string, config *Config) error {
 	t.updateConfig(config)
 	script := t.NewScript()
-	script.Run("lxc", "delete", name)
-	script.Run("lxc", "profile", "delete", config.ProfileName(name))
-	if script.Error != nil {
-		return script.Error
+	_, err := ListContainer(name)
+	if err == nil {
+		script.Run("lxc", "delete", name)
+		if script.Error != nil {
+			return script.Error
+		}
 	}
+	script.Run("lxc", "profile", "delete", config.ProfileName(name))
+	script.Error = nil // ignore errors
 	dev := NewDeviceConfigurer(t.Ops)
 	dev.SetDryRun(t.DryRun)
 	return dev.DestroyDevices(config, name)
 }
 
 func (t *Launcher) Delete(args []string) error {
+	t.Ops.Trace = true
 	return t.ConfigOptions.Run(args, t.deleteContainer)
 }
