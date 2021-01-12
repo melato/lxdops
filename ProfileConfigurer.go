@@ -34,7 +34,8 @@ func (t *ProfileConfigurer) Profiles(name string, config *Config) []string {
 func (t *ProfileConfigurer) diffProfiles(name string, config *Config) error {
 	c, err := ListContainer(name)
 	if err != nil {
-		return err
+		fmt.Println(err)
+		return nil
 	}
 	profiles := t.Profiles(name, config)
 	if !EqualArrays(profiles, c.Profiles) {
