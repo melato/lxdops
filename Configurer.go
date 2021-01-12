@@ -69,9 +69,6 @@ func (s *execRunner) Gid(gid int) *execRunner {
 }
 
 func (s *execRunner) Run(name, content string, execArgs []string) error {
-	if s.Op.ops.Trace {
-		fmt.Println(content)
-	}
 	args := []string{"exec"}
 	if s.dir != "" {
 		args = append(args, "--cwd", s.dir)
@@ -88,6 +85,12 @@ func (s *execRunner) Run(name, content string, execArgs []string) error {
 		cmd.Cmd.Stdin = strings.NewReader(content)
 	}
 	cmd.Run()
+	if s.Op.ops.Trace {
+		fmt.Println("BEGIN stdin")
+		fmt.Println(content)
+		fmt.Println("END stdin")
+		fmt.Println("")
+	}
 	return script.Error
 }
 
@@ -119,7 +122,6 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 	if !homeExists {
 		return errors.New("host $HOME doesn't exist")
 	}
-	fmt.Println("HOME", hostHome)
 	hostFile := filepath.Join(hostHome, ".ssh", "authorized_keys")
 	for _, user := range config.Users {
 		user = user.EffectiveUser()

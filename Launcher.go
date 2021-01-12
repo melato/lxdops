@@ -2,8 +2,6 @@ package lxdops
 
 import (
 	"errors"
-	"fmt"
-	"path/filepath"
 	"strings"
 
 	"melato.org/script"
@@ -11,20 +9,17 @@ import (
 
 type Launcher struct {
 	Ops            *Ops     `name:""`
-	ProfileSuffix  string   `name:"profile-suffix" usage:"suffix for device profiles, if not specified in config"`
 	Origin         string   `name:"origin" usage:"container to copy, overrides config"`
 	DeviceTemplate string   `name:"device-template" usage:"device dir or dataset to copy, overrides config"`
 	DeviceOrigin   string   `name:"device-origin" usage:"zfs snapshot to clone into target device, overrides config"`
 	DryRun         bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	Profiles       []string `name:"profile,p" usage:"profiles to add to lxc launch"`
-	Multiple       bool     `name:"m" usage:"launch each yaml file as a separate container with derived name"`
-	Ext            string   `name:"ext" usage:"extension for config files with -m option"`
+	ConfigOptions  ConfigOptions
 	Options        []string `name:"X" usage:"additional options to pass to lxc"`
 }
 
 func (t *Launcher) Init() error {
-	t.ProfileSuffix = DefaultProfileSuffix
-	return nil
+	return t.ConfigOptions.Init()
 }
 
 func (t *Launcher) Configured() error {
@@ -35,76 +30,26 @@ func (t *Launcher) NewScript() *script.Script {
 	return &script.Script{Trace: t.Ops.Trace, DryRun: t.DryRun}
 }
 
-func (op *Launcher) updateConfig(config *Config) {
-	if op.Origin != "" {
-		config.Origin = op.Origin
+func (t *Launcher) updateConfig(config *Config) {
+	if t.Origin != "" {
+		config.Origin = t.Origin
 	}
-	if op.DeviceTemplate != "" {
-		config.DeviceTemplate = op.DeviceTemplate
+	if t.DeviceTemplate != "" {
+		config.DeviceTemplate = t.DeviceTemplate
 	}
-	if op.DeviceOrigin != "" {
-		config.DeviceOrigin = op.DeviceOrigin
+	if t.DeviceOrigin != "" {
+		config.DeviceOrigin = t.DeviceOrigin
 	}
-	if config.ProfileSuffix == "" {
-		config.ProfileSuffix = op.ProfileSuffix
-	}
+	t.ConfigOptions.UpdateConfig(config)
 }
 
-func (op *Launcher) LaunchOne(name string, configFiles []string) error {
-	var err error
-	var config *Config
-	config, err = ReadConfigs(configFiles...)
-	if err != nil {
-		return err
-	}
-	op.updateConfig(config)
-	return op.LaunchContainer(config, name)
+func (t *Launcher) launchContainer(name string, config *Config) error {
+	t.updateConfig(config)
+	return t.LaunchContainer(config, name)
 }
 
-func BaseName(file string) string {
-	name := filepath.Base(file)
-	ext := filepath.Ext(name)
-	if len(ext) == 0 {
-		return file
-	}
-	return name[0 : len(name)-len(ext)]
-}
-
-func (op *Launcher) LaunchMultiple(args []string) error {
-	for _, arg := range args {
-		var name, file string
-		if op.Ext == "" {
-			file = arg
-			name = BaseName(arg)
-		} else {
-			name = filepath.Base(arg)
-			file = arg + "." + op.Ext
-		}
-		fmt.Println(name, file)
-		var err error
-		var config *Config
-		config, err = ReadConfigs(file)
-		if err != nil {
-			return err
-		}
-		op.updateConfig(config)
-		err = op.LaunchContainer(config, name)
-		if err != nil {
-			fmt.Println("failed:", file)
-			return err
-		}
-	}
-	return nil
-}
-
-func (op *Launcher) Run(args []string) error {
-	if op.Multiple {
-		return op.LaunchMultiple(args)
-	}
-	if len(args) < 2 {
-		return errors.New("Usage: {name} {configfile}...")
-	}
-	return op.LaunchOne(args[0], args[1:])
+func (t *Launcher) Run(args []string) error {
+	return t.ConfigOptions.Run(args, t.launchContainer)
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
@@ -137,7 +82,6 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		}
 		profiles = append(profiles, config.ProfileName(name))
 	}
-	fmt.Println("profiles", profiles)
 	containerTemplate := config.Origin
 	script := t.NewScript()
 	if containerTemplate == "" {
@@ -179,9 +123,11 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		if script.Error != nil {
 			return err
 		}
-		err = t.Ops.waitForNetwork(name)
-		if err != nil {
-			return err
+		if !t.DryRun {
+			err = t.Ops.waitForNetwork(name)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	t.NewConfigurer().ConfigureContainer(config, name)

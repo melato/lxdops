@@ -20,6 +20,12 @@ func (t *ConfigOptions) Init() error {
 	return nil
 }
 
+func (t *ConfigOptions) UpdateConfig(config *Config) {
+	if config.ProfileSuffix == "" {
+		config.ProfileSuffix = t.ProfileSuffix
+	}
+}
+
 func (t *ConfigOptions) ReadConfig(args ...string) (*Config, error) {
 	var err error
 	var config *Config
@@ -31,10 +37,17 @@ func (t *ConfigOptions) ReadConfig(args ...string) (*Config, error) {
 	if !config.Verify() {
 		return nil, errors.New("invalid config")
 	}
-	if config.ProfileSuffix == "" {
-		config.ProfileSuffix = t.ProfileSuffix
-	}
+	t.UpdateConfig(config)
 	return config, nil
+}
+
+func BaseName(file string) string {
+	name := filepath.Base(file)
+	ext := filepath.Ext(name)
+	if len(ext) == 0 {
+		return file
+	}
+	return name[0 : len(name)-len(ext)]
 }
 
 func (t *ConfigOptions) runMultiple(args []string, f func(name string, config *Config) error) error {
