@@ -1,0 +1,16 @@
+os:
+  name: alpine
+packages:
+  - sudo
+  - doas
+  - vim
+  - bash
+profiles:
+- default
+include:
+- version.yaml
+- ssh.yaml
+- motd.yaml
+- timezone.yaml
+- nogetty.yaml
+- cron-off.yaml

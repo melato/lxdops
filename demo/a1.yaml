@@ -1,0 +1,10 @@
+os:
+  name: alpine
+origin: base/copy
+device-template: base
+profiles:
+  - default
+include:
+  - device/standard.yaml
+  - /var/opt/dev/script/lxd/launch/alpine/melato.yaml
+  - /var/opt/dev/script/lxd/launch/alpine/copy.yaml

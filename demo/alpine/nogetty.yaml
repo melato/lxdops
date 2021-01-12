@@ -1,0 +1,9 @@
+
+os:
+  name: alpine
+description: |
+  disable the console getty process.
+  When a container is cloned, inittab is regenerated with a getty process.
+scripts:
+- name: nogetty
+  body: sed -i 's/^\(::respawn.*getty\)/# \1/g' /etc/inittab

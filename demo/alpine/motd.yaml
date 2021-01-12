@@ -1,0 +1,13 @@
+os:
+  name: alpine
+scripts:
+- name: motd
+  body: |
+    if [ -f /etc/alpine-release.apk-new ]; then
+      version=`cat /etc/alpine-release.apk-new`
+    else
+      version=`cat /etc/alpine-release`
+    fi
+    host=`hostname`
+    date=`date +%Y-%m-%d`
+    echo "Alpine $version $date $host" > /etc/motd

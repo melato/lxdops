@@ -1,0 +1,7 @@
+os:
+  name: alpine
+include:
+  - device/standard.yaml
+  - alpine/alp.yaml
+snapshot: copy  
+stop: true  

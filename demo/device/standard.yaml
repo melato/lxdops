@@ -1,0 +1,29 @@
+filesystems:
+    - id: main
+      pattern: (zfsroot)/test/main/(container)
+    - id: log
+      pattern: (zfsroot)/test/log/(container)
+devices:
+    - path: /etc/opt
+      name: etc
+      filesystem: main
+      dir: etc
+    - path: /opt
+      name: opt
+      filesystem: main
+      dir: opt
+    - path: /var/opt
+      name: var
+      filesystem: main
+      dir: var
+    - path: /usr/local/bin
+      name: bin
+      filesystem: main
+      dir: bin
+    - path: /home
+      name: home
+      filesystem: main
+      dir: home
+    - path: /var/log
+      name: log
+      filesystem: log

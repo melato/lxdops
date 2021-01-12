@@ -1,0 +1,14 @@
+os:
+  name: alpine
+  description:
+    create new host ssh keys, and save them in /etc/opt/etc/ssh,
+    if not already done
+scripts:
+- name: ssh_keys
+  body: |
+    if [ ! -e /etc/opt/etc/ssh ]; then
+      mkdir -p /etc/opt/etc/ssh
+      rm -f /etc/ssh/ssh_host*
+      service sshd restart
+      cp /etc/ssh/ssh_host* /etc/opt/etc/ssh/
+    fi
