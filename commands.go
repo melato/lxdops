@@ -65,6 +65,7 @@ func RootCommand() *command.SimpleCommand {
 	profile.Command("list").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.List).Short("list config profiles")
 	profile.Command("diff").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Diff).Short("compare container profiles with config")
 	profile.Command("apply").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Apply).Short("apply the config profiles to a container")
+	profile.Command("reorder").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Reorder).Short("reorder container profiles to match config order")
 
 	profile.Command("exists").RunMethodArgs(ops.ProfileExists).Use("<profile>").Short("check if a profile exists")
 	profile.Command("add-disk").RunMethodArgs(ops.AddDiskDevice).Use("<profile> <source> <path>").Short("add a disk device to a profile")

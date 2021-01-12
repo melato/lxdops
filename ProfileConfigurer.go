@@ -2,6 +2,7 @@ package lxdops
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"melato.org/script"
@@ -45,6 +46,35 @@ func (t *ProfileConfigurer) diffProfiles(name string, config *Config) error {
 	return nil
 }
 
+func (t *ProfileConfigurer) sorted(a []string) []string {
+	result := make([]string, len(a))
+	for i, s := range a {
+		result[i] = s
+	}
+	sort.Strings(result)
+	return result
+}
+
+func (t *ProfileConfigurer) reorderProfiles(name string, config *Config) error {
+	c, err := ListContainer(name)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	profiles := t.Profiles(name, config)
+	if EqualArrays(profiles, c.Profiles) {
+		return nil
+	}
+
+	if EqualArrays(t.sorted(profiles), t.sorted(c.Profiles)) {
+		script := t.NewScript()
+		script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
+		return script.Error
+	}
+	fmt.Println("profiles differ: " + name)
+	return nil
+}
+
 func (t *ProfileConfigurer) applyProfiles(name string, config *Config) error {
 	profiles := t.Profiles(name, config)
 	script := t.NewScript()
@@ -69,4 +99,8 @@ func (t *ProfileConfigurer) List(args []string) error {
 
 func (t *ProfileConfigurer) Diff(args []string) error {
 	return t.ConfigOptions.Run(args, t.diffProfiles)
+}
+
+func (t *ProfileConfigurer) Reorder(args []string) error {
+	return t.ConfigOptions.Run(args, t.reorderProfiles)
 }
