@@ -1,11 +1,13 @@
 os:
   name: alpine
 users:
-    - name: user
-      uid: 1201
+    - name: ""
       shell: /bin/bash
-      sudo: false
+      sudo: true
       ssh: true
       groups:
         - wheel
         - adm
+    - name: demo
+      uid: 1201
+      shell: /bin/bash

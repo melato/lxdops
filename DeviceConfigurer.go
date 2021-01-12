@@ -103,6 +103,21 @@ func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name
 	return script.Error
 }
 
+func (t *DeviceConfigurer) DestroyFilesystem(config *Config, fs *Filesystem, name string) error {
+	pattern := &PatternInfo{Configurer: t, Config: config, Container: name}
+	path, err := pattern.Substitute(fs.Pattern)
+	if err != nil {
+		return err
+	}
+	script := t.NewScript()
+	if strings.HasPrefix(path, "/") {
+		script.Run("sudo", "rm", "-rf", path)
+	} else {
+		script.Run("sudo", "zfs", "destroy", path)
+	}
+	return script.Error
+}
+
 func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 	if !DirExists(dir) {
 		script := t.NewScript()
@@ -211,6 +226,23 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 		}
 		if script.Error != nil {
 			return script.Error
+		}
+	}
+	return nil
+}
+
+func (t *DeviceConfigurer) DestroyDevices(config *Config, name string) error {
+	filesystems, err := t.FilesystemPaths(config, name)
+	if err != nil {
+		return err
+	}
+	for _, fs := range config.Filesystems {
+		fsDir, _ := filesystems[fs.Id]
+		if DirExists(fsDir) {
+			err := t.DestroyFilesystem(config, fs, name)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

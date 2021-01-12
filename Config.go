@@ -138,24 +138,26 @@ type Script struct {
 
 type User struct {
 	/** Current - Use the name and uid of the user that is running this program */
-	Current bool     `xml:"current,attr" yaml:"current"`
-	Name    string   `xml:"name,attr" yaml:"name"`
-	Uid     string   `xml:"uid,attr" yaml:"uid,omitempty"`
-	Sudo    bool     `xml:"sudo,attr" yaml:"sudo,omitempty"`
-	Ssh     bool     `xml:"ssh,attr" yaml:"ssh,omitempty"`
-	Shell   string   `xml:"shell,attr" yaml:"shell,omitempty"`
-	Home    string   `xml:"home,attr" yaml:"home,omitempty"`
-	Groups  []string `xml:"group" yaml:"groups,omitempty"`
+	//Current bool     `xml:"current,attr" yaml:"current"`
+	Name   string   `xml:"name,attr" yaml:"name"`
+	Uid    string   `xml:"uid,attr" yaml:"uid,omitempty"`
+	Sudo   bool     `xml:"sudo,attr" yaml:"sudo,omitempty"`
+	Ssh    bool     `xml:"ssh,attr" yaml:"ssh,omitempty"`
+	Shell  string   `xml:"shell,attr" yaml:"shell,omitempty"`
+	Home   string   `xml:"home,attr" yaml:"home,omitempty"`
+	Groups []string `xml:"group" yaml:"groups,omitempty"`
 }
 
 func (u *User) EffectiveUser() *User {
-	if u.Current {
+	if u.Name == "" {
 		currentUser, err := user.Current()
 		if err == nil {
 			var u2 User
 			u2 = *u
 			u2.Name = currentUser.Username
-			u2.Uid = currentUser.Uid
+			if u.Uid == "" {
+				u2.Uid = currentUser.Uid
+			}
 			return &u2
 		}
 	}
@@ -195,11 +197,8 @@ func (config *Config) Verify() bool {
 }
 
 func (u *User) IsValidName() bool {
-	if u.Current {
-		return true
-	}
 	re := regexp.MustCompile("^[A-Za-z][A-Za-z0-9_]+$")
-	return re.MatchString(u.Name)
+	return u.Name == "" || re.MatchString(u.Name)
 }
 
 func (t *Config) GetHostFS() string {

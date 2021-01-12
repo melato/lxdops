@@ -48,7 +48,7 @@ func (t *Launcher) launchContainer(name string, config *Config) error {
 	return t.LaunchContainer(config, name)
 }
 
-func (t *Launcher) Run(args []string) error {
+func (t *Launcher) Launch(args []string) error {
 	return t.ConfigOptions.Run(args, t.launchContainer)
 }
 
@@ -138,4 +138,21 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		script.Run("lxc", "stop", name)
 	}
 	return script.Error
+}
+
+func (t *Launcher) deleteContainer(name string, config *Config) error {
+	t.updateConfig(config)
+	script := t.NewScript()
+	script.Run("lxc", "delete", name)
+	script.Run("lxc", "profile", "delete", config.ProfileName(name))
+	if script.Error != nil {
+		return script.Error
+	}
+	dev := NewDeviceConfigurer(t.Ops)
+	dev.SetDryRun(t.DryRun)
+	return dev.DestroyDevices(config, name)
+}
+
+func (t *Launcher) Delete(args []string) error {
+	return t.ConfigOptions.Run(args, t.deleteContainer)
 }

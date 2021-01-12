@@ -37,10 +37,11 @@ func RootCommand() *command.SimpleCommand {
 	var cmd command.SimpleCommand
 	cmd.Flags(ops.Ops)
 	launcher := &Launcher{Ops: ops.Ops}
-	cmd.Command("launch").Flags(launcher).RunMethodArgs(launcher.Run).
+	cmd.Command("launch").Flags(launcher).RunMethodArgs(launcher.Launch).
 		Use("<container> <config-file> ...").
 		Short("launch a container").
 		Example("launch php php.yaml")
+	cmd.Command("delete").Flags(launcher).RunMethodArgs(launcher.Delete)
 
 	configurer := NewConfigurer(ops.Ops)
 	cmd.Command("configure").Flags(configurer).RunMethodArgs(configurer.Run).
