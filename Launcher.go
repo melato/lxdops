@@ -2,6 +2,7 @@ package lxdops
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"melato.org/script"
@@ -143,21 +144,39 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	return script.Error
 }
 
+type ErrorHolder struct {
+	Error error
+}
+
+func (t *ErrorHolder) Add(err error) {
+	if err != nil && t.Error == nil {
+		t.Error = err
+	}
+}
+
+func (t *ErrorHolder) ClearScript(s *script.Script) {
+	t.Add(s.Error)
+	s.Error = nil
+}
+
 func (t *Launcher) deleteContainer(name string, config *Config) error {
 	t.updateConfig(config)
+	var errorHolder ErrorHolder
 	script := t.NewScript()
-	_, err := ListContainer(name)
-	if err == nil {
-		script.Run("lxc", "delete", name)
-		if script.Error != nil {
-			return script.Error
+	script.Run("lxc", "delete", name)
+	errorHolder.ClearScript(script)
+	script.Run("lxc", "profile", "delete", config.ProfileName(name))
+	errorHolder.ClearScript(script)
+	dev := NewDeviceConfigurer(t.Ops)
+	filesystems, err := dev.ListFilesystems(config, name)
+	errorHolder.Add(err)
+	if err == nil && len(filesystems) > 0 {
+		fmt.Println("not deleted filesystems:")
+		for _, dir := range filesystems {
+			fmt.Println(dir)
 		}
 	}
-	script.Run("lxc", "profile", "delete", config.ProfileName(name))
-	script.Error = nil // ignore errors
-	dev := NewDeviceConfigurer(t.Ops)
-	dev.SetDryRun(t.DryRun)
-	return dev.DestroyDevices(config, name)
+	return errorHolder.Error
 }
 
 func (t *Launcher) Delete(args []string) error {
