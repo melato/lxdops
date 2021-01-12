@@ -2,7 +2,7 @@ os:
   name: alpine
 users:
     - name: user
-      uid: 2403
+      uid: 1201
       shell: /bin/bash
       sudo: false
       ssh: true

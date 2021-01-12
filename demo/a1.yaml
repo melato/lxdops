@@ -6,5 +6,5 @@ profiles:
   - default
 include:
   - device/standard.yaml
-  - /var/opt/dev/script/lxd/launch/alpine/melato.yaml
-  - /var/opt/dev/script/lxd/launch/alpine/copy.yaml
+  - alpine/user.yaml
+  - alpine/copy.yaml
