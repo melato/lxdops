@@ -79,17 +79,19 @@ func (s *execRunner) Run(name, content string, execArgs []string) error {
 	}
 	args = append(args, name)
 	args = append(args, execArgs...)
-	script := s.Op.NewScript()
+	script := &script.Script{}
 	cmd := script.Cmd("lxc", args...)
 	if content != "" {
 		cmd.Cmd.Stdin = strings.NewReader(content)
 	}
-	cmd.Run()
 	if s.Op.ops.Trace {
+		cmd.Print()
 		fmt.Println("BEGIN stdin")
 		fmt.Println(content)
 		fmt.Println("END stdin")
-		fmt.Println("")
+	}
+	if !s.Op.DryRun {
+		cmd.Run()
 	}
 	return script.Error
 }
@@ -212,7 +214,7 @@ func (t *Configurer) createUsers(config *Config, name string) error {
 			sshDir := homeDir + "/.ssh"
 			lines = append(lines, "mkdir -p "+sshDir)
 			lines = append(lines, "chown -R "+user.Name+":"+user.Name+" "+sshDir)
-			lines = append(lines, "")
+			lines = append(lines, "") // this is needed for some reason.
 		}
 	}
 	content := strings.Join(lines, "\n")
