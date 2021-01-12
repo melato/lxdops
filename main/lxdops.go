@@ -13,7 +13,6 @@ func main() {
 	lxdops.OSTypes["debian"] = &os.Debian{}
 	lxdops.OSTypes["ubuntu"] = &os.Ubuntu{}
 	cmd := lxdops.RootCommand()
-	lxdops.AddShorewallCommands(cmd)
 	cmd.Command("version").RunMethod(func() { fmt.Println(Version) }).Short("print program version")
 	command.Main(cmd)
 }
