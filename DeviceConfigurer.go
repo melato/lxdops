@@ -134,7 +134,7 @@ func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 func (t *DeviceConfigurer) FilesystemPaths(config *Config, name string) (map[string]string, error) {
 	pattern := &PatternInfo{Configurer: t, Config: config, Container: name}
 	filesystems := make(map[string]string)
-	for _, fs := range config.Filesystems {
+	for _, fs := range config.ReferencedFilesystems() {
 		path, err := pattern.Substitute(fs.Pattern)
 		if err != nil {
 			return nil, err
@@ -168,7 +168,7 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 	if err != nil {
 		return err
 	}
-	for _, fs := range config.Filesystems {
+	for _, fs := range config.ReferencedFilesystems() {
 		fsDir, _ := filesystems[fs.Id]
 		if !DirExists(fsDir) {
 			err := t.CreateFilesystem(config, fs, name)
@@ -236,7 +236,7 @@ func (t *DeviceConfigurer) DestroyDevices(config *Config, name string) error {
 	if err != nil {
 		return err
 	}
-	for _, fs := range config.Filesystems {
+	for _, fs := range config.ReferencedFilesystems() {
 		fsDir, _ := filesystems[fs.Id]
 		if DirExists(fsDir) {
 			err := t.DestroyFilesystem(config, fs, name)

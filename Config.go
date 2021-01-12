@@ -387,3 +387,27 @@ func (t *Config) ProfileName(name string) string {
 	}
 	return name
 }
+
+/** Return the filesystem for the given id
+In the second argument, return whether the filesystem with the specified id was defined
+*/
+func (t *Config) FilesystemForId(id string) (*Filesystem, bool) {
+	for _, fs := range t.Filesystems {
+		if fs.Id == id {
+			return fs, true
+		}
+	}
+	return nil, false
+}
+
+/** Return the filesystems that are referenced by any device */
+func (t *Config) ReferencedFilesystems() []*Filesystem {
+	var result []*Filesystem
+	for _, device := range t.Devices {
+		fs, found := t.FilesystemForId(device.Filesystem)
+		if found {
+			result = append(result, fs)
+		}
+	}
+	return result
+}

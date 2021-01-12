@@ -11,7 +11,6 @@ type ProfileConfigurer struct {
 	ops           *Ops
 	ConfigOptions ConfigOptions
 	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	Script        script.Script
 }
 
 func NewProfileConfigurer(ops *Ops) *ProfileConfigurer {
@@ -22,13 +21,10 @@ func NewProfileConfigurer(ops *Ops) *ProfileConfigurer {
 
 func (t *ProfileConfigurer) Init() error {
 	return t.ConfigOptions.Init()
-	return nil
 }
 
-func (t *ProfileConfigurer) Configured() error {
-	t.Script.DryRun = t.DryRun
-	t.Script.Trace = t.ops.Trace
-	return nil
+func (t *ProfileConfigurer) NewScript() *script.Script {
+	return &script.Script{Trace: t.ops.Trace, DryRun: t.DryRun}
 }
 
 func (t *ProfileConfigurer) Profiles(name string, config *Config) []string {
@@ -50,8 +46,9 @@ func (t *ProfileConfigurer) diffProfiles(name string, config *Config) error {
 
 func (t *ProfileConfigurer) applyProfiles(name string, config *Config) error {
 	profiles := t.Profiles(name, config)
-	t.Script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
-	return t.Script.Error
+	script := t.NewScript()
+	script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
+	return script.Error
 }
 
 func (t *ProfileConfigurer) listProfiles(name string, config *Config) error {

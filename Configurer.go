@@ -134,7 +134,7 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		guestFile := filepath.Join(home, ".ssh", "authorized_keys")
 		path := name + guestFile
 		script := t.NewScript()
-		if !script.Cmd("lxc", "file", "pull", path, "-").ToNull() {
+		if !script.Cmd("lxc", "file", "pull", path, "-").MergeStderr().ToNull() {
 			script.Error = nil
 			script.Run("lxc", "file", "push", hostFile, path)
 			script.Run("lxc", "exec", name, "chown", user.Name+":"+user.Name, guestFile)
