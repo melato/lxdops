@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"melato.org/command"
@@ -10,6 +11,12 @@ import (
 func Build() error {
 	script := script.Script{Trace: true}
 	script.Run("mkversion", "-t", "version.tpl", "version.go")
+	if script.Error != nil {
+		fmt.Println(script.Error)
+		script.Error = nil
+		fmt.Println("using unknown version")
+		script.Run("cp", "unknown_version.go", "version.go")
+	}
 	cmd := script.Cmd("go", "install",
 		"-ldflags", `-extldflags "-static"`,
 		"lxdops.go", "version.go")
