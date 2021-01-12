@@ -23,6 +23,13 @@ func (t *ProfileConfigurer) Init() error {
 	return t.ConfigOptions.Init()
 }
 
+func (t *ProfileConfigurer) Configured() error {
+	if t.DryRun {
+		t.ops.Trace = true
+	}
+	return nil
+}
+
 func (t *ProfileConfigurer) NewScript() *script.Script {
 	return &script.Script{Trace: t.ops.Trace, DryRun: t.DryRun}
 }

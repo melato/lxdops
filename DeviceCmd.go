@@ -16,6 +16,9 @@ func (t *DeviceCmd) Init() error {
 }
 
 func (t *DeviceCmd) Configured() error {
+	if t.DryRun {
+		t.Ops.Trace = true
+	}
 	return nil
 }
 

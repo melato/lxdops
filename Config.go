@@ -403,10 +403,14 @@ func (t *Config) FilesystemForId(id string) (*Filesystem, bool) {
 /** Return the filesystems that are referenced by any device */
 func (t *Config) ReferencedFilesystems() []*Filesystem {
 	var result []*Filesystem
+	included := make(map[string]bool)
 	for _, device := range t.Devices {
-		fs, found := t.FilesystemForId(device.Filesystem)
-		if found {
-			result = append(result, fs)
+		if !included[device.Filesystem] {
+			included[device.Filesystem] = true
+			fs, found := t.FilesystemForId(device.Filesystem)
+			if found {
+				result = append(result, fs)
+			}
 		}
 	}
 	return result

@@ -23,6 +23,9 @@ func (t *Launcher) Init() error {
 }
 
 func (t *Launcher) Configured() error {
+	if t.DryRun {
+		t.Ops.Trace = true
+	}
 	return nil
 }
 
