@@ -128,7 +128,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 			return err
 		}
 		if !t.DryRun {
-			err = t.Ops.waitForNetwork(name)
+			err = t.Ops.WaitForNetwork(name)
 			if err != nil {
 				return err
 			}
@@ -144,39 +144,26 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	return script.Error
 }
 
-type ErrorHolder struct {
-	Error error
-}
-
-func (t *ErrorHolder) Add(err error) {
-	if err != nil && t.Error == nil {
-		t.Error = err
-	}
-}
-
-func (t *ErrorHolder) ClearScript(s *script.Script) {
-	t.Add(s.Error)
-	s.Error = nil
-}
-
 func (t *Launcher) deleteContainer(name string, config *Config) error {
 	t.updateConfig(config)
-	var errorHolder ErrorHolder
+	var firstError script.Error
 	script := t.NewScript()
 	script.Run("lxc", "delete", name)
-	errorHolder.ClearScript(script)
+	firstError.Add(script.Error)
+	script.Error = nil
 	script.Run("lxc", "profile", "delete", config.ProfileName(name))
-	errorHolder.ClearScript(script)
+	firstError.Add(script.Error)
+	script.Error = nil
 	dev := NewDeviceConfigurer(t.Ops)
 	filesystems, err := dev.ListFilesystems(config, name)
-	errorHolder.Add(err)
+	firstError.Add(err)
 	if err == nil && len(filesystems) > 0 {
 		fmt.Println("not deleted filesystems:")
 		for _, dir := range filesystems {
 			fmt.Println(dir)
 		}
 	}
-	return errorHolder.Error
+	return firstError.First
 }
 
 func (t *Launcher) Delete(args []string) error {

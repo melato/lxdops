@@ -48,7 +48,7 @@ func (t *Ops) GetDefaultDataset() (string, error) {
 	return "", errors.New("could not get default zfs.pool_name")
 }
 
-func (t *Ops) waitForNetwork(name string) error {
+func (t *Ops) WaitForNetwork(name string) error {
 	for i := 0; i < 30; i++ {
 		script := t.NewScript()
 		lines := script.Cmd("lxc", "list", name, "--format=csv", "-c4").ToLines()

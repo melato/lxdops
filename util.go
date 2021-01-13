@@ -69,26 +69,6 @@ func EscapeShell(args ...string) string {
 	return buf.String()
 }
 
-func RemoveDuplicates(slice []string) []string {
-	var result []string
-	set := make(map[string]bool)
-	for _, s := range slice {
-		if _, exists := set[s]; !exists {
-			set[s] = true
-			result = append(result, s)
-		}
-	}
-	return result
-}
+type NullWriter struct{ io.Writer }
 
-func EqualArrays(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, s := range a {
-		if s != b[i] {
-			return false
-		}
-	}
-	return true
-}
+func (t *NullWriter) Write(p []byte) (n int, err error) { return len(p), nil }

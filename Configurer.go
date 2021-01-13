@@ -367,7 +367,7 @@ func (t *Configurer) includes(flag bool) bool {
 func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 	var err error
 	if !t.DryRun {
-		err := t.ops.waitForNetwork(name)
+		err := t.ops.WaitForNetwork(name)
 		if err != nil {
 			return err
 		}
