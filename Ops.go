@@ -50,18 +50,16 @@ func (t *Ops) GetDefaultDataset() (string, error) {
 
 func (t *Ops) WaitForNetwork(name string) error {
 	for i := 0; i < 30; i++ {
-		script := t.NewScript()
-		lines := script.Cmd("lxc", "list", name, "--format=csv", "-c4").ToLines()
-		if script.Error != nil {
-			return script.Error
+		c, err := ListContainer(name)
+		if err != nil {
+			return err
 		}
-		if len(lines) > 0 {
-			ip := lines[0]
-			if ip != "" {
-				if t.Trace {
-					fmt.Println(ip)
+		for _, net := range c.State.Network {
+			for _, a := range net.Addresses {
+				if a.Family == "inet" && a.Scope == "global" {
+					fmt.Println(a.Address)
+					return nil
 				}
-				return nil
 			}
 		}
 		time.Sleep(1 * time.Second)
