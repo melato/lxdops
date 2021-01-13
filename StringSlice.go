@@ -42,3 +42,15 @@ func (t StringSlice) Sorted() []string {
 	sort.Strings(result)
 	return result
 }
+
+func (t StringSlice) RemoveDuplicates() []string {
+	var result []string
+	set := make(map[string]bool)
+	for _, s := range t {
+		if _, exists := set[s]; !exists {
+			set[s] = true
+			result = append(result, s)
+		}
+	}
+	return result
+}

@@ -276,8 +276,8 @@ func (t *Config) Merge(c *Config) error {
 
 func (t *Config) removeDuplicates() {
 	// remove duplicate strings
-	t.Packages = RemoveDuplicates(t.Packages)
-	t.Passwords = RemoveDuplicates(t.Passwords)
+	t.Packages = StringSlice(t.Packages).RemoveDuplicates()
+	t.Passwords = StringSlice(t.Passwords).RemoveDuplicates()
 	// how about Require, Devices, Users, Scripts?
 }
 
