@@ -5,12 +5,13 @@ import (
 )
 
 type DeviceCmd struct {
-	Ops           *Ops   `name:""`
+	Ops           *Ops
 	DryRun        bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	ProfileSuffix string `name:"profile-suffix" usage:"suffix for device profiles, if not specified in config"`
 }
 
 func (t *DeviceCmd) Init() error {
+	t.Ops = &Ops{}
 	t.ProfileSuffix = "devices"
 	return nil
 }

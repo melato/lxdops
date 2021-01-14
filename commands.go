@@ -6,10 +6,11 @@ import (
 
 func RootCommand() *command.SimpleCommand {
 	var ops LxdOps
-	ops.Ops = &Ops{}
-	ops.Ops.Init()
+	//ops.Init()
+	//ops.Ops = &Ops{}
+	//ops.Ops.Init()
 	var cmd command.SimpleCommand
-	cmd.Flags(ops.Ops)
+	//cmd.Flags(ops.Ops)
 	launcher := &Launcher{Ops: ops.Ops}
 	cmd.Command("launch").Flags(launcher).RunMethodArgs(launcher.Launch).
 		Use("<container> <config-file> ...").
@@ -22,11 +23,11 @@ func RootCommand() *command.SimpleCommand {
 		Use("<container> <config-file> ...").
 		Short("configure an existing container").
 		Example("configure c1 demo.yaml")
-	cmd.Command("verify").RunMethodArgs(ops.Verify).
+	cmd.Command("verify").Flags(&ops).RunMethodArgs(ops.Verify).
 		Use("<config-file> ...").
 		Short("verify config files").
 		Example("verify *.yaml")
-	device := &DeviceCmd{Ops: ops.Ops}
+	device := &DeviceCmd{}
 	cmd.Command("create-devices").Flags(device).RunMethodArgs(device.Run).Use("{container-name} {configfile}...").Short("create devices")
 	/* add devices:
 	lxdops device add -p a.host -d /z/host/a -s 1 {configfile}...
@@ -35,7 +36,7 @@ func RootCommand() *command.SimpleCommand {
 	- add devices to profile, with optional suffix
 	*/
 	profile := cmd.Command("profile").Short("profile utilities")
-	profileConfigurer := NewProfileConfigurer(ops.Ops)
+	profileConfigurer := &ProfileConfigurer{}
 	profile.Command("list").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.List).Short("list config profiles")
 	profile.Command("diff").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Diff).Short("compare container profiles with config")
 	profile.Command("apply").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Apply).Short("apply the config profiles to a container")

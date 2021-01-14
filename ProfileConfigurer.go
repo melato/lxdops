@@ -8,15 +8,9 @@ import (
 )
 
 type ProfileConfigurer struct {
-	ops           *Ops
+	Ops           Ops
 	ConfigOptions ConfigOptions
 	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-}
-
-func NewProfileConfigurer(ops *Ops) *ProfileConfigurer {
-	var t ProfileConfigurer
-	t.ops = ops
-	return &t
 }
 
 func (t *ProfileConfigurer) Init() error {

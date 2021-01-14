@@ -9,7 +9,7 @@ import (
 )
 
 type Launcher struct {
-	Ops            *Ops     `name:""`
+	Ops            *Ops
 	Origin         string   `name:"origin" usage:"container to copy, overrides config"`
 	DeviceTemplate string   `name:"device-template" usage:"device dir or dataset to copy, overrides config"`
 	DeviceOrigin   string   `name:"device-origin" usage:"zfs snapshot to clone into target device, overrides config"`
@@ -20,6 +20,11 @@ type Launcher struct {
 }
 
 func (t *Launcher) Init() error {
+	t.Ops = &Ops{}
+	err := t.Ops.Init()
+	if err != nil {
+		return err
+	}
 	return t.ConfigOptions.Init()
 }
 
@@ -57,7 +62,7 @@ func (t *Launcher) Launch(args []string) error {
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
-	var c = &Configurer{ops: t.Ops, DryRun: t.DryRun, All: true}
+	var c = &Configurer{Ops: t.Ops, DryRun: t.DryRun, All: true}
 	return c
 }
 

@@ -13,7 +13,7 @@ import (
 )
 
 type Configurer struct {
-	ops        *Ops
+	Ops        *Ops
 	DryRun     bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	Components []string `name:"components" usage:"which components to configure: packages, scripts, users"`
 	All        bool     `name:"all" usage:"If true, configure all parts, except those that are mentioned explicitly, otherwise configure only parts that are mentioned"`
@@ -25,7 +25,7 @@ type Configurer struct {
 
 func NewConfigurer(ops *Ops) *Configurer {
 	var t Configurer
-	t.ops = ops
+	t.Ops = ops
 	return &t
 }
 
@@ -34,7 +34,7 @@ func (t *Configurer) Configured() error {
 }
 
 func (t *Configurer) NewScript() *script.Script {
-	return &script.Script{Trace: t.ops.Trace, DryRun: t.DryRun}
+	return &script.Script{Trace: t.Ops.Trace, DryRun: t.DryRun}
 }
 
 func (t *Configurer) runScriptLines(name string, lines []string) error {
@@ -84,7 +84,7 @@ func (s *execRunner) Run(name, content string, execArgs []string) error {
 	if content != "" {
 		cmd.Cmd.Stdin = strings.NewReader(content)
 	}
-	if s.Op.ops.Trace {
+	if s.Op.Ops.Trace {
 		cmd.Print()
 		fmt.Println("BEGIN stdin")
 		fmt.Println(content)
@@ -367,7 +367,7 @@ func (t *Configurer) includes(flag bool) bool {
 func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 	var err error
 	if !t.DryRun {
-		err := t.ops.WaitForNetwork(name)
+		err := t.Ops.WaitForNetwork(name)
 		if err != nil {
 			return err
 		}
