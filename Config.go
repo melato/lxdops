@@ -74,22 +74,28 @@ func (t *Config) VerifyFileExists(file string) bool {
 }
 
 type Filesystem struct {
+	/** Filesystem identifier, referenced by devices.  Can be empty to denote a default filesystem */
 	Id string `xml:"name,attr"`
-	/** A zfs dataset pattern */
+	/** A directory or zfs dataset pattern */
 	Pattern       string            `xml:"name,attr"`
 	Zfsproperties map[string]string `yaml:",omitempty"`
 }
 
 type Device struct {
+	/** The device path in the container */
 	Path string `xml:"path,attr"`
+	/** The name of the device in the profile. */
 	Name string `xml:"name,attr"`
 
-	Filesystem string `yaml:",omitempty"` // Filesystem.Id
+	/** Filesystem.Id */
+	Filesystem string `yaml:",omitempty"`
+
 	/** A (sub) directory pattern (optional).
-	If both Filesystem and Dir are provided, the disk device source directory is /(Filesystem.Pattern)/(Dir), after pattern substitution.
-	If only Filesystem is provided, the disk device source directory is /(Filesystem.Pattern), after pattern substitution.
-	If only Dir is provided, it is used as the source directory, after pattern substitution.
-	If neither is provided, Filesystem.Pattern is set to "(host)/(container)" and Dir is set to the device name, for backward compatibility.
+	If Dir begins with "/", use (Dir)
+	If Dir is empty, use (Filesystem.Dir)/(Name)
+	If Dir == ".", use (Filesystem.Dir)
+	Otherwise, use /(Filesystem.Dir)/(Dir)
+	Use pattern substitution on (Dir)
 	*/
 	Dir string `yaml:",omitempty"`
 }
@@ -399,20 +405,4 @@ func (t *Config) FilesystemForId(id string) (*Filesystem, bool) {
 		}
 	}
 	return nil, false
-}
-
-/** Return the filesystems that are referenced by any device */
-func (t *Config) ReferencedFilesystems() []*Filesystem {
-	var result []*Filesystem
-	included := make(map[string]bool)
-	for _, device := range t.Devices {
-		if !included[device.Filesystem] {
-			included[device.Filesystem] = true
-			fs, found := t.FilesystemForId(device.Filesystem)
-			if found {
-				result = append(result, fs)
-			}
-		}
-	}
-	return result
 }
