@@ -45,13 +45,22 @@ func (t *Build) CopyAPI() error {
 	if !found {
 		return errors.New("missing $GOPATH")
 	}
-	srcDir := filepath.Join(gopath, "src/github.com/lxc/lxd/shared/api")
+	apiPath := "github.com/lxc/lxd/shared/api"
+	srcDir := filepath.Join(gopath, "src", apiPath)
 	dstDir := "../lxd/"
 	script := script.Script{Trace: true}
+	log, err := os.Create(filepath.Join(dstDir, "log.txt"))
+	if err != nil {
+		return err
+	}
+	defer log.Close()
 	for _, file := range []string{"project.go", "container.go", "container_state.go"} {
+		fmt.Fprintf(log, "%s/%s:\n", apiPath, file)
 		script.Run("cp", filepath.Join(srcDir, file), dstDir)
 		script.Cmd("git", "log", "-1", "--date=iso", "--decorate=short", file).Dir(srcDir).
-			ToFile(filepath.Join(dstDir, "commit-"+file+".txt"))
+			ToWriter(log)
+		//ToFile(filepath.Join(dstDir, "commit-"+file+".txt"))
+		fmt.Fprintln(log)
 	}
 	return script.Error
 }
