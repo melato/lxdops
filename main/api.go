@@ -52,6 +52,6 @@ func (t *ApiBuild) Run() error {
 func main() {
 	var build ApiBuild
 	var cmd command.SimpleCommand
-	cmd.Flags(&build).RunMethodE(build.Run)
+	cmd.Flags(&build).RunMethodE(build.Run).Short("Copy dependent files from $GOPATH/src/github.com/lxc/lxd/shared/api")
 	command.Main(&cmd)
 }
