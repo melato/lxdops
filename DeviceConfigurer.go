@@ -7,6 +7,7 @@ import (
 
 	"strings"
 
+	"melato.org/lxdops/util"
 	"melato.org/script"
 )
 
@@ -68,7 +69,7 @@ func (t *PatternInfo) Substitute(pattern string) (string, error) {
 	if strings.IndexAny(pattern, "{}") >= 0 {
 		return "", errors.New(`pattern contains {}, please replace with (): ` + pattern)
 	}
-	return Substitute(pattern, t.Get)
+	return util.Substitute(pattern, t.Get)
 }
 
 func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name string) error {
@@ -110,7 +111,7 @@ func (t *DeviceConfigurer) chownDir(scr *script.Script, dir string) {
 }
 
 func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
-	if !DirExists(dir) {
+	if !util.DirExists(dir) {
 		script := t.NewScript()
 		script.Run("sudo", "mkdir", "-p", dir)
 		//err = os.Mkdir(dir, 0755)
@@ -191,7 +192,7 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 	}
 	for _, fs := range config.Filesystems {
 		fsDir, _ := filesystems[fs.Id]
-		if !DirExists(fsDir) {
+		if !util.DirExists(fsDir) {
 			err := t.CreateFilesystem(config, fs, name)
 			if err != nil {
 				return err
@@ -232,7 +233,7 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 			if err != nil {
 				return err
 			}
-			if DirExists(templateDir) {
+			if util.DirExists(templateDir) {
 				script.Run("sudo", "rsync", "-a", templateDir+"/", dir+"/")
 			} else {
 				fmt.Println("skipping missing Device Template: " + templateDir)
@@ -261,7 +262,7 @@ func (t *DeviceConfigurer) ListFilesystems(config *Config, name string) ([]strin
 	var result []string
 	for _, fs := range config.Filesystems {
 		fsDir, _ := filesystems[fs.Id]
-		if DirExists(fsDir) {
+		if util.DirExists(fsDir) {
 			result = append(result, fsDir)
 		}
 	}

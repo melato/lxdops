@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"melato.org/lxdops/util"
 	"melato.org/script"
 )
 
@@ -81,7 +82,7 @@ func (t *LxdOps) ProfileExists(args []string) error {
 	profile := args[0]
 	script := &script.Script{Trace: t.Ops.Trace}
 	cmd := script.Cmd("lxc", "profile", "get", profile, "x")
-	cmd.Cmd.Stdout = &NullWriter{}
+	cmd.Cmd.Stdout = &util.NullWriter{}
 	cmd.MergeStderr()
 	cmd.Run()
 	if script.Error == nil {

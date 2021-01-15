@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"melato.org/lxdops/password"
+	"melato.org/lxdops/util"
 	"melato.org/script"
 )
 
@@ -202,7 +203,7 @@ func (t *Configurer) createUsers(config *Config, name string) error {
 			if len(args) == 0 {
 				return errors.New("create users is not supported for this os")
 			}
-			lines = append(lines, EscapeShell(args...))
+			lines = append(lines, util.EscapeShell(args...))
 			for _, group := range user.Groups {
 				lines = append(lines, "adduser "+user.Name+" "+group)
 			}

@@ -1,4 +1,4 @@
-package lxdops
+package util
 
 import (
 	"regexp"

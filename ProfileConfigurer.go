@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"melato.org/lxdops/util"
 	"melato.org/script"
 )
 
@@ -39,11 +40,11 @@ func (t *ProfileConfigurer) diffProfiles(name string, config *Config) error {
 		return nil
 	}
 	profiles := t.Profiles(name, config)
-	if StringSlice(profiles).Equals(c.Profiles) {
+	if util.StringSlice(profiles).Equals(c.Profiles) {
 		return nil
 	}
-	onlyInConfig := StringSlice(profiles).Diff(c.Profiles)
-	onlyInContainer := StringSlice(c.Profiles).Diff(profiles)
+	onlyInConfig := util.StringSlice(profiles).Diff(c.Profiles)
+	onlyInContainer := util.StringSlice(c.Profiles).Diff(profiles)
 	sep := " "
 	if len(onlyInConfig) > 0 {
 		fmt.Printf("%s profiles only in config: %s\n", name, strings.Join(onlyInConfig, sep))
@@ -64,13 +65,13 @@ func (t *ProfileConfigurer) reorderProfiles(name string, config *Config) error {
 		return nil
 	}
 	profiles := t.Profiles(name, config)
-	if StringSlice(profiles).Equals(c.Profiles) {
+	if util.StringSlice(profiles).Equals(c.Profiles) {
 		return nil
 	}
 
-	sortedProfiles := StringSlice(profiles).Sorted()
-	sortedContainer := StringSlice(c.Profiles).Sorted()
-	if StringSlice(sortedProfiles).Equals(sortedContainer) {
+	sortedProfiles := util.StringSlice(profiles).Sorted()
+	sortedContainer := util.StringSlice(c.Profiles).Sorted()
+	if util.StringSlice(sortedProfiles).Equals(sortedContainer) {
 		script := t.NewScript()
 		script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
 		return script.Error

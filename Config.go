@@ -7,6 +7,8 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+
+	"melato.org/lxdops/util"
 )
 
 /** Config - Container configuration
@@ -66,7 +68,7 @@ func (t *OS) Equals(x *OS) bool {
 
 /** Check that the requirements are met */
 func (t *Config) VerifyFileExists(file string) bool {
-	if file != "" && !FileExists(file) {
+	if file != "" && !util.FileExists(file) {
 		fmt.Fprintf(os.Stderr, "file does not exist: %s\n", file)
 		return false
 	}
@@ -282,8 +284,8 @@ func (t *Config) Merge(c *Config) error {
 
 func (t *Config) removeDuplicates() {
 	// remove duplicate strings
-	t.Packages = StringSlice(t.Packages).RemoveDuplicates()
-	t.Passwords = StringSlice(t.Passwords).RemoveDuplicates()
+	t.Packages = util.StringSlice(t.Packages).RemoveDuplicates()
+	t.Passwords = util.StringSlice(t.Passwords).RemoveDuplicates()
 	// how about Require, Devices, Users, Scripts?
 }
 
