@@ -2,6 +2,7 @@ package lxdops
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 )
 
@@ -10,8 +11,9 @@ const (
 )
 
 type ConfigOptions struct {
-	ProfileSuffix string `name:"profile-suffix" usage:"suffix for device profiles, overrides config"`
-	Name          string `name:"name" usage:"The name of the container to launch or configure.  If missing, use a separate container for each config, using the name of the config."`
+	ProfilePattern string `name:"profile-pattern" usage:"pattern for device profiles, overrides config"`
+	ProfileSuffix  string `name:"profile-suffix" usage:"suffix for device profiles, overrides config"`
+	Name           string `name:"name" usage:"The name of the container to launch or configure.  If missing, use a separate container for each config, using the name of the config."`
 }
 
 func (t *ConfigOptions) Init() error {
@@ -19,12 +21,15 @@ func (t *ConfigOptions) Init() error {
 }
 
 func (t *ConfigOptions) UpdateConfig(config *Config) {
-	if config.ProfileSuffix == "" {
-		suffix := t.ProfileSuffix
-		if suffix == "" {
-			suffix = DefaultProfileSuffix
+	pattern := t.ProfilePattern
+	if pattern == "" && t.ProfileSuffix != "" {
+		pattern = "(container)." + t.ProfileSuffix
+	}
+	if pattern != "" {
+		if t.ProfileSuffix != "" && t.ProfilePattern != "" {
+			fmt.Println("profile-pattern overrides profile-suffix")
 		}
-		config.ProfileSuffix = suffix
+		config.ProfilePattern = pattern
 	}
 }
 

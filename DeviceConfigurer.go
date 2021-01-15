@@ -37,43 +37,17 @@ func ProfileExists(profile string) bool {
 	return script.Cmd("lxc", "profile", "get", profile, "x").MergeStderr().ToNull()
 }
 
-type PatternInfo struct {
-	Configurer *DeviceConfigurer
-	Config     *Config
-	Container  string
-}
-
-func (t *PatternInfo) Get(key string) (string, error) {
-	if strings.HasPrefix(key, ".") {
-		pkey := key[1:]
-		value, found := t.Config.Properties[pkey]
-		if found {
-			return value, nil
-		}
-		return "", errors.New("property not found: " + pkey)
-	}
-	if key == "container" {
-		return t.Container, nil
-	}
-	if key == "zfsroot" {
-		zfsroot, err := t.Configurer.Ops.ZFSRoot()
-		if err != nil {
-			return "", nil
-		}
-		return zfsroot, err
-	}
-	return "", errors.New("unknown key: " + key)
-}
-
-func (t *PatternInfo) Substitute(pattern string) (string, error) {
-	if strings.IndexAny(pattern, "{}") >= 0 {
-		return "", errors.New(`pattern contains {}, please replace with (): ` + pattern)
-	}
-	return util.Substitute(pattern, t.Get)
+func (t *DeviceConfigurer) NewPattern(config *Config, name string) *util.Pattern {
+	pattern := &util.Pattern{Properties: config.Properties}
+	pattern.SetConstant("container", name)
+	pattern.SetFunction("zfsroot", func() (string, error) {
+		return t.Ops.ZFSRoot()
+	})
+	return pattern
 }
 
 func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name string) error {
-	pattern := &PatternInfo{Configurer: t, Config: config, Container: name}
+	pattern := t.NewPattern(config, name)
 	path, err := pattern.Substitute(fs.Pattern)
 	if err != nil {
 		return err
@@ -94,7 +68,7 @@ func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name
 			if len(parts) != 2 {
 				return errors.New("device origin should be a snapshot: " + config.DeviceOrigin)
 			}
-			originPattern := &PatternInfo{Configurer: t, Config: config, Container: parts[0]}
+			originPattern := t.NewPattern(config, parts[0])
 			originDataset, err := originPattern.Substitute(fs.Pattern)
 			if err != nil {
 				return err
@@ -124,7 +98,7 @@ func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 }
 
 func (t *DeviceConfigurer) FilesystemPaths(config *Config, name string) (map[string]string, error) {
-	pattern := &PatternInfo{Configurer: t, Config: config, Container: name}
+	pattern := t.NewPattern(config, name)
 	filesystems := make(map[string]string)
 	for _, fs := range config.Filesystems {
 		path, err := pattern.Substitute(fs.Pattern)
@@ -149,7 +123,7 @@ func (t *DeviceConfigurer) DeviceFilesystem(config *Config, device *Device) (*Fi
 }
 
 func (t *DeviceConfigurer) DeviceDir(config *Config, filesystems map[string]string, device *Device, name string) (string, error) {
-	pattern := &PatternInfo{Configurer: t, Config: config, Container: name}
+	pattern := t.NewPattern(config, name)
 	var fsDir, dir string
 	var substituteDir bool
 	var err error

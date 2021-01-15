@@ -33,8 +33,8 @@ type Config struct {
 	Snapshot  string    `yaml:"snapshot,omitempty"`
 	Stop      bool      `yaml:"stop,omitempty"`
 
-	Properties    map[string]string `yaml:"properties,omitempty"`
-	ProfileSuffix string            `yaml:"profile-suffix,omitempty"`
+	Properties     map[string]string `yaml:"properties,omitempty"`
+	ProfilePattern string            `yaml:"profile-pattern"`
 }
 
 type OS struct {

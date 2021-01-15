@@ -124,8 +124,8 @@ func (t *Config) Merge(c *Config) error {
 		}
 		t.Properties[key] = value
 	}
-	if t.ProfileSuffix == "" {
-		t.ProfileSuffix = c.ProfileSuffix
+	if t.ProfilePattern == "" {
+		t.ProfilePattern = c.ProfilePattern
 	}
 	if t.Description == "" {
 		t.Description = c.Description
@@ -266,10 +266,16 @@ func (t *Config) merge(file string, included map[string]bool) error {
 }
 
 func (t *Config) ProfileName(name string) string {
-	if t.ProfileSuffix != "" {
-		return name + "." + t.ProfileSuffix
+	if t.ProfilePattern != "" {
+		pattern := util.Pattern{Properties: t.Properties}
+		pattern.SetConstant("container", name)
+		profile, err := pattern.Substitute(t.ProfilePattern)
+		if err == nil {
+			return profile
+		}
+		fmt.Printf("invalid profile pattern: %s.  Using default.", t.ProfilePattern)
 	}
-	return name
+	return name + "." + DefaultProfileSuffix
 }
 
 /** Return the filesystem for the given id
