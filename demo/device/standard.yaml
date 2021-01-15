@@ -1,3 +1,4 @@
+profile-suffix: devices
 filesystems:
     - id: ""
       pattern: (zfsroot)/test/main/(container)

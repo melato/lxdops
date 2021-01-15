@@ -6,23 +6,25 @@ import (
 )
 
 const (
-	DefaultProfileSuffix = "devices"
+	DefaultProfileSuffix = "lxdops"
 )
 
 type ConfigOptions struct {
-	ProfileSuffix string `name:"profile-suffix" usage:"suffix for device profiles, if not specified in config"`
-	Multiple      bool   `name:"m" usage:"treat each yaml file as a separate container with derived name"`
-	Ext           string `name:"ext" usage:"extension for config files with -m option"`
+	ProfileSuffix string `name:"profile-suffix" usage:"suffix for device profiles, overrides config"`
+	Name          string `name:"name" usage:"The name of the container to launch or configure.  If missing, use a separate container for each config, using the name of the config."`
 }
 
 func (t *ConfigOptions) Init() error {
-	t.ProfileSuffix = DefaultProfileSuffix
 	return nil
 }
 
 func (t *ConfigOptions) UpdateConfig(config *Config) {
 	if config.ProfileSuffix == "" {
-		config.ProfileSuffix = t.ProfileSuffix
+		suffix := t.ProfileSuffix
+		if suffix == "" {
+			suffix = DefaultProfileSuffix
+		}
+		config.ProfileSuffix = suffix
 	}
 }
 
@@ -53,13 +55,8 @@ func BaseName(file string) string {
 func (t *ConfigOptions) runMultiple(args []string, f func(name string, config *Config) error) error {
 	for _, arg := range args {
 		var name, file string
-		if t.Ext == "" {
-			file = arg
-			name = BaseName(arg)
-		} else {
-			name = filepath.Base(arg)
-			file = arg + "." + t.Ext
-		}
+		file = arg
+		name = BaseName(arg)
 		config, err := t.ReadConfig(file)
 		if err != nil {
 			return err
@@ -73,16 +70,15 @@ func (t *ConfigOptions) runMultiple(args []string, f func(name string, config *C
 }
 
 func (t *ConfigOptions) Run(args []string, f func(name string, config *Config) error) error {
-	if t.Multiple {
+	if t.Name == "" {
 		return t.runMultiple(args, f)
 	}
-	if len(args) < 2 {
-		return errors.New("Usage: {name} {configfile}...")
+	if len(args) < 1 {
+		return errors.New("Usage: {config-file}...")
 	}
-	name := args[0]
-	config, err := t.ReadConfig(args[1:]...)
+	config, err := t.ReadConfig(args...)
 	if err != nil {
 		return err
 	}
-	return f(name, config)
+	return f(t.Name, config)
 }
