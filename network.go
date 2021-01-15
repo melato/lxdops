@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	//"melato.org/lxdops/lxd"
 	lxd "github.com/lxc/lxd/shared/api"
 	"melato.org/script"
 )

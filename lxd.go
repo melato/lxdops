@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	lxd "github.com/lxc/lxd/shared/api"
-	//"melato.org/lxdops/lxd"
 	"melato.org/script"
 )
 

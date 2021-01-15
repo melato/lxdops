@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	//"melato.org/lxdops/lxd"
 	lxd "github.com/lxc/lxd/shared/api"
 )
 
