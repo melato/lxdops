@@ -1,9 +1,10 @@
+/** A subset of "github.com/lxc/lxd/shared/api" */
 package lxd
 
-type Container struct {
+type ContainerFull struct {
 	Name     string   `json:"name"`
 	Profiles []string `json:"profiles"`
-	State    State    `json:"state"`
+	State    *State   `json:"state"`
 }
 
 type State struct {
