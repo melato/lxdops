@@ -1,5 +1,5 @@
-/** A subset of "github.com/lxc/lxd/shared/api" */
-package lxd
+/** Equivalent to"github.com/lxc/lxd/shared/api" for our purposes. */
+package api
 
 type ContainerFull struct {
 	Name     string   `json:"name"`

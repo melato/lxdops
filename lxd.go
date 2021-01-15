@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 
-	lxd "github.com/lxc/lxd/shared/api"
+	"github.com/lxc/lxd/shared/api"
 	"melato.org/script"
 )
 
-func ListContainer(name string) (*lxd.ContainerFull, error) {
+func ListContainer(name string) (*api.ContainerFull, error) {
 	var scr script.Script
 	output := scr.Cmd("lxc", "list", name, "--format=json").ToBytes()
 	if scr.Error != nil {
 		return nil, scr.Error
 	}
-	var containers []*lxd.ContainerFull
+	var containers []*api.ContainerFull
 	err := json.Unmarshal(output, &containers)
 	if err != nil {
 		return nil, err
@@ -27,13 +27,13 @@ func ListContainer(name string) (*lxd.ContainerFull, error) {
 	return nil, errors.New("container not found: " + name)
 }
 
-func ListContainersForProject(project string) ([]*lxd.ContainerFull, error) {
+func ListContainersForProject(project string) ([]*api.ContainerFull, error) {
 	var scr script.Script
 	output := scr.Cmd("lxc", "list", "--project", project, "--format=json").ToBytes()
 	if scr.Error != nil {
 		return nil, scr.Error
 	}
-	var containers []*lxd.ContainerFull
+	var containers []*api.ContainerFull
 	err := json.Unmarshal(output, &containers)
 	if err != nil {
 		return nil, err

@@ -1,20 +1,14 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"melato.org/command"
 	"melato.org/script"
 )
 
-type Build struct {
-	Api bool `usage:"copy api files from $GOPATH/src/github.com/lxc/lxd/shared/api/`
-}
-
-func (t *Build) GenerateVersion() error {
+func GenerateVersion() error {
 	script := script.Script{Trace: true}
 	script.Run("mkversion", "-t", "version.tpl", "version.go")
 	if script.Error != nil {
@@ -26,8 +20,8 @@ func (t *Build) GenerateVersion() error {
 	return script.Error
 }
 
-func (t *Build) Compile() error {
-	err := t.GenerateVersion()
+func Compile() error {
+	err := GenerateVersion()
 	if err != nil {
 		return err
 	}
@@ -40,41 +34,8 @@ func (t *Build) Compile() error {
 	return script.Error
 }
 
-func (t *Build) CopyAPI() error {
-	gopath, found := os.LookupEnv("GOPATH")
-	if !found {
-		return errors.New("missing $GOPATH")
-	}
-	apiPath := "github.com/lxc/lxd/shared/api"
-	srcDir := filepath.Join(gopath, "src", apiPath)
-	dstDir := "../lxd/"
-	script := script.Script{Trace: true}
-	log, err := os.Create(filepath.Join(dstDir, "log.txt"))
-	if err != nil {
-		return err
-	}
-	defer log.Close()
-	for _, file := range []string{"project.go", "container.go", "container_state.go"} {
-		fmt.Fprintf(log, "%s/%s:\n", apiPath, file)
-		script.Run("cp", filepath.Join(srcDir, file), dstDir)
-		script.Cmd("git", "log", "-1", "--date=iso", "--decorate=short", file).Dir(srcDir).
-			ToWriter(log)
-		//ToFile(filepath.Join(dstDir, "commit-"+file+".txt"))
-		fmt.Fprintln(log)
-	}
-	return script.Error
-}
-
-func (t *Build) Run() error {
-	if t.Api {
-		return t.CopyAPI()
-	}
-	return t.Compile()
-}
-
 func main() {
-	var build Build
 	var cmd command.SimpleCommand
-	cmd.Flags(&build).RunMethodE(build.Run)
+	cmd.RunMethodE(Compile)
 	command.Main(&cmd)
 }

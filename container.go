@@ -4,20 +4,20 @@ import (
 	"errors"
 	"fmt"
 
-	lxd "github.com/lxc/lxd/shared/api"
+	"github.com/lxc/lxd/shared/api"
 )
 
 type ContainerOps struct {
 }
 
-func (t *ContainerOps) listProfiles(c *lxd.ContainerFull) error {
+func (t *ContainerOps) listProfiles(c *api.ContainerFull) error {
 	for _, profile := range c.Profiles {
 		fmt.Println(profile)
 	}
 	return nil
 }
 
-func (t *ContainerOps) printNetwork(c *lxd.ContainerFull) error {
+func (t *ContainerOps) printNetwork(c *api.ContainerFull) error {
 	if c.State != nil {
 		for name, net := range c.State.Network {
 			for _, a := range net.Addresses {
@@ -28,7 +28,7 @@ func (t *ContainerOps) printNetwork(c *lxd.ContainerFull) error {
 	return nil
 }
 
-func (t *ContainerOps) run(args []string, f func(c *lxd.ContainerFull) error) error {
+func (t *ContainerOps) run(args []string, f func(c *api.ContainerFull) error) error {
 	if len(args) != 1 {
 		return errors.New("usage: <container>")
 	}

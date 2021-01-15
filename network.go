@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	lxd "github.com/lxc/lxd/shared/api"
+	"github.com/lxc/lxd/shared/api"
 	"melato.org/script"
 )
 
@@ -55,7 +55,7 @@ func (t *NetworkManager) GetProjects() ([]string, error) {
 	if s.Error != nil {
 		return nil, s.Error
 	}
-	var projects []*lxd.Project
+	var projects []*api.Project
 	err := json.Unmarshal(output, &projects)
 	if err != nil {
 		return nil, err
