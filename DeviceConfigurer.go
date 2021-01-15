@@ -63,6 +63,7 @@ func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name
 			}
 			args = append(args, path)
 			script.Run("sudo", args...)
+			t.chownDir(script, filepath.Join("/", path))
 		} else {
 			parts := strings.Split(config.DeviceOrigin, "@")
 			if len(parts) != 2 {
@@ -75,13 +76,12 @@ func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name
 			}
 			script.Run("sudo", "zfs", "clone", "-p", originDataset+"@"+parts[1], path)
 		}
-		t.chownDir(script, filepath.Join("/", path))
 	}
 	return script.Error
 }
 
 func (t *DeviceConfigurer) chownDir(scr *script.Script, dir string) {
-	scr.Run("sudo", "chown", "-R", "1000000:1000000", dir)
+	scr.Run("sudo", "chown", "1000000:1000000", dir)
 }
 
 func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
