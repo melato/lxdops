@@ -4,29 +4,32 @@ import (
 	"errors"
 	"fmt"
 
-	"melato.org/lxdops/lxd"
+	//"melato.org/lxdops/lxd"
+	lxd "github.com/lxc/lxd/shared/api"
 )
 
 type ContainerOps struct {
 }
 
-func (t *ContainerOps) listProfiles(c *lxd.Container) error {
+func (t *ContainerOps) listProfiles(c *lxd.ContainerFull) error {
 	for _, profile := range c.Profiles {
 		fmt.Println(profile)
 	}
 	return nil
 }
 
-func (t *ContainerOps) printNetwork(c *lxd.Container) error {
-	for name, net := range c.State.Network {
-		for _, a := range net.Addresses {
-			fmt.Printf("%s %s %s %s/%s\n", name, a.Family, a.Scope, a.Address, a.Netmask)
+func (t *ContainerOps) printNetwork(c *lxd.ContainerFull) error {
+	if c.State != nil {
+		for name, net := range c.State.Network {
+			for _, a := range net.Addresses {
+				fmt.Printf("%s %s %s %s/%s\n", name, a.Family, a.Scope, a.Address, a.Netmask)
+			}
 		}
 	}
 	return nil
 }
 
-func (t *ContainerOps) run(args []string, f func(c *lxd.Container) error) error {
+func (t *ContainerOps) run(args []string, f func(c *lxd.ContainerFull) error) error {
 	if len(args) != 1 {
 		return errors.New("usage: <container>")
 	}

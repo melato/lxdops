@@ -54,11 +54,13 @@ func (t *Ops) WaitForNetwork(name string) error {
 		if err != nil {
 			return err
 		}
-		for _, net := range c.State.Network {
-			for _, a := range net.Addresses {
-				if a.Family == "inet" && a.Scope == "global" {
-					fmt.Println(a.Address)
-					return nil
+		if c.State != nil {
+			for _, net := range c.State.Network {
+				for _, a := range net.Addresses {
+					if a.Family == "inet" && a.Scope == "global" {
+						fmt.Println(a.Address)
+						return nil
+					}
 				}
 			}
 		}

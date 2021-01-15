@@ -1,14 +1,14 @@
 package lxdops
 
 import (
-	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"os"
 	"strings"
 
-	"melato.org/lxdops/lxd"
+	//"melato.org/lxdops/lxd"
+	lxd "github.com/lxc/lxd/shared/api"
 	"melato.org/script"
 )
 
@@ -29,23 +29,21 @@ func (t *NetworkManager) ParseAddress(addr string) string {
 }
 
 func (t *NetworkManager) GetProjectAddresses(project string) ([]*HostAddress, error) {
-	var s script.Script
-	// lxc list -c ns4 --format=csv
-	output := s.Cmd("lxc", "list", "--project", project, "-c", "n4", "--format=csv").ToBytes()
-	if s.Error != nil {
-		return nil, s.Error
+	containers, err := ListContainersForProject(project)
+	if err != nil {
+		return nil, err
 	}
 	var addresses []*HostAddress
-	r := csv.NewReader(bytes.NewReader(output))
-	for {
-		fields, _ := r.Read()
-		if fields == nil {
-			break
+
+	for _, c := range containers {
+		if c.State == nil || c.State.Network == nil {
+			continue
 		}
-		if fields[1] != "" {
-			address := t.ParseAddress((fields[1]))
-			if address != "" {
-				addresses = append(addresses, &HostAddress{Name: fields[0], Address: address})
+		for _, net := range c.State.Network {
+			for _, a := range net.Addresses {
+				if a.Family == "inet" && a.Scope == "global" {
+					addresses = append(addresses, &HostAddress{Name: c.Name, Address: a.Address})
+				}
 			}
 		}
 	}
