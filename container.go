@@ -3,19 +3,21 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+
+	"melato.org/lxdops/lxd"
 )
 
 type ContainerOps struct {
 }
 
-func (t *ContainerOps) listProfiles(c *Container) error {
+func (t *ContainerOps) listProfiles(c *lxd.Container) error {
 	for _, profile := range c.Profiles {
 		fmt.Println(profile)
 	}
 	return nil
 }
 
-func (t *ContainerOps) printNetwork(c *Container) error {
+func (t *ContainerOps) printNetwork(c *lxd.Container) error {
 	for name, net := range c.State.Network {
 		for _, a := range net.Addresses {
 			fmt.Printf("%s %s %s %s/%s\n", name, a.Family, a.Scope, a.Address, a.Netmask)
@@ -24,7 +26,7 @@ func (t *ContainerOps) printNetwork(c *Container) error {
 	return nil
 }
 
-func (t *ContainerOps) run(args []string, f func(c *Container) error) error {
+func (t *ContainerOps) run(args []string, f func(c *lxd.Container) error) error {
 	if len(args) != 1 {
 		return errors.New("usage: <container>")
 	}

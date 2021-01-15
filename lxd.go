@@ -4,41 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 
+	//lxd "github.com/lxc/lxd/shared/api"
+	"melato.org/lxdops/lxd"
 	"melato.org/script"
 )
 
-type Container struct {
-	Name     string   `json:"name"`
-	Profiles []string `json:"profiles"`
-	State    State    `json:"state"`
-}
-
-type State struct {
-	Network map[string]*Network `json:"network"`
-}
-
-type Network struct {
-	Addresses []*Address `json:"addresses"`
-}
-
-type Address struct {
-	Address string `json:"address"`
-	Family  string `json:"family"`
-	Netmask string `json:"netmask"`
-	Scope   string `json:"scope"`
-}
-
-type Project struct {
-	Name string `json:name`
-}
-
-func ListContainer(name string) (*Container, error) {
+func ListContainer(name string) (*lxd.Container, error) {
 	var scr script.Script
 	output := scr.Cmd("lxc", "list", name, "--format=json").ToBytes()
 	if scr.Error != nil {
 		return nil, scr.Error
 	}
-	var containers []*Container
+	var containers []*lxd.Container
 	err := json.Unmarshal(output, &containers)
 	if err != nil {
 		return nil, err
