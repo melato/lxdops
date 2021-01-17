@@ -18,7 +18,7 @@ func RootCommand() *command.SimpleCommand {
 		Example("launch php php.yaml")
 	cmd.Command("delete").Flags(launcher).RunMethodArgs(launcher.Delete)
 
-	configurer := NewConfigurer(ops.Ops)
+	configurer := &Configurer{Ops: ops.Ops}
 	cmd.Command("configure").Flags(configurer).RunMethodArgs(configurer.Run).
 		Use("<container> <config-file> ...").
 		Short("configure an existing container").

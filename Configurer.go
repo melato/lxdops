@@ -14,20 +14,24 @@ import (
 )
 
 type Configurer struct {
-	Ops        *Ops
-	DryRun     bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	Components []string `name:"components" usage:"which components to configure: packages, scripts, users"`
-	All        bool     `name:"all" usage:"If true, configure all parts, except those that are mentioned explicitly, otherwise configure only parts that are mentioned"`
-	Packages   bool     `name:"packages" usage:"whether to install packages"`
-	Scripts    bool     `name:"scripts" usage:"whether to run scripts"`
-	Files      bool     `name:"files" usage:"whether to copy files"`
-	Users      bool     `name:"users" usage:"whether to create users and change passwords"`
+	Ops           *Ops
+	ConfigOptions ConfigOptions
+	DryRun        bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	Components    []string `name:"components" usage:"which components to configure: packages, scripts, users"`
+	All           bool     `name:"all" usage:"If true, configure all parts, except those that are mentioned explicitly, otherwise configure only parts that are mentioned"`
+	Packages      bool     `name:"packages" usage:"whether to install packages"`
+	Scripts       bool     `name:"scripts" usage:"whether to run scripts"`
+	Files         bool     `name:"files" usage:"whether to copy files"`
+	Users         bool     `name:"users" usage:"whether to create users and change passwords"`
 }
 
-func NewConfigurer(ops *Ops) *Configurer {
-	var t Configurer
-	t.Ops = ops
-	return &t
+func (t *Configurer) Init() error {
+	t.Ops = &Ops{}
+	err := t.Ops.Init()
+	if err != nil {
+		return err
+	}
+	return t.ConfigOptions.Init()
 }
 
 func (t *Configurer) Configured() error {
@@ -142,6 +146,8 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 			if script.Error != nil {
 				return script.Error
 			}
+		} else {
+			fmt.Printf("%s already exists\n", path)
 		}
 	}
 	return nil
@@ -418,19 +424,11 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 	return nil
 }
 
-func (t *Configurer) Run(args []string) error {
-	if len(args) < 2 {
-		return errors.New("Usage: {name} {configfile}...")
-	}
-	name := args[0]
-	var err error
-	var config *Config
-	config, err = ReadConfigs(args[1:]...)
-	if err != nil {
-		return err
-	}
-
-	config.Verify()
-
+func (t *Configurer) runConfigure(name string, config *Config) error {
 	return t.ConfigureContainer(config, name)
+}
+
+func (t *Configurer) Run(args []string) error {
+	t.Ops.Trace = true
+	return t.ConfigOptions.Run(args, t.runConfigure)
 }
