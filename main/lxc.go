@@ -16,7 +16,7 @@ func main() {
 	}
 
 	if args[0] == "file" && args[1] == "pull" && args[3] == "-" {
-		fmt.Println(os.Stderr, "Error: not found")
+		fmt.Fprintln(os.Stderr, "Error: not found")
 		os.Exit(1)
 	}
 	fmt.Println(pargs...)
