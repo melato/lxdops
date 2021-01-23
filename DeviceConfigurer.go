@@ -12,36 +12,23 @@ import (
 )
 
 type DeviceConfigurer struct {
-	Ops    *Ops
-	Trace  bool
-	DryRun bool
-}
-
-func NewDeviceConfigurer(ops *Ops) *DeviceConfigurer {
-	t := &DeviceConfigurer{Ops: ops, Trace: ops.Trace}
-	return t
+	Trace   bool
+	DryRun  bool
+	FuncMap map[string]func() (string, error)
 }
 
 func (t *DeviceConfigurer) NewScript() *script.Script {
-	return &script.Script{Trace: t.Ops.Trace, DryRun: t.DryRun}
+	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 }
 
-func (t *DeviceConfigurer) SetDryRun(dryRun bool) {
-	t.DryRun = dryRun
-}
-
-func ProfileExists(profile string) bool {
-	// Not sure what profile get does, but it returns an error if the profile doesn't exist.
-	// "x" is a key.  It doesn't matter what key we use for our purpose.
-	script := script.Script{}
-	return script.Cmd("lxc", "profile", "get", profile, "x").MergeStderr().ToNull()
+func (t *DeviceConfigurer) AddFuncs(map[string]func() (string, error)) {
 }
 
 func (t *DeviceConfigurer) NewPattern(config *Config, name string) *util.Pattern {
 	pattern := &util.Pattern{Properties: config.Properties}
 	pattern.SetConstant("container", name)
 	pattern.SetFunction("zfsroot", func() (string, error) {
-		return t.Ops.ZFSRoot()
+		return ZFSRoot()
 	})
 	return pattern
 }

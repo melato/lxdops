@@ -9,34 +9,30 @@ import (
 )
 
 type Launcher struct {
-	Ops            *Ops
+	ConfigOptions ConfigOptions
+	Trace         bool `name:"trace,t" usage:"print exec arguments"`
+	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+
 	Origin         string   `name:"origin" usage:"container to copy, overrides config"`
 	DeviceTemplate string   `name:"device-template" usage:"device dir or dataset to copy, overrides config"`
 	DeviceOrigin   string   `name:"device-origin" usage:"zfs snapshot to clone into target device, overrides config"`
-	DryRun         bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	Profiles       []string `name:"profile,p" usage:"profiles to add to lxc launch"`
-	ConfigOptions  ConfigOptions
 	Options        []string `name:"X" usage:"additional options to pass to lxc"`
 }
 
 func (t *Launcher) Init() error {
-	t.Ops = &Ops{}
-	err := t.Ops.Init()
-	if err != nil {
-		return err
-	}
 	return t.ConfigOptions.Init()
 }
 
 func (t *Launcher) Configured() error {
 	if t.DryRun {
-		t.Ops.Trace = true
+		t.Trace = true
 	}
 	return nil
 }
 
 func (t *Launcher) NewScript() *script.Script {
-	return &script.Script{Trace: t.Ops.Trace, DryRun: t.DryRun}
+	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 }
 
 func (t *Launcher) updateConfig(config *Config) {
@@ -62,7 +58,7 @@ func (t *Launcher) Launch(args []string) error {
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
-	var c = &Configurer{Ops: t.Ops, DryRun: t.DryRun, All: true}
+	var c = &Configurer{Trace: t.Trace, DryRun: t.DryRun, All: true}
 	return c
 }
 
@@ -76,8 +72,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		return errors.New("unsupported OS type: " + config.OS.Name)
 	}
 
-	dev := NewDeviceConfigurer(t.Ops)
-	dev.SetDryRun(t.DryRun)
+	dev := &DeviceConfigurer{Trace: t.Trace, DryRun: t.DryRun}
 	err = dev.ConfigureDevices(config, name)
 	if err != nil {
 		return err
@@ -133,7 +128,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 			return err
 		}
 		if !t.DryRun {
-			err = t.Ops.WaitForNetwork(name)
+			err = WaitForNetwork(name)
 			if err != nil {
 				return err
 			}
@@ -159,7 +154,7 @@ func (t *Launcher) deleteContainer(name string, config *Config) error {
 	script.Run("lxc", "profile", "delete", config.ProfileName(name))
 	firstError.Add(script.Error)
 	script.Error = nil
-	dev := NewDeviceConfigurer(t.Ops)
+	dev := &DeviceConfigurer{Trace: t.Trace, DryRun: t.DryRun}
 	filesystems, err := dev.ListFilesystems(config, name)
 	firstError.Add(err)
 	if err == nil && len(filesystems) > 0 {
@@ -172,6 +167,5 @@ func (t *Launcher) deleteContainer(name string, config *Config) error {
 }
 
 func (t *Launcher) Delete(args []string) error {
-	t.Ops.Trace = true
 	return t.ConfigOptions.Run(args, t.deleteContainer)
 }

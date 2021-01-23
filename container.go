@@ -49,8 +49,7 @@ func (t *ContainerOps) Network(args []string) error {
 
 func (t *ContainerOps) Wait(args []string) error {
 	for _, container := range args {
-		var ops Ops
-		err := ops.WaitForNetwork(container)
+		err := WaitForNetwork(container)
 		if err != nil {
 			return err
 		}

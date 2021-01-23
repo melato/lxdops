@@ -9,8 +9,8 @@ import (
 )
 
 type ProfileConfigurer struct {
-	Ops           Ops
 	ConfigOptions ConfigOptions
+	Trace         bool
 	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 }
 
@@ -20,13 +20,13 @@ func (t *ProfileConfigurer) Init() error {
 
 func (t *ProfileConfigurer) Configured() error {
 	if t.DryRun {
-		t.Ops.Trace = true
+		t.Trace = true
 	}
 	return nil
 }
 
 func (t *ProfileConfigurer) NewScript() *script.Script {
-	return &script.Script{Trace: t.Ops.Trace, DryRun: t.DryRun}
+	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 }
 
 func (t *ProfileConfigurer) Profiles(name string, config *Config) []string {
