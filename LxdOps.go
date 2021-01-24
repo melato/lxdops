@@ -57,3 +57,12 @@ func (t *LxdOps) ProfileExists(args []string) error {
 	}
 	return script.Error
 }
+
+func (t *LxdOps) CurrentProject() error {
+    project, err := CurrentProject()
+    if err != nil {
+        return err
+    }
+    fmt.Println(project)
+    return nil
+}

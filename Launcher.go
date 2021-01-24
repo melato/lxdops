@@ -88,9 +88,10 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	}
 	containerTemplate := config.Origin
 	script := t.NewScript()
+	project, container := SplitContainerName(name)
+	projectArgs := ProjectArgs(project)
 	if containerTemplate == "" {
-		var lxcArgs []string
-		lxcArgs = append(lxcArgs, "launch")
+		lxcArgs := append(projectArgs, "launch")
 
 		osVersion := config.OS.Version
 		if osVersion == "" {
@@ -106,24 +107,29 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		for _, option := range t.Options {
 			lxcArgs = append(lxcArgs, option)
 		}
-		lxcArgs = append(lxcArgs, name)
+		lxcArgs = append(lxcArgs, container)
 		script.Run("lxc", lxcArgs...)
 		if script.Error != nil {
 			return err
 		}
 	} else {
-		copyArgs := []string{"copy"}
-		if !strings.Contains(containerTemplate, "/") {
-			copyArgs = append(copyArgs, "--container-only")
+		sn := SplitSnapshotName(containerTemplate)
+		copyArgs := append(ProjectArgs(sn.Project), "copy")
+		if project != "" {
+			copyArgs = append(copyArgs, "--target-project", project)
 		}
-		copyArgs = append(copyArgs, containerTemplate, name)
+		if sn.Snapshot == "" {
+			copyArgs = append(copyArgs, "--container-only", sn.Container)
+		} else {
+			copyArgs = append(copyArgs, sn.Container+"/"+sn.Snapshot)
+		}
 		script.Run("lxc", copyArgs...)
 		if script.Error != nil {
 			return err
 		}
 
-		script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
-		script.Run("lxc", "start", name)
+		script.Run("lxc", append(projectArgs, "profile", "apply", container, strings.Join(profiles, ","))...)
+		script.Run("lxc", append(projectArgs, "start", container)...)
 		if script.Error != nil {
 			return err
 		}
@@ -136,19 +142,21 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	}
 	t.NewConfigurer().ConfigureContainer(config, name)
 	if config.Snapshot != "" {
-		script.Run("lxc", "snapshot", name, config.Snapshot)
+		script.Run("lxc", append(projectArgs, "snapshot", container, config.Snapshot)...)
 	}
 	if config.Stop {
-		script.Run("lxc", "stop", name)
+		script.Run("lxc", append(projectArgs, "stop", container)...)
 	}
 	return script.Error
 }
 
 func (t *Launcher) deleteContainer(name string, config *Config) error {
 	t.updateConfig(config)
+	project, container := SplitContainerName(name)
 	var firstError script.Error
 	script := t.NewScript()
-	script.Run("lxc", "delete", name)
+	projectArgs := ProjectArgs(project)
+	script.Run("lxc", append(projectArgs, "delete", container)...)
 	firstError.Add(script.Error)
 	script.Error = nil
 	script.Run("lxc", "profile", "delete", config.ProfileName(name))

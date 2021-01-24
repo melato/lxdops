@@ -1,19 +1,28 @@
 package lxdops
 
 import (
+	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/lxc/lxd/shared/api"
 	"melato.org/script"
 )
 
+const DefaultProject = "default"
+
 func ListContainer(name string) (*api.ContainerFull, error) {
 	var scr script.Script
-	output := scr.Cmd("lxc", "list", name, "--format=json").ToBytes()
+	project, container := SplitContainerName(name)
+	args := []string{"list"}
+	args = append(args, ProjectArgs(project)...)
+	args = append(args, container, "--format=json")
+	output := scr.Cmd("lxc", args...).ToBytes()
 	if scr.Error != nil {
 		return nil, scr.Error
 	}
@@ -32,7 +41,10 @@ func ListContainer(name string) (*api.ContainerFull, error) {
 
 func ListContainersForProject(project string) ([]*api.ContainerFull, error) {
 	var scr script.Script
-	output := scr.Cmd("lxc", "list", "--project", project, "--format=json").ToBytes()
+	args := []string{"list"}
+	args = append(args, ProjectArgs(project)...)
+	args = append(args, "--format=json")
+	output := scr.Cmd("lxc", args...).ToBytes()
 	if scr.Error != nil {
 		return nil, scr.Error
 	}
@@ -42,6 +54,47 @@ func ListContainersForProject(project string) ([]*api.ContainerFull, error) {
 		return nil, err
 	}
 	return containers, err
+}
+
+func ProjectArgs(project string) []string {
+	if project == "" {
+		return nil
+	}
+	return []string{"--project", project}
+}
+
+func SplitContainerName(name string) (project string, container string) {
+	i := strings.LastIndex(name, "_")
+	if i >= 0 {
+		return name[0:i], name[i+1:]
+	} else {
+		return "", name
+	}
+}
+
+func QualifiedContainerName(project string, container string) string {
+	if project == DefaultProject {
+		return container
+	}
+	return project + "_" + container
+}
+
+type SnapshotName struct {
+	Project   string
+	Container string
+	Snapshot  string
+}
+
+func SplitSnapshotName(name string) SnapshotName {
+	var r SnapshotName
+	i := strings.Index(name, "/")
+	if i >= 0 {
+		r.Snapshot = name[i+1:]
+		r.Project, r.Container = SplitContainerName(name[0:i])
+	} else {
+		r.Project, r.Container = SplitContainerName(name)
+	}
+	return r
 }
 
 func WaitForNetwork(name string) error {
@@ -92,4 +145,54 @@ func ProfileExists(profile string) bool {
 	// "x" is a key.  It doesn't matter what key we use for our purpose.
 	script := script.Script{}
 	return script.Cmd("lxc", "profile", "get", profile, "x").MergeStderr().ToNull()
+}
+
+func ListProjects() ([]*api.Project, error) {
+	var s script.Script
+	output := s.Cmd("lxc", "project", "list", "--format=json").ToBytes()
+	if s.Error != nil {
+		return nil, s.Error
+	}
+	var projects []*api.Project
+	err := json.Unmarshal(output, &projects)
+	if err != nil {
+		return nil, err
+	}
+	return projects, nil
+}
+
+func ProjectNames() ([]string, error) {
+	projects, err := ListProjects()
+	if err != nil {
+		return nil, err
+	}
+    names := make([]string, len(projects))
+	for i, project := range projects {
+        names[i] = project.Name
+	}
+	return names, nil
+}
+
+func CurrentProject() (string, error) {
+	var s script.Script
+	output := s.Cmd("lxc", "project", "list", "--format=csv").ToBytes()
+	if s.Error != nil {
+		return "", s.Error
+	}
+	reader := csv.NewReader(bytes.NewReader(output))
+	for {
+		row, err := reader.Read()
+        if err != nil {
+            return "", err
+        }
+		if len(row) == 0 {
+			// should not happen, but just move on.
+			continue 
+		}
+		parts := strings.Split(row[0], " ")
+		if len(parts) == 2 && parts[1] == "(current)" {
+			return parts[0], nil
+		}
+	}
+	return "", errors.New("could not detect current project")
 }

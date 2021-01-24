@@ -65,7 +65,8 @@ func (s *execRunner) Gid(gid int) *execRunner {
 }
 
 func (s *execRunner) Run(name, content string, execArgs []string) error {
-	args := []string{"exec"}
+	project, container := SplitContainerName(name)
+	args := append(ProjectArgs(project), "exec")
 	if s.dir != "" {
 		args = append(args, "--cwd", s.dir)
 	}
@@ -73,7 +74,7 @@ func (s *execRunner) Run(name, content string, execArgs []string) error {
 		args = append(args, "--user", strconv.Itoa(s.uid))
 		args = append(args, "--group", strconv.Itoa(s.gid))
 	}
-	args = append(args, name)
+	args = append(args, container)
 	args = append(args, execArgs...)
 	script := &script.Script{}
 	cmd := script.Cmd("lxc", args...)
@@ -110,8 +111,9 @@ func (t *Configurer) installPackages(config *Config, name string) error {
 }
 
 func (t *Configurer) createSnapshot(name, snapshot string) error {
+	project, container := SplitContainerName(name)
 	script := t.NewScript()
-	script.Run("lxc", "snapshot", name, snapshot)
+	script.Run("lxc", append(ProjectArgs(project), "snapshot", container, snapshot)...)
 	return script.Error
 }
 
@@ -121,6 +123,7 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		return errors.New("host $HOME doesn't exist")
 	}
 	hostFile := filepath.Join(hostHome, ".ssh", "authorized_keys")
+	project, container := SplitContainerName(name)
 	for _, user := range config.Users {
 		user = user.EffectiveUser()
 		if !user.Ssh {
@@ -128,12 +131,13 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		}
 		home := user.HomeDir()
 		guestFile := filepath.Join(home, ".ssh", "authorized_keys")
-		path := name + guestFile
+		path := container + guestFile
 		script := t.NewScript()
-		if !script.Cmd("lxc", "file", "pull", path, "-").MergeStderr().ToNull() {
+		projectArgs := ProjectArgs(project)
+		if !script.Cmd("lxc", append(projectArgs, "file", "pull", path, "-")...).MergeStderr().ToNull() {
 			script.Error = nil
-			script.Run("lxc", "file", "push", hostFile, path)
-			script.Run("lxc", "exec", name, "chown", user.Name+":"+user.Name, guestFile)
+			script.Run("lxc", append(projectArgs, "file", "push", hostFile, path)...)
+			script.Run("lxc", append(projectArgs, "exec", container, "chown", user.Name+":"+user.Name, guestFile)...)
 			if script.Error != nil {
 				return script.Error
 			}
@@ -251,7 +255,8 @@ func (t *Configurer) changePasswords(config *Config, name string, users []string
 	}
 	content := strings.Join(lines, "\n")
 	script := t.NewScript()
-	cmd := script.Cmd("lxc", "exec", name, "chpasswd")
+	project, container := SplitContainerName(name)
+	cmd := script.Cmd("lxc", append(ProjectArgs(project), "exec", container, "chpasswd")...)
 	cmd.Cmd.Stdin = strings.NewReader(content)
 	cmd.Run()
 	return script.Error
@@ -272,13 +277,18 @@ func (t *Configurer) changeUserPasswords(config *Config, name string) error {
 func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 	// copy any script files
 	var failedFiles []string
+	project, container := SplitContainerName(name)
+    projectArgs := ProjectArgs(project)
 	for _, script := range config.Scripts {
 		if script.First != first {
 			continue
 		}
 		if script.File != "" {
 			s := t.NewScript()
-			s.Run("lxc", "file", "push", script.File, name+"/root/")
+			args := []string{"file"}
+			args = append(args, projectArgs...)
+			args = append(args, "push", script.File, container+"/root/")
+			s.Run("lxc", args...)
 			if s.Error != nil {
 				fmt.Println(script.File, s.Error)
 				failedFiles = append(failedFiles, script.File)
@@ -307,8 +317,8 @@ func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 			}
 			if script.Reboot {
 				s := t.NewScript()
-				s.Run("lxc", "stop", name)
-				s.Run("lxc", "start", name)
+				s.Run("lxc", append(projectArgs, "stop", container)...)
+				s.Run("lxc", append(projectArgs, "start", container)...)
 				if s.Error != nil {
 					return s.Error
 				}
@@ -322,15 +332,18 @@ func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 
 func (t *Configurer) copyFiles(config *Config, name string) error {
 	// copy any files
+	project, container := SplitContainerName(name)
 	var failedFiles []string
 	for _, f := range config.Files {
 		var path string
 		if strings.HasPrefix(f.Path, "/") {
-			path = name + f.Path
+			path = container + f.Path
 		} else {
-			path = name + "/" + f.Path
+			path = container + "/" + f.Path
 		}
-		args := []string{"file", "push", f.Source, path, "-p"}
+		args := []string{"file"}
+		args = append(args, ProjectArgs(project)...)
+		args = append(args, "push", f.Source, path, "-p")
 		if f.Recursive {
 			args = append(args, "-r")
 		}

@@ -2,13 +2,9 @@ package lxdops
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"errors"
 	"os"
 	"strings"
-
-	"github.com/lxc/lxd/shared/api"
-	"melato.org/script"
 )
 
 type HostAddress struct {
@@ -41,7 +37,7 @@ func (t *NetworkManager) GetProjectAddresses(project string) ([]*HostAddress, er
 		for _, net := range c.State.Network {
 			for _, a := range net.Addresses {
 				if a.Family == "inet" && a.Scope == "global" {
-					addresses = append(addresses, &HostAddress{Name: c.Name, Address: a.Address})
+					addresses = append(addresses, &HostAddress{Name: QualifiedContainerName(project, c.Name), Address: a.Address})
 				}
 			}
 		}
@@ -49,26 +45,8 @@ func (t *NetworkManager) GetProjectAddresses(project string) ([]*HostAddress, er
 	return addresses, nil
 }
 
-func (t *NetworkManager) GetProjects() ([]string, error) {
-	var s script.Script
-	output := s.Cmd("lxc", "project", "list", "--format=json").ToBytes()
-	if s.Error != nil {
-		return nil, s.Error
-	}
-	var projects []*api.Project
-	err := json.Unmarshal(output, &projects)
-	if err != nil {
-		return nil, err
-	}
-	var names []string
-	for _, project := range projects {
-		names = append(names, project.Name)
-	}
-	return names, nil
-}
-
 func (t *NetworkManager) GetAddresses() ([]*HostAddress, error) {
-	projects, err := t.GetProjects()
+	projects, err := ProjectNames()
 	if err != nil {
 		return nil, err
 	}

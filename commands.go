@@ -49,6 +49,7 @@ func RootCommand() *command.SimpleCommand {
 	profile.Command("exists").RunMethodArgs(lxdOps.ProfileExists).Use("<profile>").Short("check if a profile exists")
 	profile.Command("add-disk").RunMethodArgs(lxdOps.AddDiskDevice).Use("<profile> <source> <path>").Short("add a disk device to a profile")
 	cmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot).Short("print zfs parent of lxd dataset")
+	cmd.Command("current-project").RunMethodE(lxdOps.CurrentProject).Short("print the name of the current project")
 
 	parse := &ParseOp{}
 	cmd.Command("parse").Flags(parse).RunMethodArgs(parse.Run).
@@ -69,6 +70,12 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd.Command("profiles").RunMethodArgs(containerOps.Profiles)
 	containerCmd.Command("network").RunMethodArgs(containerOps.Network)
 	containerCmd.Command("wait").RunMethodArgs(containerOps.Wait)
+
+	cmd.Long(`lxdops launches or copies containers and creates or clones zfs filesystem devices for them, using yaml config files.  It can also install packages, create users, setup authorized_keys for users, push files, attach profiles, and run scripts.
+One of its goals is to facilitate separating the container OS files from the user files, so that the container can be upgraded by relaunching it, thus replacing its OS, rather than upgrading the OS in place.  It is expected that such relaunching can be done by copying a template container and keeping the existing container devices.  The template container can be upgraded with the traditional way, or relaunched from scratch.
+A config file provides the recipe for how the container should be created.
+Devices are attached to the container via a .devices profile
+`)
 
 	return &cmd
 }
