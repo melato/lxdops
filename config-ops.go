@@ -27,8 +27,10 @@ func (t *ConfigOps) Verify(args []string) error {
 }
 
 func (t *ConfigOps) createDevices(name string, config *Config) error {
-	dev := DeviceConfigurer{Trace: t.Trace, DryRun: t.DryRun}
-	return dev.ConfigureDevices(config, name)
+	dev := NewDeviceConfigurer(config)
+	dev.Trace = t.Trace
+	dev.DryRun = t.DryRun
+	return dev.ConfigureDevices(name)
 }
 
 func (t *ConfigOps) CreateDevices(args []string) error {

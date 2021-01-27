@@ -72,8 +72,10 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		return errors.New("unsupported OS type: " + config.OS.Name)
 	}
 
-	dev := &DeviceConfigurer{Trace: t.Trace, DryRun: t.DryRun}
-	err = dev.ConfigureDevices(config, name)
+	dev := NewDeviceConfigurer(config)
+	dev.Trace = t.Trace
+	dev.DryRun = t.DryRun
+	err = dev.ConfigureDevices(name)
 	if err != nil {
 		return err
 	}
@@ -89,6 +91,9 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	containerTemplate := config.Origin
 	script := t.NewScript()
 	project, container := SplitContainerName(name)
+	if t.Trace {
+		fmt.Printf("name=%s project=%s container=%s\n", name, project, container)
+	}
 	projectArgs := ProjectArgs(project)
 	if containerTemplate == "" {
 		lxcArgs := append(projectArgs, "launch")
@@ -114,6 +119,9 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		}
 	} else {
 		sn := SplitSnapshotName(containerTemplate)
+		if t.Trace {
+			fmt.Printf("template=%s project=%s container=%s snapshot=%s\n", containerTemplate, sn.Project, sn.Container, sn.Snapshot)
+		}
 		copyArgs := append(ProjectArgs(sn.Project), "copy")
 		if project != "" {
 			copyArgs = append(copyArgs, "--target-project", project)
@@ -123,6 +131,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		} else {
 			copyArgs = append(copyArgs, sn.Container+"/"+sn.Snapshot)
 		}
+		copyArgs = append(copyArgs, container)
 		script.Run("lxc", copyArgs...)
 		if script.Error != nil {
 			return err
@@ -162,8 +171,10 @@ func (t *Launcher) deleteContainer(name string, config *Config) error {
 	script.Run("lxc", "profile", "delete", config.ProfileName(name))
 	firstError.Add(script.Error)
 	script.Error = nil
-	dev := &DeviceConfigurer{Trace: t.Trace, DryRun: t.DryRun}
-	filesystems, err := dev.ListFilesystems(config, name)
+	dev := NewDeviceConfigurer(config)
+	dev.Trace = t.Trace
+	dev.DryRun = t.DryRun
+	filesystems, err := dev.ListFilesystems(name)
 	firstError.Add(err)
 	if err == nil && len(filesystems) > 0 {
 		fmt.Println("not deleted filesystems:")

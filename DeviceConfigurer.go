@@ -12,9 +12,14 @@ import (
 )
 
 type DeviceConfigurer struct {
+	Config  *Config
 	Trace   bool
 	DryRun  bool
 	FuncMap map[string]func() (string, error)
+}
+
+func NewDeviceConfigurer(config *Config) *DeviceConfigurer {
+	return &DeviceConfigurer{Config: config}
 }
 
 func (t *DeviceConfigurer) NewScript() *script.Script {
@@ -24,8 +29,8 @@ func (t *DeviceConfigurer) NewScript() *script.Script {
 func (t *DeviceConfigurer) AddFuncs(map[string]func() (string, error)) {
 }
 
-func (t *DeviceConfigurer) NewPattern(config *Config, name string) *util.Pattern {
-	pattern := &util.Pattern{Properties: config.Properties}
+func (t *DeviceConfigurer) NewPattern(name string) *util.Pattern {
+	pattern := &util.Pattern{Properties: t.Config.Properties}
 	pattern.SetConstant("container", name)
 	pattern.SetFunction("zfsroot", func() (string, error) {
 		return ZFSRoot()
@@ -33,8 +38,8 @@ func (t *DeviceConfigurer) NewPattern(config *Config, name string) *util.Pattern
 	return pattern
 }
 
-func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name string) error {
-	pattern := t.NewPattern(config, name)
+func (t *DeviceConfigurer) CreateFilesystem(fs *Filesystem, name string) error {
+	pattern := t.NewPattern(name)
 	path, err := pattern.Substitute(fs.Pattern)
 	if err != nil {
 		return err
@@ -43,7 +48,7 @@ func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name
 	if strings.HasPrefix(path, "/") {
 		return t.CreateDir(path, true)
 	} else {
-		if config.DeviceOrigin == "" {
+		if t.Config.DeviceOrigin == "" {
 			args := []string{"zfs", "create", "-p"}
 			for key, value := range fs.Zfsproperties {
 				args = append(args, "-o", key+"="+value)
@@ -52,11 +57,11 @@ func (t *DeviceConfigurer) CreateFilesystem(config *Config, fs *Filesystem, name
 			script.Run("sudo", args...)
 			t.chownDir(script, filepath.Join("/", path))
 		} else {
-			parts := strings.Split(config.DeviceOrigin, "@")
+			parts := strings.Split(t.Config.DeviceOrigin, "@")
 			if len(parts) != 2 {
-				return errors.New("device origin should be a snapshot: " + config.DeviceOrigin)
+				return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
 			}
-			originPattern := t.NewPattern(config, parts[0])
+			originPattern := t.NewPattern(parts[0])
 			originDataset, err := originPattern.Substitute(fs.Pattern)
 			if err != nil {
 				return err
@@ -84,10 +89,10 @@ func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 	return nil
 }
 
-func (t *DeviceConfigurer) FilesystemPaths(config *Config, name string) (map[string]string, error) {
-	pattern := t.NewPattern(config, name)
+func (t *DeviceConfigurer) FilesystemPaths(name string) (map[string]string, error) {
+	pattern := t.NewPattern(name)
 	filesystems := make(map[string]string)
-	for _, fs := range config.Filesystems {
+	for _, fs := range t.Config.Filesystems {
 		path, err := pattern.Substitute(fs.Pattern)
 		if err != nil {
 			return nil, err
@@ -100,8 +105,8 @@ func (t *DeviceConfigurer) FilesystemPaths(config *Config, name string) (map[str
 	return filesystems, nil
 }
 
-func (t *DeviceConfigurer) DeviceFilesystem(config *Config, device *Device) (*Filesystem, error) {
-	for _, fs := range config.Filesystems {
+func (t *DeviceConfigurer) DeviceFilesystem(device *Device) (*Filesystem, error) {
+	for _, fs := range t.Config.Filesystems {
 		if fs.Id == device.Filesystem {
 			return fs, nil
 		}
@@ -109,8 +114,8 @@ func (t *DeviceConfigurer) DeviceFilesystem(config *Config, device *Device) (*Fi
 	return nil, errors.New("no such filesystem: " + device.Filesystem)
 }
 
-func (t *DeviceConfigurer) DeviceDir(config *Config, filesystems map[string]string, device *Device, name string) (string, error) {
-	pattern := t.NewPattern(config, name)
+func (t *DeviceConfigurer) DeviceDir(filesystems map[string]string, device *Device, name string) (string, error) {
+	pattern := t.NewPattern(name)
 	var fsDir, dir string
 	var substituteDir bool
 	var err error
@@ -118,7 +123,7 @@ func (t *DeviceConfigurer) DeviceDir(config *Config, filesystems map[string]stri
 		dir = device.Dir
 		substituteDir = true
 	} else {
-		fs, err := t.DeviceFilesystem(config, device)
+		fs, err := t.DeviceFilesystem(device)
 		if err != nil {
 			return "", err
 		}
@@ -146,23 +151,23 @@ func (t *DeviceConfigurer) DeviceDir(config *Config, filesystems map[string]stri
 	}
 }
 
-func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
-	filesystems, err := t.FilesystemPaths(config, name)
+func (t *DeviceConfigurer) ConfigureDevices(name string) error {
+	filesystems, err := t.FilesystemPaths(name)
 	if err != nil {
 		return err
 	}
-	for _, fs := range config.Filesystems {
+	for _, fs := range t.Config.Filesystems {
 		fsDir, _ := filesystems[fs.Id]
 		if !util.DirExists(fsDir) {
-			err := t.CreateFilesystem(config, fs, name)
+			err := t.CreateFilesystem(fs, name)
 			if err != nil {
 				return err
 			}
 		}
 	}
 	var templateFilesystems map[string]string
-	if config.DeviceTemplate != "" {
-		templateFilesystems, err = t.FilesystemPaths(config, config.DeviceTemplate)
+	if t.Config.DeviceTemplate != "" {
+		templateFilesystems, err = t.FilesystemPaths(t.Config.DeviceTemplate)
 		if err != nil {
 			return err
 		}
@@ -170,9 +175,9 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 	var profileName string
 	var useProfile bool
 	script := t.NewScript()
-	for _, device := range config.Devices {
+	for _, device := range t.Config.Devices {
 		if profileName == "" {
-			profileName = config.ProfileName(name)
+			profileName = t.Config.ProfileName(name)
 			if !ProfileExists(profileName) {
 				useProfile = true
 				script.Run("lxc", "profile", "create", profileName)
@@ -181,7 +186,7 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 				}
 			}
 		}
-		dir, err := t.DeviceDir(config, filesystems, device, name)
+		dir, err := t.DeviceDir(filesystems, device, name)
 		if err != nil {
 			return err
 		}
@@ -189,8 +194,8 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 		if err != nil {
 			return err
 		}
-		if config.DeviceTemplate != "" {
-			templateDir, err := t.DeviceDir(config, templateFilesystems, device, config.DeviceTemplate)
+		if t.Config.DeviceTemplate != "" {
+			templateDir, err := t.DeviceDir(templateFilesystems, device, t.Config.DeviceTemplate)
 			if err != nil {
 				return err
 			}
@@ -215,13 +220,13 @@ func (t *DeviceConfigurer) ConfigureDevices(config *Config, name string) error {
 	return nil
 }
 
-func (t *DeviceConfigurer) ListFilesystems(config *Config, name string) ([]string, error) {
-	filesystems, err := t.FilesystemPaths(config, name)
+func (t *DeviceConfigurer) ListFilesystems(name string) ([]string, error) {
+	filesystems, err := t.FilesystemPaths(name)
 	if err != nil {
 		return nil, err
 	}
 	var result []string
-	for _, fs := range config.Filesystems {
+	for _, fs := range t.Config.Filesystems {
 		fsDir, _ := filesystems[fs.Id]
 		if util.DirExists(fsDir) {
 			result = append(result, fsDir)
