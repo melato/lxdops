@@ -59,6 +59,25 @@ func (user *User) HomeDir() string {
 	}
 }
 
+func (config *Config) verifyDevices() bool {
+	valid := true
+	deviceNames := make(map[string]bool)
+	devicePaths := make(map[string]bool)
+	for _, d := range config.Devices {
+		if deviceNames[d.Name] {
+			valid = false
+			fmt.Fprintf(os.Stderr, "duplicate device name: %s\n", d.Name)
+		}
+		deviceNames[d.Name] = true
+		if devicePaths[d.Path] {
+			valid = false
+			fmt.Fprintf(os.Stderr, "duplicate device path: %s\n", d.Path)
+		}
+		deviceNames[d.Path] = true
+	}
+	return valid
+}
+
 func (config *Config) Verify() bool {
 	valid := true
 	for _, u := range config.Users {
@@ -76,6 +95,9 @@ func (config *Config) Verify() bool {
 		if !config.VerifyFileExists(file.Source) {
 			valid = false
 		}
+	}
+	if !config.verifyDevices() {
+		valid = false
 	}
 	return valid
 }
