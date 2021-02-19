@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"melato.org/script"
+	"melato.org/script/v2"
 )
 
 type Launcher struct {
@@ -156,33 +156,29 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	if config.Stop {
 		script.Run("lxc", append(projectArgs, "stop", container)...)
 	}
-	return script.Error
+	return script.Error()
 }
 
 func (t *Launcher) deleteContainer(name string, config *Config) error {
 	t.updateConfig(config)
 	project, container := SplitContainerName(name)
-	var firstError script.Error
-	script := t.NewScript()
+	s := t.NewScript()
+	s.Errors.AlwaysContinue = true
 	projectArgs := ProjectArgs(project)
-	script.Run("lxc", append(projectArgs, "delete", container)...)
-	firstError.Add(script.Error)
-	script.Error = nil
-	script.Run("lxc", "profile", "delete", config.ProfileName(name))
-	firstError.Add(script.Error)
-	script.Error = nil
+	s.Run("lxc", append(projectArgs, "delete", container)...)
+	s.Run("lxc", "profile", "delete", config.ProfileName(name))
 	dev := NewDeviceConfigurer(config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	filesystems, err := dev.ListFilesystems(name)
-	firstError.Add(err)
+	s.Errors.Handle(err)
 	if err == nil && len(filesystems) > 0 {
 		fmt.Println("not deleted filesystems:")
 		for _, dir := range filesystems {
 			fmt.Println(dir)
 		}
 	}
-	return firstError.First
+	return s.Error()
 }
 
 func (t *Launcher) Delete(args []string) error {

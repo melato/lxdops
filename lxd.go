@@ -11,20 +11,20 @@ import (
 	"time"
 
 	"github.com/lxc/lxd/shared/api"
-	"melato.org/script"
+	"melato.org/script/v2"
 )
 
 const DefaultProject = "default"
 
 func ListContainer(name string) (*api.ContainerFull, error) {
-	var scr script.Script
+	var s script.Script
 	project, container := SplitContainerName(name)
 	args := []string{"list"}
 	args = append(args, ProjectArgs(project)...)
 	args = append(args, container, "--format=json")
-	output := scr.Cmd("lxc", args...).ToBytes()
-	if scr.Error != nil {
-		return nil, scr.Error
+	output := s.Cmd("lxc", args...).ToBytes()
+	if err := s.Error(); err != nil {
+		return nil, err
 	}
 	var containers []*api.ContainerFull
 	err := json.Unmarshal(output, &containers)
@@ -45,8 +45,8 @@ func ListContainersForProject(project string) ([]*api.ContainerFull, error) {
 	args = append(args, ProjectArgs(project)...)
 	args = append(args, "--format=json")
 	output := scr.Cmd("lxc", args...).ToBytes()
-	if scr.Error != nil {
-		return nil, scr.Error
+	if err := scr.Error(); err != nil {
+		return nil, err
 	}
 	var containers []*api.ContainerFull
 	err := json.Unmarshal(output, &containers)
@@ -121,8 +121,8 @@ func WaitForNetwork(name string) error {
 func GetDefaultDataset() (string, error) {
 	script := script.Script{}
 	lines := script.Cmd("lxc", "storage", "get", "default", "zfs.pool_name").ToLines()
-	if script.Error != nil {
-		return "", script.Error
+	if err := script.Error(); err != nil {
+		return "", err
 	}
 	if len(lines) > 0 {
 		fs := lines[0]
@@ -144,14 +144,15 @@ func ProfileExists(profile string) bool {
 	// Not sure what profile get does, but it returns an error if the profile doesn't exist.
 	// "x" is a key.  It doesn't matter what key we use for our purpose.
 	script := script.Script{}
-	return script.Cmd("lxc", "profile", "get", profile, "x").MergeStderr().ToNull()
+	script.Cmd("lxc", "profile", "get", profile, "x").CombineOutput().ToNull()
+	return script.Error() == nil
 }
 
 func ListProjects() ([]*api.Project, error) {
 	var s script.Script
 	output := s.Cmd("lxc", "project", "list", "--format=json").ToBytes()
-	if s.Error != nil {
-		return nil, s.Error
+	if err := s.Error(); err != nil {
+		return nil, err
 	}
 	var projects []*api.Project
 	err := json.Unmarshal(output, &projects)
@@ -166,9 +167,9 @@ func ProjectNames() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-    names := make([]string, len(projects))
+	names := make([]string, len(projects))
 	for i, project := range projects {
-        names[i] = project.Name
+		names[i] = project.Name
 	}
 	return names, nil
 }
@@ -176,18 +177,18 @@ func ProjectNames() ([]string, error) {
 func CurrentProject() (string, error) {
 	var s script.Script
 	output := s.Cmd("lxc", "project", "list", "--format=csv").ToBytes()
-	if s.Error != nil {
-		return "", s.Error
+	if err := s.Error(); err != nil {
+		return "", err
 	}
 	reader := csv.NewReader(bytes.NewReader(output))
 	for {
 		row, err := reader.Read()
-        if err != nil {
-            return "", err
-        }
+		if err != nil {
+			return "", err
+		}
 		if len(row) == 0 {
 			// should not happen, but just move on.
-			continue 
+			continue
 		}
 		parts := strings.Split(row[0], " ")
 		if len(parts) == 2 && parts[1] == "(current)" {

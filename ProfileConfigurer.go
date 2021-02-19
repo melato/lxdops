@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"melato.org/lxdops/util"
-	"melato.org/script"
+	"melato.org/script/v2"
 )
 
 type ProfileConfigurer struct {
@@ -74,7 +74,7 @@ func (t *ProfileConfigurer) reorderProfiles(name string, config *Config) error {
 	if util.StringSlice(sortedProfiles).Equals(sortedContainer) {
 		script := t.NewScript()
 		script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
-		return script.Error
+		return script.Error()
 	}
 	fmt.Println("profiles differ: " + name)
 	return nil
@@ -84,7 +84,7 @@ func (t *ProfileConfigurer) applyProfiles(name string, config *Config) error {
 	profiles := t.Profiles(name, config)
 	script := t.NewScript()
 	script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
-	return script.Error
+	return script.Error()
 }
 
 func (t *ProfileConfigurer) listProfiles(name string, config *Config) error {

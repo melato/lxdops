@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"melato.org/lxdops/util"
-	"melato.org/script"
+	"melato.org/script/v2"
 )
 
 type LxdOps struct {
@@ -31,7 +30,7 @@ func (t *LxdOps) AddDiskDevice(args []string) error {
 	device := RandomDeviceName()
 	script := &script.Script{Trace: t.Trace}
 	script.Run("lxc", "profile", "device", "add", profile, device, "disk", "path="+path, "source="+source)
-	return script.Error
+	return script.Error()
 }
 
 func (t *LxdOps) ProfileExists(args []string) error {
@@ -39,12 +38,10 @@ func (t *LxdOps) ProfileExists(args []string) error {
 		return errors.New("Usage: <profile>")
 	}
 	profile := args[0]
-	script := &script.Script{Trace: t.Trace}
-	cmd := script.Cmd("lxc", "profile", "get", profile, "x")
-	cmd.Cmd.Stdout = &util.NullWriter{}
-	cmd.MergeStderr()
-	cmd.Run()
-	if script.Error == nil {
+	s := &script.Script{Trace: t.Trace}
+	s.Cmd("lxc", "profile", "get", profile, "x").CombineOutput().ToNull()
+	err := s.Error()
+	if err == nil {
 		if t.Trace {
 			fmt.Printf("profile %s exists\n", profile)
 		}
@@ -55,14 +52,14 @@ func (t *LxdOps) ProfileExists(args []string) error {
 		}
 		os.Exit(1)
 	}
-	return script.Error
+	return err
 }
 
 func (t *LxdOps) CurrentProject() error {
-    project, err := CurrentProject()
-    if err != nil {
-        return err
-    }
-    fmt.Println(project)
-    return nil
+	project, err := CurrentProject()
+	if err != nil {
+		return err
+	}
+	fmt.Println(project)
+	return nil
 }

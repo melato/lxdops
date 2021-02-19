@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"melato.org/lxdops/util"
-	"melato.org/script"
+	"melato.org/script/v2"
 )
 
 type DeviceConfigurer struct {
@@ -69,7 +69,7 @@ func (t *DeviceConfigurer) CreateFilesystem(fs *Filesystem, name string) error {
 			script.Run("sudo", "zfs", "clone", "-p", originDataset+"@"+parts[1], path)
 		}
 	}
-	return script.Error
+	return script.Error()
 }
 
 func (t *DeviceConfigurer) chownDir(scr *script.Script, dir string) {
@@ -84,7 +84,7 @@ func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 		if chown {
 			t.chownDir(script, dir)
 		}
-		return script.Error
+		return script.Error()
 	}
 	return nil
 }
@@ -181,8 +181,8 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 			if !ProfileExists(profileName) {
 				useProfile = true
 				script.Run("lxc", "profile", "create", profileName)
-				if script.Error != nil {
-					return script.Error
+				if script.Error() != nil {
+					return script.Error()
 				}
 			}
 		}
@@ -213,8 +213,8 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 				"path="+device.Path,
 				"source="+dir)
 		}
-		if script.Error != nil {
-			return script.Error
+		if script.Error() != nil {
+			return script.Error()
 		}
 	}
 	return nil

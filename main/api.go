@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"melato.org/command"
-	"melato.org/script"
+	"melato.org/script/v2"
 )
 
 type ApiBuild struct {

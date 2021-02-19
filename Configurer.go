@@ -10,7 +10,7 @@ import (
 
 	"melato.org/lxdops/password"
 	"melato.org/lxdops/util"
-	"melato.org/script"
+	"melato.org/script/v2"
 )
 
 type Configurer struct {
@@ -76,21 +76,13 @@ func (s *execRunner) Run(name, content string, execArgs []string) error {
 	}
 	args = append(args, container)
 	args = append(args, execArgs...)
-	script := &script.Script{}
+	script := &script.Script{Trace: s.Op.Trace, DryRun: s.Op.DryRun}
 	cmd := script.Cmd("lxc", args...)
 	if content != "" {
-		cmd.Cmd.Stdin = strings.NewReader(content)
+		cmd.InputString(content)
 	}
-	if s.Op.Trace {
-		cmd.Print()
-		fmt.Println("BEGIN stdin")
-		fmt.Println(content)
-		fmt.Println("END stdin")
-	}
-	if !s.Op.DryRun {
-		cmd.Run()
-	}
-	return script.Error
+	cmd.Run()
+	return script.Error()
 }
 
 func (t *Configurer) runScript(name string, content string) error {
@@ -114,7 +106,7 @@ func (t *Configurer) createSnapshot(name, snapshot string) error {
 	project, container := SplitContainerName(name)
 	script := t.NewScript()
 	script.Run("lxc", append(ProjectArgs(project), "snapshot", container, snapshot)...)
-	return script.Error
+	return script.Error()
 }
 
 func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
@@ -132,14 +124,15 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		home := user.HomeDir()
 		guestFile := filepath.Join(home, ".ssh", "authorized_keys")
 		path := container + guestFile
-		script := t.NewScript()
+		s := &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 		projectArgs := ProjectArgs(project)
-		if !script.Cmd("lxc", append(projectArgs, "file", "pull", path, "-")...).MergeStderr().ToNull() {
-			script.Error = nil
-			script.Run("lxc", append(projectArgs, "file", "push", hostFile, path)...)
-			script.Run("lxc", append(projectArgs, "exec", container, "chown", user.Name+":"+user.Name, guestFile)...)
-			if script.Error != nil {
-				return script.Error
+		s.Cmd("lxc", append(projectArgs, "file", "pull", path, "-")...).CombineOutput().ToNull()
+		if s.Error() != nil {
+			s.Errors.Clear()
+			s.Run("lxc", append(projectArgs, "file", "push", hostFile, path)...)
+			s.Run("lxc", append(projectArgs, "exec", container, "chown", user.Name+":"+user.Name, guestFile)...)
+			if err := s.Error(); err != nil {
+				return err
 			}
 		} else {
 			fmt.Printf("%s already exists\n", path)
@@ -259,7 +252,7 @@ func (t *Configurer) changePasswords(config *Config, name string, users []string
 	cmd := script.Cmd("lxc", append(ProjectArgs(project), "exec", container, "chpasswd")...)
 	cmd.Cmd.Stdin = strings.NewReader(content)
 	cmd.Run()
-	return script.Error
+	return script.Error()
 }
 
 func (t *Configurer) changeUserPasswords(config *Config, name string) error {
@@ -278,7 +271,7 @@ func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 	// copy any script files
 	var failedFiles []string
 	project, container := SplitContainerName(name)
-    projectArgs := ProjectArgs(project)
+	projectArgs := ProjectArgs(project)
 	for _, script := range config.Scripts {
 		if script.First != first {
 			continue
@@ -289,8 +282,8 @@ func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 			args = append(args, projectArgs...)
 			args = append(args, "push", script.File, container+"/root/")
 			s.Run("lxc", args...)
-			if s.Error != nil {
-				fmt.Println(script.File, s.Error)
+			if s.Error() != nil {
+				fmt.Println(script.File, s.Error())
 				failedFiles = append(failedFiles, script.File)
 			}
 		}
@@ -319,8 +312,8 @@ func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 				s := t.NewScript()
 				s.Run("lxc", append(projectArgs, "stop", container)...)
 				s.Run("lxc", append(projectArgs, "start", container)...)
-				if s.Error != nil {
-					return s.Error
+				if s.Error() != nil {
+					return s.Error()
 				}
 			}
 		}
@@ -355,8 +348,8 @@ func (t *Configurer) copyFiles(config *Config, name string) error {
 		}
 		s := t.NewScript()
 		s.Run("lxc", args...)
-		if s.Error != nil {
-			fmt.Println(f.Source, s.Error)
+		if s.Error() != nil {
+			fmt.Println(f.Source, s.Error())
 			failedFiles = append(failedFiles, f.Source)
 		}
 	}

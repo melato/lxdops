@@ -68,7 +68,3 @@ func EscapeShell(args ...string) string {
 	}
 	return buf.String()
 }
-
-type NullWriter struct{ io.Writer }
-
-func (t *NullWriter) Write(p []byte) (n int, err error) { return len(p), nil }
