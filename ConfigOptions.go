@@ -51,9 +51,6 @@ func (t *ConfigOptions) ReadConfig(args ...string) (*Config, error) {
 func BaseName(file string) string {
 	name := filepath.Base(file)
 	ext := filepath.Ext(name)
-	if len(ext) == 0 {
-		return file
-	}
 	return name[0 : len(name)-len(ext)]
 }
 

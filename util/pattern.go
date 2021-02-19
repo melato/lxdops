@@ -4,6 +4,8 @@ import (
 	"errors"
 
 	"strings"
+
+	"melato.org/export/template"
 )
 
 /** Implements a simple pattern substitution on strings, using properties and functions
@@ -31,7 +33,7 @@ func (t *Pattern) SetConstant(key string, value string) {
 	})
 }
 
-func (t *Pattern) get(key string) (string, error) {
+func (t *Pattern) Get(key string) (string, error) {
 	if strings.HasPrefix(key, ".") {
 		pkey := key[1:]
 		if t.Properties != nil {
@@ -56,5 +58,9 @@ func (t *Pattern) get(key string) (string, error) {
 }
 
 func (t *Pattern) Substitute(pattern string) (string, error) {
-	return Substitute(pattern, t.get)
+	tpl, err := template.Paren.NewTemplate(pattern)
+	if err != nil {
+		return "", err
+	}
+	return tpl.Applyf(t.Get)
 }

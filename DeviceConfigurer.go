@@ -220,6 +220,53 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 	return nil
 }
 
+func (t *DeviceConfigurer) CreateProfile(name string) error {
+	filesystems, err := t.FilesystemPaths(name)
+	if err != nil {
+		return err
+	}
+	profileName := t.Config.ProfileName(name)
+	s := t.NewScript()
+	s.Run("lxc", "profile", "create", profileName)
+	for _, device := range t.Config.Devices {
+		dir, err := t.DeviceDir(filesystems, device, name)
+		if err != nil {
+			return err
+		}
+		s.Run("lxc", "profile", "device", "add", profileName,
+			device.Name,
+			"disk",
+			"path="+device.Path,
+			"source="+dir)
+	}
+	return s.Error()
+}
+
+func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
+	oldpattern := t.NewPattern(oldname)
+	newpattern := t.NewPattern(newname)
+	s := t.NewScript()
+	for _, fs := range t.Config.Filesystems {
+		oldpath, err := oldpattern.Substitute(fs.Pattern)
+		if err != nil {
+			return err
+		}
+		newpath, err := newpattern.Substitute(fs.Pattern)
+		if err != nil {
+			return err
+		}
+		if strings.HasPrefix(oldpath, "/") {
+			if util.DirExists(newpath) {
+				return errors.New(newpath + ": already exists")
+			}
+			s.Run("mv", oldpath, newpath)
+		} else {
+			s.Run("sudo", "zfs", "rename", oldpath, newpath)
+		}
+	}
+	return s.Error()
+}
+
 func (t *DeviceConfigurer) ListFilesystems(name string) ([]string, error) {
 	filesystems, err := t.FilesystemPaths(name)
 	if err != nil {

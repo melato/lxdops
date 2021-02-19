@@ -3,8 +3,10 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
+	"melato.org/lxdops/util"
 	"melato.org/script/v2"
 )
 
@@ -114,8 +116,8 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		}
 		lxcArgs = append(lxcArgs, container)
 		script.Run("lxc", lxcArgs...)
-		if script.Error != nil {
-			return err
+		if script.HasError() {
+			return script.Error()
 		}
 	} else {
 		sn := SplitSnapshotName(containerTemplate)
@@ -133,14 +135,14 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		}
 		copyArgs = append(copyArgs, container)
 		script.Run("lxc", copyArgs...)
-		if script.Error != nil {
-			return err
+		if script.HasError() {
+			return script.Error()
 		}
 
 		script.Run("lxc", append(projectArgs, "profile", "apply", container, strings.Join(profiles, ","))...)
 		script.Run("lxc", append(projectArgs, "start", container)...)
-		if script.Error != nil {
-			return err
+		if script.HasError() {
+			return script.Error()
 		}
 		if !t.DryRun {
 			err = WaitForNetwork(name)
@@ -183,4 +185,54 @@ func (t *Launcher) deleteContainer(name string, config *Config) error {
 
 func (t *Launcher) Delete(args []string) error {
 	return t.ConfigOptions.Run(args, t.deleteContainer)
+}
+
+func (t *Launcher) Rename(oldpath, newpath string) error {
+	oldname := BaseName(oldpath)
+	newname := BaseName(newpath)
+	if oldname == newname {
+		return errors.New(fmt.Sprintf("%s and %s have the same name", oldname, newname))
+	}
+	if filepath.Ext(oldpath) != filepath.Ext(newpath) {
+		return errors.New(fmt.Sprintf("%s and %s don't have the same extension", oldpath, newpath))
+	}
+	if util.FileExists(newpath) {
+		return errors.New(fmt.Sprintf("%s already exists", newpath))
+	}
+	config, err := t.ConfigOptions.ReadConfig(oldpath)
+	if err != nil {
+		return err
+	}
+	s := t.NewScript()
+	oldprofile := config.ProfileName(oldname)
+	newprofile := config.ProfileName(newname)
+	if len(config.Devices) > 0 {
+		if ProfileExists(newprofile) {
+			return errors.New(fmt.Sprintf("profile %s already exists", newprofile))
+		}
+	}
+	s.Run("lxc", "rename", oldname, newname)
+	if len(config.Devices) > 0 {
+		s.Run("lxc", "profile", "remove", newname, oldprofile)
+		s.Run("lxc", "profile", "delete", oldprofile)
+	}
+	if s.HasError() {
+		return s.Error()
+	}
+	dev := NewDeviceConfigurer(config)
+	dev.Trace = t.Trace
+	dev.DryRun = t.DryRun
+	err = dev.RenameFilesystems(oldname, newname)
+	if err != nil {
+		return err
+	}
+	if len(config.Devices) > 0 {
+		err := dev.CreateProfile(newname)
+		if err != nil {
+			return err
+		}
+		s.Run("lxc", "profile", "add", newname, newprofile)
+	}
+	s.Run("mv", oldpath, newpath)
+	return s.Error()
 }
