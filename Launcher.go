@@ -12,7 +12,7 @@ import (
 
 type Launcher struct {
 	ConfigOptions ConfigOptions
-	Trace         bool `name:"trace,t" usage:"print exec arguments"`
+	Trace         bool `name:""` //`name:"trace,t" usage:"print exec arguments"`
 	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 
 	Origin         string   `name:"origin" usage:"container to copy, overrides config"`
@@ -56,6 +56,7 @@ func (t *Launcher) launchContainer(name string, config *Config) error {
 }
 
 func (t *Launcher) Launch(args []string) error {
+	t.Trace = true
 	return t.ConfigOptions.Run(args, t.launchContainer)
 }
 
@@ -235,4 +236,16 @@ func (t *Launcher) Rename(oldpath, newpath string) error {
 	}
 	s.Run("mv", oldpath, newpath)
 	return s.Error()
+}
+
+func (t *Launcher) printFilesystems(name string, config *Config) error {
+	t.updateConfig(config)
+	dev := NewDeviceConfigurer(config)
+	dev.Trace = t.Trace
+	dev.DryRun = t.DryRun
+	return dev.PrintFilesystems(name)
+}
+
+func (t *Launcher) PrintFilesystems(arg string) error {
+	return t.ConfigOptions.Run([]string{arg}, t.printFilesystems)
 }

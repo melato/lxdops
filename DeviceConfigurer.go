@@ -158,7 +158,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 	}
 	for _, fs := range t.Config.Filesystems {
 		fsDir, _ := filesystems[fs.Id]
-		if !util.DirExists(fsDir) {
+		if t.Config.DeviceOrigin != "" || !util.DirExists(fsDir) {
 			err := t.CreateFilesystem(fs, name)
 			if err != nil {
 				return err
@@ -181,7 +181,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 			if !ProfileExists(profileName) {
 				useProfile = true
 				script.Run("lxc", "profile", "create", profileName)
-				if script.Error() != nil {
+				if script.HasError() {
 					return script.Error()
 				}
 			}
@@ -190,9 +190,11 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 		if err != nil {
 			return err
 		}
-		err = t.CreateDir(dir, true)
-		if err != nil {
-			return err
+		if t.Config.DeviceOrigin == "" {
+			err = t.CreateDir(dir, true)
+			if err != nil {
+				return err
+			}
 		}
 		if t.Config.DeviceTemplate != "" {
 			templateDir, err := t.DeviceDir(templateFilesystems, device, t.Config.DeviceTemplate)
@@ -280,4 +282,16 @@ func (t *DeviceConfigurer) ListFilesystems(name string) ([]string, error) {
 		}
 	}
 	return result, nil
+}
+
+func (t *DeviceConfigurer) PrintFilesystems(name string) error {
+	pattern := t.NewPattern(name)
+	for _, fs := range t.Config.Filesystems {
+		path, err := pattern.Substitute(fs.Pattern)
+		if err != nil {
+			return err
+		}
+		fmt.Println(path)
+	}
+	return nil
 }
