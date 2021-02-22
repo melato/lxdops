@@ -94,9 +94,6 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	containerTemplate := config.Origin
 	script := t.NewScript()
 	project, container := SplitContainerName(name)
-	if t.Trace {
-		fmt.Printf("name=%s project=%s container=%s\n", name, project, container)
-	}
 	projectArgs := ProjectArgs(project)
 	if containerTemplate == "" {
 		lxcArgs := append(projectArgs, "launch")
@@ -122,9 +119,6 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		}
 	} else {
 		sn := SplitSnapshotName(containerTemplate)
-		if t.Trace {
-			fmt.Printf("template=%s project=%s container=%s snapshot=%s\n", containerTemplate, sn.Project, sn.Container, sn.Snapshot)
-		}
 		copyArgs := append(ProjectArgs(sn.Project), "copy")
 		if project != "" {
 			copyArgs = append(copyArgs, "--target-project", project)
