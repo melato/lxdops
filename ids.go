@@ -2,7 +2,6 @@ package lxdops
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 
 	"melato.org/script/v2"
@@ -38,25 +37,6 @@ func (t *Ids) convert(s *script.Script, idString string) int {
 	return id
 }
 
-func (t *Ids) id(s *script.Script, idmap map[string]int, idString string, label string) int {
-	if s.HasError() {
-		return 0
-	}
-	if t.IsNumber(idString) {
-		return t.convert(s, idString)
-	}
-	id, found := idmap[idString]
-	if !found {
-		lines := s.Cmd("lxc", "exec", t.Container, "id", "-u", idString).ToLines()
-		if len(lines) != 1 {
-			s.Errors.Handle(errors.New(fmt.Sprintf("cannot get %s of %s", label, idString)))
-			id := t.convert(s, lines[0])
-			idmap[idString] = id
-		}
-	}
-	return id
-}
-
 func (t *Ids) Uid(s *script.Script, user string) int {
 	if s.HasError() {
 		return 0
@@ -71,7 +51,8 @@ func (t *Ids) Uid(s *script.Script, user string) int {
 	if !found {
 		lines := s.Cmd("lxc", "exec", t.Container, "id", "--", "-u", user).ToLines()
 		if len(lines) != 1 {
-			s.Errors.Handle(errors.New("cannot get uid of:" + user))
+			s.Errors.Clear()
+			s.Errors.Handle(errors.New("unknown user: " + user))
 			return -1
 		}
 		id = t.convert(s, lines[0])
@@ -94,7 +75,8 @@ func (t *Ids) Gid(s *script.Script, group string) int {
 	if !found {
 		lines := s.Cmd("lxc", "exec", t.Container, "id", "--", "-g", group).ToLines()
 		if len(lines) != 1 {
-			s.Errors.Handle(errors.New("cannot get gid of:" + group))
+			s.Errors.Clear()
+			s.Errors.Handle(errors.New("unknown group: " + group))
 			return -1
 		}
 		id = t.convert(s, lines[0])

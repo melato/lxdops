@@ -321,7 +321,7 @@ func (t *Configurer) copyFiles(config *Config, name string) error {
 	ids := Ids{Container: name}
 	// copy any files
 	project, container := SplitContainerName(name)
-	var failedFiles []string
+	s := t.NewScript()
 	for _, f := range config.Files {
 		var path string
 		if strings.HasPrefix(f.Path, "/") {
@@ -339,7 +339,6 @@ func (t *Configurer) copyFiles(config *Config, name string) error {
 			args = append(args, "--mode", f.Mode)
 		}
 
-		s := t.NewScript()
 		var uid, gid int
 		if f.User != "" {
 			if f.Uid != 0 {
@@ -363,12 +362,8 @@ func (t *Configurer) copyFiles(config *Config, name string) error {
 		}
 		s.Run("lxc", args...)
 		if s.HasError() {
-			fmt.Println(f.Source, s.Error())
-			failedFiles = append(failedFiles, f.Source)
+			return errors.New(fmt.Sprintf("failed to copy file %s: %v", f.Source, s.Error()))
 		}
-	}
-	if failedFiles != nil {
-		return errors.New("failed to copy files: " + strings.Join(failedFiles, ","))
 	}
 	return nil
 }
