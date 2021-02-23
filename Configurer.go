@@ -127,7 +127,7 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		s := &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 		projectArgs := ProjectArgs(project)
 		s.Cmd("lxc", append(projectArgs, "file", "pull", path, "-")...).CombineOutput().ToNull()
-		if s.Error() != nil {
+		if s.HasError() {
 			s.Errors.Clear()
 			s.Run("lxc", append(projectArgs, "file", "push", hostFile, path)...)
 			s.Run("lxc", append(projectArgs, "exec", container, "chown", user.Name+":"+user.Name, guestFile)...)
@@ -267,32 +267,26 @@ func (t *Configurer) changeUserPasswords(config *Config, name string) error {
 	return t.changePasswords(config, name, users)
 }
 
-func (t *Configurer) runScripts(config *Config, name string, first bool) error {
+func (t *Configurer) runScripts(config *Config, name string, scripts []*Script) error {
 	// copy any script files
 	var failedFiles []string
 	project, container := SplitContainerName(name)
 	projectArgs := ProjectArgs(project)
-	for _, script := range config.Scripts {
-		if script.First != first {
-			continue
-		}
+	for _, script := range scripts {
 		if script.File != "" {
 			s := t.NewScript()
 			args := []string{"file"}
 			args = append(args, projectArgs...)
 			args = append(args, "push", script.File, container+"/root/")
 			s.Run("lxc", args...)
-			if s.Error() != nil {
+			if s.HasError() {
 				fmt.Println(script.File, s.Error())
 				failedFiles = append(failedFiles, script.File)
 			}
 		}
 	}
 	if failedFiles == nil {
-		for _, script := range config.Scripts {
-			if script.First != first {
-				continue
-			}
+		for _, script := range scripts {
 			runner := t.NewExec().Dir(script.Dir).Uid(script.Uid).Gid(script.Gid)
 			if script.File != "" {
 				baseName := filepath.Base(script.File)
@@ -312,7 +306,7 @@ func (t *Configurer) runScripts(config *Config, name string, first bool) error {
 				s := t.NewScript()
 				s.Run("lxc", append(projectArgs, "stop", container)...)
 				s.Run("lxc", append(projectArgs, "start", container)...)
-				if s.Error() != nil {
+				if s.HasError() {
 					return s.Error()
 				}
 			}
@@ -348,7 +342,7 @@ func (t *Configurer) copyFiles(config *Config, name string) error {
 		}
 		s := t.NewScript()
 		s.Run("lxc", args...)
-		if s.Error() != nil {
+		if s.HasError() {
 			fmt.Println(f.Source, s.Error())
 			failedFiles = append(failedFiles, f.Source)
 		}
@@ -367,6 +361,17 @@ func (t *Configurer) includes(flag bool) bool {
 	}
 }
 
+// selectScripts returns the config scripts that should run first or normally
+func (t *Configurer) selectScripts(config *Config, first bool) []*Script {
+	var result []*Script
+	for _, script := range config.Scripts {
+		if script.First == first {
+			result = append(result, script)
+		}
+	}
+	return result
+}
+
 /** run things inside the container:  install packages, create users, run scripts */
 func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 	var err error
@@ -377,7 +382,7 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 		}
 	}
 	if t.includes(t.Scripts) {
-		err = t.runScripts(config, name, true)
+		err = t.runScripts(config, name, t.selectScripts(config, true))
 		if err != nil {
 			return err
 		}
@@ -407,7 +412,7 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 		}
 	}
 	if t.includes(t.Scripts) {
-		err = t.runScripts(config, name, false)
+		err = t.runScripts(config, name, t.selectScripts(config, false))
 		if err != nil {
 			return err
 		}
