@@ -2,6 +2,7 @@ package lxdops
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"melato.org/script/v2"
@@ -9,11 +10,18 @@ import (
 
 type Ids struct {
 	Container string
-	uids      map[string]int
-	gids      map[string]int
+	uids      *idset
+	gids      *idset
 }
 
-func (t *Ids) IsNumber(s string) bool {
+type idset struct {
+	Container string
+	Flag      string
+	Label     string
+	ids       map[string]int
+}
+
+func (t *idset) IsNumber(s string) bool {
 	if s == "" {
 		return false
 	}
@@ -28,7 +36,7 @@ func (t *Ids) IsNumber(s string) bool {
 	return true
 }
 
-func (t *Ids) convert(s *script.Script, idString string) int {
+func (t *idset) convert(s *script.Script, idString string) int {
 	id, err := strconv.Atoi(idString)
 	if err != nil {
 		s.Errors.Handle(err)
@@ -37,50 +45,40 @@ func (t *Ids) convert(s *script.Script, idString string) int {
 	return id
 }
 
-func (t *Ids) Uid(s *script.Script, user string) int {
+func (t *idset) id(s *script.Script, sid string) int {
 	if s.HasError() {
 		return 0
 	}
-	if t.IsNumber(user) {
-		return t.convert(s, user)
+	if t.IsNumber(sid) {
+		return t.convert(s, sid)
 	}
-	if t.uids == nil {
-		t.uids = make(map[string]int)
+	if t.ids == nil {
+		t.ids = make(map[string]int)
 	}
-	id, found := t.uids[user]
+	id, found := t.ids[sid]
 	if !found {
-		lines := s.Cmd("lxc", "exec", t.Container, "id", "--", "-u", user).ToLines()
+		lines := s.Cmd("lxc", "exec", t.Container, "id", "--", t.Flag, sid).ToLines()
 		if len(lines) != 1 {
 			s.Errors.Clear()
-			s.Errors.Handle(errors.New("unknown user: " + user))
+			s.Errors.Handle(errors.New(fmt.Sprintf("unknown %s: ", t.Label, sid)))
 			return -1
 		}
 		id = t.convert(s, lines[0])
-		t.uids[user] = id
+		t.ids[sid] = id
 	}
 	return id
 }
 
-func (t *Ids) Gid(s *script.Script, group string) int {
-	if s.HasError() {
-		return 0
-	}
-	if t.IsNumber(group) {
-		return t.convert(s, group)
-	}
+func (t *Ids) Uid(s *script.Script, user string) int {
 	if t.uids == nil {
-		t.uids = make(map[string]int)
+		t.uids = &idset{Container: t.Container, Flag: "-u", Label: "user"}
 	}
-	id, found := t.uids[group]
-	if !found {
-		lines := s.Cmd("lxc", "exec", t.Container, "id", "--", "-g", group).ToLines()
-		if len(lines) != 1 {
-			s.Errors.Clear()
-			s.Errors.Handle(errors.New("unknown group: " + group))
-			return -1
-		}
-		id = t.convert(s, lines[0])
-		t.uids[group] = id
+	return t.uids.id(s, user)
+}
+
+func (t *Ids) Gid(s *script.Script, group string) int {
+	if t.gids == nil {
+		t.gids = &idset{Container: t.Container, Flag: "-g", Label: "group"}
 	}
-	return id
+	return t.gids.id(s, group)
 }
