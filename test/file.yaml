@@ -1,0 +1,13 @@
+os:
+  name: alpine
+files:
+  - path: /root/1.yaml
+    source: file.yaml
+    mode: 040
+    user: 1
+  - path: /root/adm.yaml
+    source: file.yaml
+    user: adm
+  - path: /root/minus.yaml
+    source: file.yaml
+    user: -1
