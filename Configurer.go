@@ -134,8 +134,6 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 			if err := s.Error(); err != nil {
 				return err
 			}
-		} else {
-			fmt.Printf("%s already exists\n", path)
 		}
 	}
 	return nil
