@@ -25,6 +25,8 @@ type Config struct {
 	Devices        []*Device     `yaml:"devices,omitempty"`
 	Profiles       []string      `yaml:"profiles,omitempty"`
 
+	//PreScripts []*Script `yaml:"pre-scripts,omitempty"`
+
 	Packages  []string  `yaml:"packages,omitempty"`
 	Users     []*User   `yaml:"users,omitempty"`
 	Files     []*File   `yaml:"files,omitempty"`
@@ -80,6 +82,8 @@ type File struct {
 	Source string
 
 	Recursive bool
+
+	Mode string
 
 	Uid int
 

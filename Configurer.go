@@ -334,6 +334,11 @@ func (t *Configurer) copyFiles(config *Config, name string) error {
 		if f.Recursive {
 			args = append(args, "-r")
 		}
+		if f.Mode != "" {
+			args = append(args, "--mode", f.Mode)
+		}
+		// if we do not set --uid, --gid, lxd uses the calling users's uid/gid.
+		// If that is the desired, specify uid: -1, gid: -1
 		if f.Uid != -1 {
 			args = append(args, "--uid", strconv.Itoa(f.Uid))
 		}
