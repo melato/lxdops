@@ -205,10 +205,12 @@ func (t *Launcher) deleteContainer(name string, config *Config) error {
 }
 
 func (t *Launcher) Delete(args []string) error {
+	t.Trace = true
 	return t.ConfigOptions.Run(args, t.deleteContainer)
 }
 
 func (t *Launcher) Rename(oldpath, newpath string) error {
+	t.Trace = true
 	oldname := BaseName(oldpath)
 	newname := BaseName(newpath)
 	if oldname == newname {
