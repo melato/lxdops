@@ -88,6 +88,10 @@ type File struct {
 	Uid int
 
 	Gid int
+
+	User string
+
+	Group string
 }
 
 type Script struct {

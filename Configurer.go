@@ -318,6 +318,7 @@ func (t *Configurer) runScripts(config *Config, name string, scripts []*Script) 
 }
 
 func (t *Configurer) copyFiles(config *Config, name string) error {
+	ids := Ids{Container: name}
 	// copy any files
 	project, container := SplitContainerName(name)
 	var failedFiles []string
@@ -337,15 +338,29 @@ func (t *Configurer) copyFiles(config *Config, name string) error {
 		if f.Mode != "" {
 			args = append(args, "--mode", f.Mode)
 		}
-		// if we do not set --uid, --gid, lxd uses the calling users's uid/gid.
-		// If that is the desired, specify uid: -1, gid: -1
-		if f.Uid != -1 {
-			args = append(args, "--uid", strconv.Itoa(f.Uid))
-		}
-		if f.Gid != -1 {
-			args = append(args, "--gid", strconv.Itoa(f.Gid))
-		}
+
 		s := t.NewScript()
+		var uid, gid int
+		if f.User != "" {
+			if f.Uid != 0 {
+				return errors.New("both uid and user are specified")
+			}
+			uid = ids.Uid(s, f.User)
+		}
+		if f.Group != "" {
+			if f.Gid != 0 {
+				return errors.New("both gid and group are specified")
+			}
+			gid = ids.Gid(s, f.Group)
+		}
+		// if we do not set --uid, --gid, lxd uses the calling users's uid/gid.
+		// If that is the desired behavior, specify uid: -1, gid: -1
+		if uid != -1 {
+			args = append(args, "--uid", strconv.Itoa(uid))
+		}
+		if gid != -1 {
+			args = append(args, "--gid", strconv.Itoa(gid))
+		}
 		s.Run("lxc", args...)
 		if s.HasError() {
 			fmt.Println(f.Source, s.Error())
