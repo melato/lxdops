@@ -25,7 +25,7 @@ type Config struct {
 	Devices        []*Device     `yaml:"devices,omitempty"`
 	Profiles       []string      `yaml:"profiles,omitempty"`
 
-	//PreScripts []*Script `yaml:"pre-scripts,omitempty"`
+	PreScripts []*Script `yaml:"pre-scripts,omitempty"`
 
 	Packages  []string  `yaml:"packages,omitempty"`
 	Users     []*User   `yaml:"users,omitempty"`
@@ -101,9 +101,6 @@ type Script struct {
 	/** The file to run.  This is a file on the host, that is copied to the container in /root/ and run there.
 	 */
 	File string `xml:"file,attr" yaml:"file,omitempty"`
-
-	/** If true, run before packages and users, otherwise after packages and users. */
-	First bool `yaml:"first,omitempty"`
 
 	/** Reboot after running this script */
 	Reboot bool `xml:"reboot,attr" yaml:"reboot,omitempty"`

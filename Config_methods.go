@@ -168,6 +168,7 @@ func (t *Config) Merge(c *Config) error {
 	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
 	t.Filesystems = append(t.Filesystems, c.Filesystems...)
 	t.Devices = append(t.Devices, c.Devices...)
+	t.PreScripts = append(t.PreScripts, c.PreScripts...)
 	t.Packages = append(t.Packages, c.Packages...)
 	t.Profiles = append(t.Profiles, c.Profiles...)
 	t.Users = append(t.Users, c.Users...)

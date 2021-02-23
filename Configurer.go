@@ -267,7 +267,7 @@ func (t *Configurer) changeUserPasswords(config *Config, name string) error {
 	return t.changePasswords(config, name, users)
 }
 
-func (t *Configurer) runScripts(config *Config, name string, scripts []*Script) error {
+func (t *Configurer) runScripts(name string, scripts []*Script) error {
 	// copy any script files
 	var failedFiles []string
 	project, container := SplitContainerName(name)
@@ -376,17 +376,6 @@ func (t *Configurer) includes(flag bool) bool {
 	}
 }
 
-// selectScripts returns the config scripts that should run first or normally
-func (t *Configurer) selectScripts(config *Config, first bool) []*Script {
-	var result []*Script
-	for _, script := range config.Scripts {
-		if script.First == first {
-			result = append(result, script)
-		}
-	}
-	return result
-}
-
 /** run things inside the container:  install packages, create users, run scripts */
 func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 	var err error
@@ -397,7 +386,7 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 		}
 	}
 	if t.includes(t.Scripts) {
-		err = t.runScripts(config, name, t.selectScripts(config, true))
+		err = t.runScripts(name, config.PreScripts)
 		if err != nil {
 			return err
 		}
@@ -427,7 +416,7 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 		}
 	}
 	if t.includes(t.Scripts) {
-		err = t.runScripts(config, name, t.selectScripts(config, false))
+		err = t.runScripts(name, config.Scripts)
 		if err != nil {
 			return err
 		}

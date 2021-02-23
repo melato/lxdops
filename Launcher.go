@@ -3,6 +3,7 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -55,9 +56,24 @@ func (t *Launcher) launchContainer(name string, config *Config) error {
 	return t.LaunchContainer(config, name)
 }
 
+func (t *Launcher) rebuildContainer(name string, config *Config) error {
+	t.updateConfig(config)
+	exec.Command("lxc", "stop", name).Run() // ignore error
+	err := t.DeleteContainer(config, name)
+	if err != nil {
+		return err
+	}
+	return t.LaunchContainer(config, name)
+}
+
 func (t *Launcher) Launch(args []string) error {
 	t.Trace = true
 	return t.ConfigOptions.Run(args, t.launchContainer)
+}
+
+func (t *Launcher) Rebuild(args []string) error {
+	t.Trace = true
+	return t.ConfigOptions.Run(args, t.rebuildContainer)
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
@@ -156,26 +172,36 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	return script.Error()
 }
 
-func (t *Launcher) deleteContainer(name string, config *Config) error {
-	t.updateConfig(config)
+func (t *Launcher) DeleteContainer(config *Config, name string) error {
 	project, container := SplitContainerName(name)
 	s := t.NewScript()
 	s.Errors.AlwaysContinue = true
 	projectArgs := ProjectArgs(project)
 	s.Run("lxc", append(projectArgs, "delete", container)...)
 	s.Run("lxc", "profile", "delete", config.ProfileName(name))
+	return s.Error()
+}
+
+func (t *Launcher) deleteContainer(name string, config *Config) error {
+	t.updateConfig(config)
+	err := t.DeleteContainer(config, name)
+	if err != nil {
+		return err
+	}
 	dev := NewDeviceConfigurer(config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	filesystems, err := dev.ListFilesystems(name)
-	s.Errors.Handle(err)
-	if err == nil && len(filesystems) > 0 {
+	if err != nil {
+		return err
+	}
+	if len(filesystems) > 0 {
 		fmt.Println("not deleted filesystems:")
 		for _, dir := range filesystems {
 			fmt.Println(dir)
 		}
 	}
-	return s.Error()
+	return nil
 }
 
 func (t *Launcher) Delete(args []string) error {

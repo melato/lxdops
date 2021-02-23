@@ -21,6 +21,7 @@ func RootCommand() *command.SimpleCommand {
 		Short("launch a container").
 		Example("launch php php.yaml")
 	cmd.Command("delete").Flags(launcher).RunMethodArgs(launcher.Delete).Short("delete a stopped container and its profile")
+	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.Rebuild).Short("stop, delete, launch")
 	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename).Short("rename a container, filesystems, config file, and rebuild its profile")
 	cmd.Command("filesystems").Flags(launcher).RunFunc(launcher.PrintFilesystems).Short("list filesystems")
 
