@@ -3,7 +3,6 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -58,7 +57,9 @@ func (t *Launcher) launchContainer(name string, config *Config) error {
 
 func (t *Launcher) rebuildContainer(name string, config *Config) error {
 	t.updateConfig(config)
-	exec.Command("lxc", "stop", name).Run() // ignore error
+	s := t.NewScript()
+	s.Run("lxc", "stop", name)
+	s.Errors.Clear() // ignore error
 	err := t.DeleteContainer(config, name)
 	if err != nil {
 		return err
