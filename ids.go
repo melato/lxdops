@@ -60,7 +60,7 @@ func (t *idset) id(s *script.Script, sid string) int {
 		lines := s.Cmd("lxc", "exec", t.Container, "id", "--", t.Flag, sid).ToLines()
 		if len(lines) != 1 {
 			s.Errors.Clear()
-			s.Errors.Handle(errors.New(fmt.Sprintf("unknown %s: ", t.Label, sid)))
+			s.Errors.Handle(errors.New(fmt.Sprintf("unknown %s: %s", t.Label, sid)))
 			return -1
 		}
 		id = t.convert(s, lines[0])

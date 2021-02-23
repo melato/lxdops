@@ -156,7 +156,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 	if err != nil {
 		return err
 	}
-	for _, fs := range t.Config.Filesystems {
+	for _, fs := range FilesystemList(t.Config.Filesystems).Sorted() {
 		fsDir, _ := filesystems[fs.Id]
 		if t.Config.DeviceOrigin != "" || !util.DirExists(fsDir) {
 			err := t.CreateFilesystem(fs, name)
@@ -248,7 +248,7 @@ func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
 	oldpattern := t.NewPattern(oldname)
 	newpattern := t.NewPattern(newname)
 	s := t.NewScript()
-	for _, fs := range t.Config.Filesystems {
+	for _, fs := range RootFilesystems(t.Config.Filesystems) {
 		oldpath, err := oldpattern.Substitute(fs.Pattern)
 		if err != nil {
 			return err
