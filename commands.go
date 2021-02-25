@@ -13,8 +13,9 @@ type DryRun struct {
 }
 
 func RootCommand() *command.SimpleCommand {
-	var lxdOps LxdOps
+	client := &LxdClient{}
 	var cmd command.SimpleCommand
+	cmd.Flags(client)
 	launcher := &Launcher{}
 	cmd.Command("launch").Flags(launcher).RunMethodArgs(launcher.Launch).
 		Use("<container> <config-file> ...").
@@ -49,6 +50,7 @@ func RootCommand() *command.SimpleCommand {
 	profile.Command("apply").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Apply).Short("apply the config profiles to a container")
 	profile.Command("reorder").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Reorder).Short("reorder container profiles to match config order")
 
+	var lxdOps LxdOps
 	profile.Command("exists").RunMethodArgs(lxdOps.ProfileExists).Use("<profile>").Short("check if a profile exists")
 	profile.Command("add-disk").RunMethodArgs(lxdOps.AddDiskDevice).Use("<profile> <source> <path>").Short("add a disk device to a profile")
 	cmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot).Short("print zfs parent of lxd dataset")
@@ -68,8 +70,8 @@ func RootCommand() *command.SimpleCommand {
 	var networkOp NetworkOp
 	cmd.Command("addresses").Flags(&networkOp).RunMethodE(networkOp.ExportAddresses).Short("export container addresses")
 
-	var containerOps ContainerOps
-	containerCmd := cmd.Command("container")
+	containerOps := &ContainerOps{Client: client}
+	containerCmd := cmd.Command("container").Flags(containerOps)
 	containerCmd.Command("profiles").RunMethodArgs(containerOps.Profiles)
 	containerCmd.Command("network").RunMethodArgs(containerOps.Network)
 	containerCmd.Command("wait").RunMethodArgs(containerOps.Wait)

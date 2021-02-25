@@ -3,11 +3,17 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/lxc/lxd/shared/api"
 )
 
 type ContainerOps struct {
+	Client *LxdClient `name:"-"`
+}
+
+func (t *ContainerOps) Init() error {
+	return t.Client.Init()
 }
 
 func (t *ContainerOps) listProfiles(c *api.ContainerFull) error {
@@ -47,9 +53,36 @@ func (t *ContainerOps) Network(args []string) error {
 	return t.run(args, t.printNetwork)
 }
 
+func (t *ContainerOps) WaitForNetwork(container string) error {
+	server, err := t.Client.Server()
+	if err != nil {
+		return err
+	}
+	for i := 0; i < 30; i++ {
+		state, _, err := server.GetContainerState(container)
+		if err != nil {
+			return err
+		}
+		if state == nil {
+			continue
+		}
+		for _, net := range state.Network {
+			for _, a := range net.Addresses {
+				if a.Family == "inet" && a.Scope == "global" {
+					fmt.Println(a.Address)
+					return nil
+				}
+			}
+		}
+		fmt.Printf("status: %s\n", state.Status)
+		time.Sleep(1 * time.Second)
+	}
+	return errors.New("could not get ip address for: " + container)
+}
+
 func (t *ContainerOps) Wait(args []string) error {
 	for _, container := range args {
-		err := WaitForNetwork(container)
+		err := t.WaitForNetwork(container)
 		if err != nil {
 			return err
 		}
