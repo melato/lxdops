@@ -188,7 +188,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	}
 	t.NewConfigurer().ConfigureContainer(config, name)
 	if config.Snapshot != "" {
-		fmt.Println("snapshot %s %s\n", container, config.Snapshot)
+		fmt.Printf("snapshot %s %s\n", container, config.Snapshot)
 		if !t.DryRun {
 			op, err := server.CreateContainerSnapshot(container, api.ContainerSnapshotsPost{Name: config.Snapshot})
 			if err != nil {
@@ -200,7 +200,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		}
 	}
 	if config.Stop {
-		fmt.Println("stop %s\n", container)
+		fmt.Printf("stop %s\n", container)
 		if !t.DryRun {
 			op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "stop"}, "")
 			if err != nil {
