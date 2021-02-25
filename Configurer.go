@@ -1,6 +1,7 @@
 package lxdops
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/password"
 	"melato.org/lxdops/util"
@@ -77,11 +79,14 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		return errors.New("host $HOME doesn't exist")
 	}
 	hostFile := filepath.Join(hostHome, ".ssh", "authorized_keys")
+	authorizedKeys, err := os.ReadFile(hostFile)
+	if err != nil {
+		return err
+	}
 	server, container, err := t.Client.InstanceServer(name)
 	if err != nil {
 		return err
 	}
-	project, container := SplitContainerName(name)
 	for _, user := range config.Users {
 		user = user.EffectiveUser()
 		if !user.Ssh {
@@ -89,15 +94,13 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		}
 		home := user.HomeDir()
 		guestFile := filepath.Join(home, ".ssh", "authorized_keys")
-		path := container + guestFile
-		s := &script.Script{Trace: t.Trace, DryRun: t.DryRun}
-		projectArgs := ProjectArgs(project)
-		if !fileExists(server, container, guestFile) {
-			s.Run("lxc", append(projectArgs, "file", "push", hostFile, path)...)
-			if s.HasError() {
-				return s.Error()
+		if !FileExists(server, container, guestFile) {
+			file := lxd.ContainerFileArgs{Content: bytes.NewReader(authorizedKeys)}
+			err := server.CreateContainerFile(container, guestFile, file)
+			if err != nil {
+				return AnnotateLXDError(guestFile, err)
 			}
-			err := t.Client.NewExec(name).Run("", "chown", "", user.Name+":"+user.Name, guestFile)
+			err = t.Client.NewExec(name).Run("", "chown", "", user.Name+":"+user.Name, guestFile)
 			if err != nil {
 				return err
 			}
@@ -232,35 +235,30 @@ func (t *Configurer) runScripts(name string, scripts []*Script) error {
 	if err != nil {
 		return err
 	}
-	var failedFiles []string
-	project, container := SplitContainerName(name)
-	projectArgs := ProjectArgs(project)
+	ex := t.Client.NewExec(name)
 	for _, script := range scripts {
+		ex.Dir(script.Dir)
+		ex.Uid(script.Uid)
+		ex.Gid(script.Gid)
 		if script.File != "" {
-			s := t.NewScript()
-			args := []string{"file"}
-			args = append(args, projectArgs...)
-			args = append(args, "push", script.File, container+"/root/")
-			s.Run("lxc", args...)
-			if s.HasError() {
-				fmt.Println(script.File, s.Error())
-				failedFiles = append(failedFiles, script.File)
+			content, err := os.ReadFile(script.File)
+			if err != nil {
+				return err
 			}
-		}
-	}
-	if failedFiles == nil {
-		for _, script := range scripts {
-			runner := t.Client.NewExec(name).Dir(script.Dir).Uid(script.Uid).Gid(script.Gid)
-			if script.File != "" {
-				baseName := filepath.Base(script.File)
-				err := runner.Run("", "/root/"+baseName)
-				if err != nil {
-					return err
-				}
+			file := lxd.ContainerFileArgs{Content: bytes.NewReader(content),
+				Mode: 0555}
+			guestFile := filepath.Join("/root", filepath.Base(script.File))
+			err = server.CreateContainerFile(container, guestFile, file)
+			if err != nil {
+				return AnnotateLXDError(guestFile, err)
+			}
+			err = ex.Run("", guestFile)
+			if err != nil {
+				return err
 			}
 			body := strings.TrimSpace(script.Body)
 			if body != "" {
-				err := runner.Run(body, "sh")
+				err := ex.Run(body, "sh")
 				if err != nil {
 					return err
 				}
@@ -282,10 +280,8 @@ func (t *Configurer) runScripts(name string, scripts []*Script) error {
 				}
 			}
 		}
-		return nil
-	} else {
-		return errors.New("failed to copy scripts: " + strings.Join(failedFiles, ","))
 	}
+	return nil
 }
 
 func (t *Configurer) copyFiles(config *Config, name string) error {

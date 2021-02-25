@@ -1,7 +1,6 @@
 package lxdops
 
 import (
-	"errors"
 	"fmt"
 
 	"melato.org/lxdops/util"
@@ -64,24 +63,5 @@ func (t *ContainerOps) State(name string, action ...string) error {
 	}
 	fmt.Println(etag)
 	util.PrintYaml(state)
-	return nil
-}
-
-func (t *ContainerOps) File(name string, file string) error {
-	server, container, err := t.Client.InstanceServer(name)
-	if err != nil {
-		return err
-	}
-	reader, response, err := server.GetContainerFile(container, file)
-	if err != nil {
-		return AnnotateLXDError(container, err)
-	}
-	util.PrintYaml(response)
-	if reader != nil {
-		err = reader.Close()
-		if err != nil {
-			return errors.New(file + ": " + err.Error())
-		}
-	}
 	return nil
 }
