@@ -112,10 +112,10 @@ type Script struct {
 	Dir string `xml:"dir,attr" yaml:"dir,omitempty"`
 
 	/** The uid to run as */
-	Uid int `xml:"uid,attr" yaml:"uid,omitempty"`
+	Uid uint32 `xml:"uid,attr" yaml:"uid,omitempty"`
 
 	/** The gid to run as */
-	Gid int `xml:"gid,attr" yaml:"gid,omitempty"`
+	Gid uint32 `xml:"gid,attr" yaml:"gid,omitempty"`
 }
 
 type User struct {

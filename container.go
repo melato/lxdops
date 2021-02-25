@@ -1,87 +1,89 @@
 package lxdops
 
 import (
-	"errors"
 	"fmt"
-	"time"
+	"os"
 
+	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
+	"melato.org/lxdops/util"
 )
 
 type ContainerOps struct {
 	Client *LxdClient `name:"-"`
 }
 
-func (t *ContainerOps) listProfiles(c *api.ContainerFull) error {
+func (t *ContainerOps) Profiles(container string) error {
+	server, err := t.Client.Server()
+	if err != nil {
+		return err
+	}
+	c, _, err := server.GetContainer(container)
+	if err != nil {
+		return AnnotateLXDError(container, err)
+	}
 	for _, profile := range c.Profiles {
 		fmt.Println(profile)
 	}
 	return nil
 }
 
-func (t *ContainerOps) printNetwork(c *api.ContainerFull) error {
-	if c.State != nil {
-		for name, net := range c.State.Network {
-			for _, a := range net.Addresses {
-				fmt.Printf("%s %s %s %s/%s\n", name, a.Family, a.Scope, a.Address, a.Netmask)
-			}
-		}
-	}
-	return nil
-}
-
-func (t *ContainerOps) run(args []string, f func(c *api.ContainerFull) error) error {
-	if len(args) != 1 {
-		return errors.New("usage: <container>")
-	}
-	c, err := ListContainer(args[0])
-	if err != nil {
-		return err
-	}
-	return f(c)
-}
-
-func (t *ContainerOps) Profiles(args []string) error {
-	return t.run(args, t.listProfiles)
-}
-
-func (t *ContainerOps) Network(args []string) error {
-	return t.run(args, t.printNetwork)
-}
-
-func (t *ContainerOps) WaitForNetwork(container string) error {
+func (t *ContainerOps) Network(container string) error {
 	server, err := t.Client.Server()
 	if err != nil {
 		return err
 	}
-	for i := 0; i < 30; i++ {
-		state, _, err := server.GetContainerState(container)
-		if err != nil {
-			return err
-		}
-		if state == nil {
-			continue
-		}
-		for _, net := range state.Network {
-			for _, a := range net.Addresses {
-				if a.Family == "inet" && a.Scope == "global" {
-					fmt.Println(a.Address)
-					return nil
-				}
-			}
-		}
-		fmt.Printf("status: %s\n", state.Status)
-		time.Sleep(1 * time.Second)
+	state, _, err := server.GetContainerState(container)
+	if err != nil {
+		return AnnotateLXDError(container, err)
 	}
-	return errors.New("could not get ip address for: " + container)
+	for name, net := range state.Network {
+		for _, a := range net.Addresses {
+			fmt.Printf("%s %s %s %s/%s\n", name, a.Family, a.Scope, a.Address, a.Netmask)
+		}
+	}
+	return nil
 }
 
 func (t *ContainerOps) Wait(args []string) error {
 	for _, container := range args {
-		err := t.WaitForNetwork(container)
+		err := t.Client.WaitForNetwork(container)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (t *ContainerOps) State(name string, action ...string) error {
+	server, container, err := t.Client.ContainerServer(name)
+	if err != nil {
+		return err
+	}
+	state, etag, err := server.GetContainerState(container)
+	if err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	fmt.Println(etag)
+	util.PrintYaml(state)
+	return nil
+}
+
+func (t *ContainerOps) Exec(name string, command ...string) error {
+	server, container, err := t.Client.InstanceServer(name)
+	if err != nil {
+		return err
+	}
+	var post api.InstanceExecPost
+	post.Command = command
+	post.WaitForWS = true
+	var args lxd.InstanceExecArgs
+	args.Stdout = os.Stdout
+	args.Stderr = os.Stderr
+	op, err := server.ExecInstance(container, post, &args)
+	if err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	err = op.Wait()
+	return AnnotateLXDError(container, err)
 }

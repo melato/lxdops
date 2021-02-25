@@ -5,6 +5,8 @@ import (
 	"errors"
 	"os"
 	"strings"
+
+	lxd "github.com/lxc/lxd/client"
 )
 
 type HostAddress struct {
@@ -13,6 +15,7 @@ type HostAddress struct {
 }
 
 type NetworkManager struct {
+	Client *LxdClient
 }
 
 func (t *NetworkManager) ParseAddress(addr string) string {
@@ -23,8 +26,8 @@ func (t *NetworkManager) ParseAddress(addr string) string {
 	return ""
 }
 
-func (t *NetworkManager) GetProjectAddresses(project string) ([]*HostAddress, error) {
-	containers, err := ListContainersForProject(project)
+func (t *NetworkManager) GetProjectAddresses(server lxd.ContainerServer, project string) ([]*HostAddress, error) {
+	containers, err := server.GetContainersFull()
 	if err != nil {
 		return nil, err
 	}
@@ -46,13 +49,17 @@ func (t *NetworkManager) GetProjectAddresses(project string) ([]*HostAddress, er
 }
 
 func (t *NetworkManager) GetAddresses() ([]*HostAddress, error) {
-	projects, err := ProjectNames()
+	server, err := t.Client.Server()
+	if err != nil {
+		return nil, err
+	}
+	projects, err := server.GetProjects()
 	if err != nil {
 		return nil, err
 	}
 	var addresses []*HostAddress
 	for _, project := range projects {
-		paddresses, err := t.GetProjectAddresses(project)
+		paddresses, err := t.GetProjectAddresses(server, project.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -79,15 +86,16 @@ func (t *NetworkManager) WriteAddresses(addresses []*HostAddress, file string, h
 }
 
 type NetworkOp struct {
-	OutputFile string `name:"o" usage:"output file"`
-	Headers    bool   `name:"headers" usage:"include headers"`
+	Client     *LxdClient `name:"-"`
+	OutputFile string     `name:"o" usage:"output file"`
+	Headers    bool       `name:"headers" usage:"include headers"`
 }
 
 func (t *NetworkOp) ExportAddresses() error {
 	if t.OutputFile == "" {
 		return errors.New("Missing output file")
 	}
-	var net NetworkManager
+	net := &NetworkManager{Client: t.Client}
 	containers, err := net.GetAddresses()
 
 	if err != nil {

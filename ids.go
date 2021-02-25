@@ -9,16 +9,16 @@ import (
 )
 
 type Ids struct {
-	Container string
-	uids      *idset
-	gids      *idset
+	Exec *execRunner
+	uids *idset
+	gids *idset
 }
 
 type idset struct {
-	Container string
-	Flag      string
-	Label     string
-	ids       map[string]int
+	Exec  *execRunner
+	Flag  string
+	Label string
+	ids   map[string]int
 }
 
 func (t *idset) IsNumber(s string) bool {
@@ -57,9 +57,12 @@ func (t *idset) id(s *script.Script, sid string) int {
 	}
 	id, found := t.ids[sid]
 	if !found {
-		lines := s.Cmd("lxc", "exec", t.Container, "id", "--", t.Flag, sid).ToLines()
+		var lines []string
+		data, err := t.Exec.Output("", "id", "--", t.Flag, sid)
+		if err == nil {
+			lines = script.BytesToLines(data)
+		}
 		if len(lines) != 1 {
-			s.Errors.Clear()
 			s.Errors.Handle(errors.New(fmt.Sprintf("unknown %s: %s", t.Label, sid)))
 			return -1
 		}
@@ -71,14 +74,14 @@ func (t *idset) id(s *script.Script, sid string) int {
 
 func (t *Ids) Uid(s *script.Script, user string) int {
 	if t.uids == nil {
-		t.uids = &idset{Container: t.Container, Flag: "-u", Label: "user"}
+		t.uids = &idset{Exec: t.Exec, Flag: "-u", Label: "user"}
 	}
 	return t.uids.id(s, user)
 }
 
 func (t *Ids) Gid(s *script.Script, group string) int {
 	if t.gids == nil {
-		t.gids = &idset{Container: t.Container, Flag: "-g", Label: "group"}
+		t.gids = &idset{Exec: t.Exec, Flag: "-g", Label: "group"}
 	}
 	return t.gids.id(s, group)
 }

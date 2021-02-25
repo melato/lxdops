@@ -9,6 +9,7 @@ import (
 )
 
 type ProfileConfigurer struct {
+	Client        *LxdClient
 	ConfigOptions ConfigOptions
 	Trace         bool
 	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
@@ -34,10 +35,13 @@ func (t *ProfileConfigurer) Profiles(name string, config *Config) []string {
 }
 
 func (t *ProfileConfigurer) diffProfiles(name string, config *Config) error {
-	c, err := ListContainer(name)
+	server, container, err := t.Client.ContainerServer(name)
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		return err
+	}
+	c, _, err := server.GetContainer(container)
+	if err != nil {
+		return AnnotateLXDError(container, err)
 	}
 	profiles := t.Profiles(name, config)
 	if util.StringSlice(profiles).Equals(c.Profiles) {
@@ -59,10 +63,13 @@ func (t *ProfileConfigurer) diffProfiles(name string, config *Config) error {
 }
 
 func (t *ProfileConfigurer) reorderProfiles(name string, config *Config) error {
-	c, err := ListContainer(name)
+	server, container, err := t.Client.ContainerServer(name)
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		return err
+	}
+	c, _, err := server.GetContainer(container)
+	if err != nil {
+		return AnnotateLXDError(container, err)
 	}
 	profiles := t.Profiles(name, config)
 	if util.StringSlice(profiles).Equals(c.Profiles) {
@@ -72,19 +79,37 @@ func (t *ProfileConfigurer) reorderProfiles(name string, config *Config) error {
 	sortedProfiles := util.StringSlice(profiles).Sorted()
 	sortedContainer := util.StringSlice(c.Profiles).Sorted()
 	if util.StringSlice(sortedProfiles).Equals(sortedContainer) {
-		script := t.NewScript()
-		script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
-		return script.Error()
+		c.Profiles = sortedProfiles
+		op, err := server.UpdateContainer(container, c.ContainerPut, "")
+		if err != nil {
+			return err
+		}
+		if err := op.Wait(); err != nil {
+			return AnnotateLXDError(container, err)
+		}
 	}
 	fmt.Println("profiles differ: " + name)
 	return nil
 }
 
 func (t *ProfileConfigurer) applyProfiles(name string, config *Config) error {
-	profiles := t.Profiles(name, config)
-	script := t.NewScript()
-	script.Run("lxc", "profile", "apply", name, strings.Join(profiles, ","))
-	return script.Error()
+	server, container, err := t.Client.ContainerServer(name)
+	if err != nil {
+		return err
+	}
+	c, _, err := server.GetContainer(container)
+	if err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	c.Profiles = t.Profiles(name, config)
+	op, err := server.UpdateContainer(container, c.ContainerPut, "")
+	if err != nil {
+		return err
+	}
+	if err := op.Wait(); err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	return nil
 }
 
 func (t *ProfileConfigurer) listProfiles(name string, config *Config) error {

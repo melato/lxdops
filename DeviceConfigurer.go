@@ -35,7 +35,15 @@ func (t *DeviceConfigurer) NewPattern(name string) *util.Pattern {
 	pattern := &util.Pattern{Properties: t.Config.Properties}
 	pattern.SetConstant("container", name)
 	pattern.SetFunction("zfsroot", func() (string, error) {
-		return ZFSRoot()
+		dataset, err := t.Client.GetDefaultDataset()
+		if err != nil {
+			return "", err
+		}
+		root := filepath.Dir(dataset)
+		if root == "" {
+			return "", errors.New("cannot determine zfsroot for dataset: " + dataset)
+		}
+		return root, nil
 	})
 	return pattern
 }
@@ -174,20 +182,8 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 			return err
 		}
 	}
-	var profileName string
-	var useProfile bool
 	script := t.NewScript()
 	for _, device := range t.Config.Devices {
-		if profileName == "" {
-			profileName = t.Config.ProfileName(name)
-			if !ProfileExists(profileName) {
-				useProfile = true
-				script.Run("lxc", "profile", "create", profileName)
-				if script.HasError() {
-					return script.Error()
-				}
-			}
-		}
 		dir, err := t.DeviceDir(filesystems, device, name)
 		if err != nil {
 			return err
@@ -209,14 +205,6 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 				fmt.Println("skipping missing Device Template: " + templateDir)
 			}
 		}
-		// lxc profile device add a1.devices etc disk source=/z/host/a1/etc path=/etc/opt
-		if useProfile {
-			script.Run("lxc", "profile", "device", "add", profileName,
-				device.Name,
-				"disk",
-				"path="+device.Path,
-				"source="+dir)
-		}
 		if script.Error() != nil {
 			return script.Error()
 		}
@@ -231,8 +219,6 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 	}
 	devices := make(map[string]map[string]string)
 
-	//s := t.NewScript()
-	//s.Run("lxc", "profile", "create", profileName)
 	for _, device := range t.Config.Devices {
 		dir, err := t.DeviceDir(filesystems, device, name)
 		if err != nil {
@@ -241,17 +227,19 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 		devices[device.Name] = map[string]string{"type": "disk", "path": device.Path, "source": dir}
 	}
 	profileName := t.Config.ProfileName(name)
-	server, err := t.Client.Server()
+	server, _, err := t.Client.ContainerServer(name)
 	if err != nil {
 		return err
 	}
-	/*
-		post.Name = profileName
-		post.ProfilePut.Description = "lxdops devices"
-		post.ProfilePut.Devices = devices
-	*/
 	post := api.ProfilesPost{Name: profileName, ProfilePut: api.ProfilePut{Devices: devices, Description: "lxdops devices"}}
-	return server.CreateProfile(post)
+	if t.Trace {
+		fmt.Printf("create profile %s:\n", profileName)
+		util.PrintYaml(&post)
+	}
+	if !t.DryRun {
+		return server.CreateProfile(post)
+	}
+	return nil
 }
 
 func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {

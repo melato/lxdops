@@ -8,12 +8,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/password"
 	"melato.org/lxdops/util"
 	"melato.org/script/v2"
 )
 
 type Configurer struct {
+	Client        *LxdClient `name:"-"`
 	ConfigOptions ConfigOptions
 	Trace         bool     `name:"trace,t" usage:"print exec arguments"`
 	DryRun        bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
@@ -38,56 +40,8 @@ func (t *Configurer) runScriptLines(name string, lines []string) error {
 	return t.runScript(name, content)
 }
 
-type execRunner struct {
-	Op  *Configurer
-	dir string
-	uid int
-	gid int
-}
-
-func (t *Configurer) NewExec() *execRunner {
-	return &execRunner{Op: t}
-}
-
-func (s *execRunner) Dir(dir string) *execRunner {
-	s.dir = dir
-	return s
-}
-
-func (s *execRunner) Uid(uid int) *execRunner {
-	s.uid = uid
-	return s
-}
-
-func (s *execRunner) Gid(gid int) *execRunner {
-	s.gid = gid
-	return s
-}
-
-func (s *execRunner) Run(name, content string, execArgs []string) error {
-	project, container := SplitContainerName(name)
-	args := append(ProjectArgs(project), "exec")
-	if s.dir != "" {
-		args = append(args, "--cwd", s.dir)
-	}
-	if s.uid != 0 {
-		args = append(args, "--user", strconv.Itoa(s.uid))
-		args = append(args, "--group", strconv.Itoa(s.gid))
-	}
-	args = append(args, container)
-	args = append(args, execArgs...)
-	script := &script.Script{Trace: s.Op.Trace, DryRun: s.Op.DryRun}
-	cmd := script.Cmd("lxc", args...)
-	if content != "" {
-		cmd.InputString(content)
-	}
-	cmd.Run()
-	return script.Error()
-}
-
 func (t *Configurer) runScript(name string, content string) error {
-	s := t.NewExec()
-	return s.Run(name, content, []string{"sh"})
+	return t.Client.NewExec(name).Run(content, "sh")
 }
 
 func (t *Configurer) installPackages(config *Config, name string) error {
@@ -103,10 +57,18 @@ func (t *Configurer) installPackages(config *Config, name string) error {
 }
 
 func (t *Configurer) createSnapshot(name, snapshot string) error {
-	project, container := SplitContainerName(name)
-	script := t.NewScript()
-	script.Run("lxc", append(ProjectArgs(project), "snapshot", container, snapshot)...)
-	return script.Error()
+	server, container, err := t.Client.ContainerServer(name)
+	if err != nil {
+		return err
+	}
+	op, err := server.CreateContainerSnapshot(container, api.ContainerSnapshotsPost{Name: snapshot})
+	if err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	if err := op.Wait(); err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	return nil
 }
 
 func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
@@ -130,8 +92,11 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		if s.HasError() {
 			s.Errors.Clear()
 			s.Run("lxc", append(projectArgs, "file", "push", hostFile, path)...)
-			s.Run("lxc", append(projectArgs, "exec", container, "chown", user.Name+":"+user.Name, guestFile)...)
-			if err := s.Error(); err != nil {
+			if s.HasError() {
+				return s.Error()
+			}
+			err := t.Client.NewExec(name).Run("", "chown", "", user.Name+":"+user.Name, guestFile)
+			if err != nil {
 				return err
 			}
 		}
@@ -245,12 +210,7 @@ func (t *Configurer) changePasswords(config *Config, name string, users []string
 		lines = append(lines, user+":"+pass)
 	}
 	content := strings.Join(lines, "\n")
-	script := t.NewScript()
-	project, container := SplitContainerName(name)
-	cmd := script.Cmd("lxc", append(ProjectArgs(project), "exec", container, "chpasswd")...)
-	cmd.Cmd.Stdin = strings.NewReader(content)
-	cmd.Run()
-	return script.Error()
+	return t.Client.NewExec(name).Run(content, "chpasswd")
 }
 
 func (t *Configurer) changeUserPasswords(config *Config, name string) error {
@@ -266,7 +226,10 @@ func (t *Configurer) changeUserPasswords(config *Config, name string) error {
 }
 
 func (t *Configurer) runScripts(name string, scripts []*Script) error {
-	// copy any script files
+	server, container, err := t.Client.ContainerServer(name)
+	if err != nil {
+		return err
+	}
 	var failedFiles []string
 	project, container := SplitContainerName(name)
 	projectArgs := ProjectArgs(project)
@@ -285,27 +248,35 @@ func (t *Configurer) runScripts(name string, scripts []*Script) error {
 	}
 	if failedFiles == nil {
 		for _, script := range scripts {
-			runner := t.NewExec().Dir(script.Dir).Uid(script.Uid).Gid(script.Gid)
+			runner := t.Client.NewExec(name).Dir(script.Dir).Uid(script.Uid).Gid(script.Gid)
 			if script.File != "" {
 				baseName := filepath.Base(script.File)
-				err := runner.Run(name, "", []string{"/root/" + baseName})
+				err := runner.Run("", "/root/"+baseName)
 				if err != nil {
 					return err
 				}
 			}
 			body := strings.TrimSpace(script.Body)
 			if body != "" {
-				err := runner.Run(name, body, []string{"sh"})
+				err := runner.Run(body, "sh")
 				if err != nil {
 					return err
 				}
 			}
 			if script.Reboot {
-				s := t.NewScript()
-				s.Run("lxc", append(projectArgs, "stop", container)...)
-				s.Run("lxc", append(projectArgs, "start", container)...)
-				if s.HasError() {
-					return s.Error()
+				op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "stop"}, "")
+				if err != nil {
+					return AnnotateLXDError(container, err)
+				}
+				if err := op.Wait(); err != nil {
+					return AnnotateLXDError(container, err)
+				}
+				op, err = server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
+				if err != nil {
+					return AnnotateLXDError(container, err)
+				}
+				if err := op.Wait(); err != nil {
+					return AnnotateLXDError(container, err)
 				}
 			}
 		}
@@ -316,7 +287,7 @@ func (t *Configurer) runScripts(name string, scripts []*Script) error {
 }
 
 func (t *Configurer) copyFiles(config *Config, name string) error {
-	ids := Ids{Container: name}
+	ids := Ids{Exec: t.Client.NewExec(name)}
 	// copy any files
 	project, container := SplitContainerName(name)
 	s := t.NewScript()
@@ -378,7 +349,7 @@ func (t *Configurer) includes(flag bool) bool {
 func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 	var err error
 	if !t.DryRun {
-		err := WaitForNetwork(name)
+		err := t.Client.WaitForNetwork(name)
 		if err != nil {
 			return err
 		}

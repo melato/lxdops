@@ -1,10 +1,8 @@
 package lxdops
 
 import (
-	"errors"
 	"fmt"
-
-	"melato.org/script/v2"
+	"path/filepath"
 )
 
 type LxdOps struct {
@@ -13,24 +11,27 @@ type LxdOps struct {
 }
 
 func (t *LxdOps) ZFSRoot() error {
-	path, err := ZFSRoot()
-	if err == nil {
-		fmt.Println(path)
+	dataset, err := t.Client.GetDefaultDataset()
+	if err != nil {
+		return err
 	}
-	return err
+	fmt.Println(filepath.Dir(dataset))
+	return nil
 }
 
-func (t *LxdOps) AddDiskDevice(args []string) error {
-	if len(args) != 3 {
-		return errors.New("Usage: <profile> <source> <path>")
+func (t *LxdOps) AddDiskDevice(profile, source, path string) error {
+	server, err := t.Client.Server()
+	if err != nil {
+		return err
 	}
-	profile := args[0]
-	source := args[1]
-	path := args[2]
+	p, _, err := server.GetProfile(profile)
+	if err != nil {
+		return AnnotateLXDError(profile, err)
+	}
+
 	device := RandomDeviceName()
-	script := &script.Script{Trace: t.Trace}
-	script.Run("lxc", "profile", "device", "add", profile, device, "disk", "path="+path, "source="+source)
-	return script.Error()
+	p.Devices[device] = map[string]string{"type": "disk", "path": path, "source": source}
+	return server.UpdateProfile(profile, p.ProfilePut, "")
 }
 
 func (t *LxdOps) ProfileExists(profile string) error {
@@ -43,14 +44,5 @@ func (t *LxdOps) ProfileExists(profile string) error {
 		return err
 	}
 	fmt.Println(prof.Name)
-	return nil
-}
-
-func (t *LxdOps) CurrentProject() error {
-	project, err := CurrentProject()
-	if err != nil {
-		return err
-	}
-	fmt.Println(project)
 	return nil
 }
