@@ -1,11 +1,9 @@
 package lxdops
 
 import (
+	"errors"
 	"fmt"
-	"os"
 
-	lxd "github.com/lxc/lxd/client"
-	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/util"
 )
 
@@ -69,21 +67,21 @@ func (t *ContainerOps) State(name string, action ...string) error {
 	return nil
 }
 
-func (t *ContainerOps) Exec(name string, command ...string) error {
+func (t *ContainerOps) File(name string, file string) error {
 	server, container, err := t.Client.InstanceServer(name)
 	if err != nil {
 		return err
 	}
-	var post api.InstanceExecPost
-	post.Command = command
-	post.WaitForWS = true
-	var args lxd.InstanceExecArgs
-	args.Stdout = os.Stdout
-	args.Stderr = os.Stderr
-	op, err := server.ExecInstance(container, post, &args)
+	reader, response, err := server.GetContainerFile(container, file)
 	if err != nil {
 		return AnnotateLXDError(container, err)
 	}
-	err = op.Wait()
-	return AnnotateLXDError(container, err)
+	util.PrintYaml(response)
+	if reader != nil {
+		err = reader.Close()
+		if err != nil {
+			return errors.New(file + ": " + err.Error())
+		}
+	}
+	return nil
 }

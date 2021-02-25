@@ -105,3 +105,12 @@ func (t *LxdClient) NewExec(name string) *execRunner {
 	server, container, err := t.InstanceServer(name)
 	return &execRunner{Server: server, Container: container, Error: err}
 }
+
+func fileExists(server lxd.InstanceServer, container string, file string) bool {
+	reader, _, err := server.GetContainerFile(container, file)
+	if err != nil {
+		return false
+	}
+	reader.Close()
+	return true
+}

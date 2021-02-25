@@ -77,6 +77,10 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		return errors.New("host $HOME doesn't exist")
 	}
 	hostFile := filepath.Join(hostHome, ".ssh", "authorized_keys")
+	server, container, err := t.Client.InstanceServer(name)
+	if err != nil {
+		return err
+	}
 	project, container := SplitContainerName(name)
 	for _, user := range config.Users {
 		user = user.EffectiveUser()
@@ -88,9 +92,7 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		path := container + guestFile
 		s := &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 		projectArgs := ProjectArgs(project)
-		s.Cmd("lxc", append(projectArgs, "file", "pull", path, "-")...).CombineOutput().ToNull()
-		if s.HasError() {
-			s.Errors.Clear()
+		if !fileExists(server, container, guestFile) {
 			s.Run("lxc", append(projectArgs, "file", "push", hostFile, path)...)
 			if s.HasError() {
 				return s.Error()

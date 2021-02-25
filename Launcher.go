@@ -219,22 +219,27 @@ func (t *Launcher) DeleteContainer(config *Config, name string) error {
 	if err != nil {
 		return err
 	}
-	profileName := config.ProfileName(name)
-	if t.Trace {
-		fmt.Printf("delete container %s\n", container)
-		fmt.Printf("delete profile %s\n", profileName)
-	}
 	if !t.DryRun {
 		op, err := server.DeleteContainer(container)
-		if err != nil {
-			return AnnotateLXDError(container, err)
+		if err == nil {
+			if t.Trace {
+				fmt.Printf("deleted container %s\n", container)
+			}
+			if err := op.Wait(); err != nil {
+				return AnnotateLXDError(container, err)
+			}
+		} else {
+			state, _, err := server.GetContainerState(container)
+			if err == nil {
+				return errors.New(fmt.Sprintf("container %s is %s", container, state.Status))
+			}
 		}
-		if err := op.Wait(); err != nil {
-			return err
-		}
-		err = server.DeleteProfile(profileName)
-		if err != nil {
-			return AnnotateLXDError(profileName, err)
+	}
+	profileName := config.ProfileName(name)
+	if !t.DryRun {
+		err := server.DeleteProfile(profileName)
+		if err == nil && t.Trace {
+			fmt.Printf("deleted profile %s\n", profileName)
 		}
 	}
 	return nil
@@ -242,7 +247,10 @@ func (t *Launcher) DeleteContainer(config *Config, name string) error {
 
 func (t *Launcher) deleteContainer(name string, config *Config) error {
 	t.updateConfig(config)
-	t.DeleteContainer(config, name)
+	err := t.DeleteContainer(config, name)
+	if err != nil {
+		return err
+	}
 	dev := NewDeviceConfigurer(t.Client, config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
