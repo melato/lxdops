@@ -2,6 +2,7 @@ package lxdops
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -50,6 +51,7 @@ func (s *execRunner) run(content string, captureOutput bool, execArgs []string) 
 	if s.Error != nil {
 		return nil, s.Error
 	}
+	fmt.Println(strings.Join(execArgs, " "))
 	var post api.InstanceExecPost
 	post.Command = execArgs
 	post.WaitForWS = true

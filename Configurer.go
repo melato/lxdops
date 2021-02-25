@@ -43,6 +43,11 @@ func (t *Configurer) runScriptLines(name string, lines []string) error {
 }
 
 func (t *Configurer) runScript(name string, content string) error {
+	if t.Trace {
+		fmt.Println("sh < ---")
+		fmt.Println(content)
+		fmt.Println("---")
+	}
 	return t.Client.NewExec(name).Run(content, "sh")
 }
 
@@ -95,12 +100,15 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 		home := user.HomeDir()
 		guestFile := filepath.Join(home, ".ssh", "authorized_keys")
 		if !FileExists(server, container, guestFile) {
+			if t.Trace {
+				fmt.Printf("creating %s\n", guestFile)
+			}
 			file := lxd.ContainerFileArgs{Content: bytes.NewReader(authorizedKeys)}
 			err := server.CreateContainerFile(container, guestFile, file)
 			if err != nil {
 				return AnnotateLXDError(guestFile, err)
 			}
-			err = t.Client.NewExec(name).Run("", "chown", "", user.Name+":"+user.Name, guestFile)
+			err = t.Client.NewExec(name).Run("", "chown", user.Name+":"+user.Name, guestFile)
 			if err != nil {
 				return err
 			}
