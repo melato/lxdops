@@ -16,7 +16,7 @@ func RootCommand() *command.SimpleCommand {
 	client := &LxdClient{}
 	var cmd command.SimpleCommand
 	cmd.Flags(client)
-	launcher := &Launcher{}
+	launcher := &Launcher{Client: client}
 	cmd.Command("launch").Flags(launcher).RunMethodArgs(launcher.Launch).
 		Use("<container> <config-file> ...").
 		Short("launch a container").
@@ -31,7 +31,7 @@ func RootCommand() *command.SimpleCommand {
 		Use("<container> <config-file> ...").
 		Short("configure an existing container").
 		Example("configure c1 demo.yaml")
-	var configOps ConfigOps
+	configOps := &ConfigOps{Client: client}
 	cmd.Command("verify").Flags(&configOps).RunMethodArgs(configOps.Verify).
 		Use("<config-file> ...").
 		Short("verify config files").
@@ -50,8 +50,8 @@ func RootCommand() *command.SimpleCommand {
 	profile.Command("apply").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Apply).Short("apply the config profiles to a container")
 	profile.Command("reorder").Flags(profileConfigurer).RunMethodArgs(profileConfigurer.Reorder).Short("reorder container profiles to match config order")
 
-	var lxdOps LxdOps
-	profile.Command("exists").RunMethodArgs(lxdOps.ProfileExists).Use("<profile>").Short("check if a profile exists")
+	lxdOps := &LxdOps{Client: client}
+	profile.Command("exists").RunFunc(lxdOps.ProfileExists).Use("<profile>").Short("check if a profile exists")
 	profile.Command("add-disk").RunMethodArgs(lxdOps.AddDiskDevice).Use("<profile> <source> <path>").Short("add a disk device to a profile")
 	cmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot).Short("print zfs parent of lxd dataset")
 	cmd.Command("current-project").RunMethodE(lxdOps.CurrentProject).Short("print the name of the current project")

@@ -12,10 +12,6 @@ type ContainerOps struct {
 	Client *LxdClient `name:"-"`
 }
 
-func (t *ContainerOps) Init() error {
-	return t.Client.Init()
-}
-
 func (t *ContainerOps) listProfiles(c *api.ContainerFull) error {
 	for _, profile := range c.Profiles {
 		fmt.Println(profile)

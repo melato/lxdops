@@ -7,19 +7,21 @@ import (
 
 	"strings"
 
+	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/util"
 	"melato.org/script/v2"
 )
 
 type DeviceConfigurer struct {
+	Client  *LxdClient
 	Config  *Config
 	Trace   bool
 	DryRun  bool
 	FuncMap map[string]func() (string, error)
 }
 
-func NewDeviceConfigurer(config *Config) *DeviceConfigurer {
-	return &DeviceConfigurer{Config: config}
+func NewDeviceConfigurer(client *LxdClient, config *Config) *DeviceConfigurer {
+	return &DeviceConfigurer{Client: client, Config: config}
 }
 
 func (t *DeviceConfigurer) NewScript() *script.Script {
@@ -227,21 +229,29 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 	if err != nil {
 		return err
 	}
-	profileName := t.Config.ProfileName(name)
-	s := t.NewScript()
-	s.Run("lxc", "profile", "create", profileName)
+	devices := make(map[string]map[string]string)
+
+	//s := t.NewScript()
+	//s.Run("lxc", "profile", "create", profileName)
 	for _, device := range t.Config.Devices {
 		dir, err := t.DeviceDir(filesystems, device, name)
 		if err != nil {
 			return err
 		}
-		s.Run("lxc", "profile", "device", "add", profileName,
-			device.Name,
-			"disk",
-			"path="+device.Path,
-			"source="+dir)
+		devices[device.Name] = map[string]string{"type": "disk", "path": device.Path, "source": dir}
 	}
-	return s.Error()
+	profileName := t.Config.ProfileName(name)
+	server, err := t.Client.Server()
+	if err != nil {
+		return err
+	}
+	/*
+		post.Name = profileName
+		post.ProfilePut.Description = "lxdops devices"
+		post.ProfilePut.Devices = devices
+	*/
+	post := api.ProfilesPost{Name: profileName, ProfilePut: api.ProfilePut{Devices: devices, Description: "lxdops devices"}}
+	return server.CreateProfile(post)
 }
 
 func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {

@@ -5,6 +5,7 @@ import (
 )
 
 type ConfigOps struct {
+	Client        *LxdClient `name:"-"`
 	ConfigOptions ConfigOptions
 	Trace         bool
 	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
@@ -27,7 +28,7 @@ func (t *ConfigOps) Verify(args []string) error {
 }
 
 func (t *ConfigOps) createDevices(name string, config *Config) error {
-	dev := NewDeviceConfigurer(config)
+	dev := NewDeviceConfigurer(t.Client, config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	return dev.ConfigureDevices(name)

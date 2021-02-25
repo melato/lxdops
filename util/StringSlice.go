@@ -54,3 +54,24 @@ func (t StringSlice) RemoveDuplicates() []string {
 	}
 	return result
 }
+
+func (t StringSlice) Remove(remove string) []string {
+	var removed bool
+	var result []string
+	for i, s := range t {
+		if s == remove {
+			if !removed {
+				removed = true
+				result = append(result, t[0:i]...)
+			}
+		} else if removed {
+			result = append(result, s)
+
+		}
+	}
+	if removed {
+		return result
+	} else {
+		return t
+	}
+}

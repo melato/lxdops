@@ -3,14 +3,14 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
-	"melato.org/lxdops/util"
+	"github.com/lxc/lxd/shared/api"
 	"melato.org/script/v2"
 )
 
 type Launcher struct {
+	Client        *LxdClient `name:"-"`
 	ConfigOptions ConfigOptions
 	Trace         bool `name:""` //`name:"trace,t" usage:"print exec arguments"`
 	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
@@ -86,16 +86,14 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	if !config.Verify() {
 		return errors.New("prerequisites not met")
 	}
-	var err error
 	osType := config.OS.Type()
 	if osType == nil {
 		return errors.New("unsupported OS type: " + config.OS.Name)
 	}
-
-	dev := NewDeviceConfigurer(config)
+	dev := NewDeviceConfigurer(t.Client, config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
-	err = dev.ConfigureDevices(name)
+	err := dev.ConfigureDevices(name)
 	if err != nil {
 		return err
 	}
@@ -157,7 +155,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 			return script.Error()
 		}
 		if !t.DryRun {
-			err = WaitForNetwork(name)
+			err := WaitForNetwork(name)
 			if err != nil {
 				return err
 			}
@@ -189,7 +187,7 @@ func (t *Launcher) deleteContainer(name string, config *Config) error {
 	if err != nil {
 		return err
 	}
-	dev := NewDeviceConfigurer(config)
+	dev := NewDeviceConfigurer(t.Client, config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	filesystems, err := dev.ListFilesystems(name)
@@ -210,60 +208,85 @@ func (t *Launcher) Delete(args []string) error {
 	return t.ConfigOptions.Run(args, t.deleteContainer)
 }
 
-func (t *Launcher) Rename(oldpath, newpath string) error {
-	t.Trace = true
-	oldname := BaseName(oldpath)
-	newname := BaseName(newpath)
+func (t *Launcher) Rename(configFile string, newname string) error {
+	oldname := t.ConfigOptions.Name
+	if oldname == "" {
+		oldname = BaseName(configFile)
+	}
 	if oldname == newname {
-		return errors.New(fmt.Sprintf("%s and %s have the same name", oldname, newname))
+		return errors.New("cannot rename to the same name")
 	}
-	if filepath.Ext(oldpath) != filepath.Ext(newpath) {
-		return errors.New(fmt.Sprintf("%s and %s don't have the same extension", oldpath, newpath))
-	}
-	if util.FileExists(newpath) {
-		return errors.New(fmt.Sprintf("%s already exists", newpath))
-	}
-	config, err := t.ConfigOptions.ReadConfig(oldpath)
+	config, err := t.ConfigOptions.ReadConfig(configFile)
 	if err != nil {
 		return err
 	}
-	s := t.NewScript()
 	oldprofile := config.ProfileName(oldname)
 	newprofile := config.ProfileName(newname)
+	server, err := t.Client.Server()
+	if err != nil {
+		return err
+	}
+	dev := NewDeviceConfigurer(t.Client, config)
+	dev.Trace = t.Trace
+	dev.DryRun = t.DryRun
 	if len(config.Devices) > 0 {
-		if ProfileExists(newprofile) {
+		_, _, err := server.GetProfile(newprofile)
+		if err == nil {
 			return errors.New(fmt.Sprintf("profile %s already exists", newprofile))
 		}
 	}
-	s.Run("lxc", "rename", oldname, newname)
-	if len(config.Devices) > 0 {
-		s.Run("lxc", "profile", "remove", newname, oldprofile)
-		s.Run("lxc", "profile", "delete", oldprofile)
-	}
-	if s.HasError() {
-		return s.Error()
-	}
-	dev := NewDeviceConfigurer(config)
-	dev.Trace = t.Trace
-	dev.DryRun = t.DryRun
-	err = dev.RenameFilesystems(oldname, newname)
+	op, err := server.RenameContainer(oldname, api.ContainerPost{Name: newname})
 	if err != nil {
 		return err
 	}
+	if err := op.Wait(); err != nil {
+		return err
+	}
 	if len(config.Devices) > 0 {
-		err := dev.CreateProfile(newname)
+		err = dev.RenameFilesystems(oldname, newname)
 		if err != nil {
 			return err
 		}
-		s.Run("lxc", "profile", "add", newname, newprofile)
+		container, etag, err := server.GetContainer(newname)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("container etag: %s\n", etag)
+		err = dev.CreateProfile(newname)
+		if err != nil {
+			return err
+		}
+		var replaced bool
+		for i, profile := range container.Profiles {
+			if profile == oldprofile {
+				container.Profiles[i] = newprofile
+				replaced = true
+				break
+			}
+		}
+		if !replaced {
+			container.Profiles = append(container.Profiles, newprofile)
+		}
+		op, err := server.UpdateContainer(newname, container.ContainerPut, "")
+		if err != nil {
+			return err
+		}
+		if err := op.Wait(); err != nil {
+			return err
+		}
+		//s.Run("lxc", "profile", "remove", newname, oldprofile)
+		//s.Run("lxc", "profile", "delete", oldprofile)
+		err = server.DeleteProfile(oldprofile)
+		if err != nil {
+			return err
+		}
 	}
-	s.Run("mv", oldpath, newpath)
-	return s.Error()
+	return nil
 }
 
 func (t *Launcher) printFilesystems(name string, config *Config) error {
 	t.updateConfig(config)
-	dev := NewDeviceConfigurer(config)
+	dev := NewDeviceConfigurer(t.Client, config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	return dev.PrintFilesystems(name)

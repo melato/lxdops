@@ -3,13 +3,13 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"melato.org/script/v2"
 )
 
 type LxdOps struct {
-	Trace bool `name:"trace,t" usage:"print exec arguments"`
+	Client *LxdClient `name:"-"`
+	Trace  bool       `name:"trace,t" usage:"print exec arguments"`
 }
 
 func (t *LxdOps) ZFSRoot() error {
@@ -33,26 +33,17 @@ func (t *LxdOps) AddDiskDevice(args []string) error {
 	return script.Error()
 }
 
-func (t *LxdOps) ProfileExists(args []string) error {
-	if len(args) != 1 {
-		return errors.New("Usage: <profile>")
+func (t *LxdOps) ProfileExists(profile string) error {
+	server, err := t.Client.Server()
+	if err != nil {
+		return err
 	}
-	profile := args[0]
-	s := &script.Script{Trace: t.Trace}
-	s.Cmd("lxc", "profile", "get", profile, "x").CombineOutput().ToNull()
-	err := s.Error()
-	if err == nil {
-		if t.Trace {
-			fmt.Printf("profile %s exists\n", profile)
-		}
-		os.Exit(0)
-	} else {
-		if t.Trace {
-			fmt.Printf("profile %s does not exist\n", profile)
-		}
-		os.Exit(1)
+	prof, _, err := server.GetProfile(profile)
+	if err != nil {
+		return err
 	}
-	return err
+	fmt.Println(prof.Name)
+	return nil
 }
 
 func (t *LxdOps) CurrentProject() error {
