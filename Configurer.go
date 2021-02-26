@@ -37,18 +37,20 @@ func (t *Configurer) NewScript() *script.Script {
 	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 }
 
+func (t *Configurer) NewExec(name string) *execRunner {
+	ex := t.Client.NewExec(name)
+	ex.Trace = t.Trace
+	ex.DryRun = t.DryRun
+	return ex
+}
+
 func (t *Configurer) runScriptLines(name string, lines []string) error {
 	content := strings.Join(lines, "\n")
 	return t.runScript(name, content)
 }
 
 func (t *Configurer) runScript(name string, content string) error {
-	if t.Trace {
-		fmt.Println("sh < ---")
-		fmt.Println(content)
-		fmt.Println("---")
-	}
-	return t.Client.NewExec(name).Run(content, "sh")
+	return t.NewExec(name).Run(content, "sh")
 }
 
 func (t *Configurer) installPackages(config *Config, name string) error {
@@ -108,7 +110,7 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 			if err != nil {
 				return AnnotateLXDError(guestFile, err)
 			}
-			err = t.Client.NewExec(name).Run("", "chown", user.Name+":"+user.Name, guestFile)
+			err = t.NewExec(name).Run("", "chown", user.Name+":"+user.Name, guestFile)
 			if err != nil {
 				return err
 			}
@@ -223,7 +225,7 @@ func (t *Configurer) changePasswords(config *Config, name string, users []string
 		lines = append(lines, user+":"+pass)
 	}
 	content := strings.Join(lines, "\n")
-	return t.Client.NewExec(name).Run(content, "chpasswd")
+	return t.NewExec(name).Run(content, "chpasswd")
 }
 
 func (t *Configurer) changeUserPasswords(config *Config, name string) error {
@@ -243,7 +245,7 @@ func (t *Configurer) runScripts(name string, scripts []*Script) error {
 	if err != nil {
 		return err
 	}
-	ex := t.Client.NewExec(name)
+	ex := t.NewExec(name)
 	for _, script := range scripts {
 		ex.Dir(script.Dir)
 		ex.Uid(script.Uid)
@@ -293,7 +295,7 @@ func (t *Configurer) runScripts(name string, scripts []*Script) error {
 }
 
 func (t *Configurer) copyFiles(config *Config, name string) error {
-	ids := Ids{Exec: t.Client.NewExec(name)}
+	ids := Ids{Exec: t.NewExec(name)}
 	// copy any files
 	project, container := SplitContainerName(name)
 	s := t.NewScript()

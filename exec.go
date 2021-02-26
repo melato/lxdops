@@ -26,6 +26,8 @@ func (nopCloser) Close() error { return nil }
 type execRunner struct {
 	Server    lxd.InstanceServer
 	Container string
+	Trace     bool
+	DryRun    bool
 	Error     error
 	dir       string
 	uid       uint32
@@ -51,7 +53,19 @@ func (s *execRunner) run(content string, captureOutput bool, execArgs []string) 
 	if s.Error != nil {
 		return nil, s.Error
 	}
-	fmt.Println(strings.Join(execArgs, " "))
+	if s.Trace {
+		var suffix string
+		if content != "" {
+			suffix = " << ---"
+		}
+		fmt.Printf("%s%s\n", strings.Join(execArgs, " "), suffix)
+		if content != "" {
+			fmt.Printf("%s\n---\n", content)
+		}
+	}
+	if s.DryRun {
+		return nil, nil
+	}
 	var post api.InstanceExecPost
 	post.Command = execArgs
 	post.WaitForWS = true

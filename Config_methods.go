@@ -107,13 +107,6 @@ func (u *User) IsValidName() bool {
 	return u.Name == "" || re.MatchString(u.Name)
 }
 
-func (t *Config) GetHostFS() string {
-	if t.HostFS != "" {
-		return t.HostFS
-	}
-	return "host"
-}
-
 func (t *Config) Print() error {
 	return PrintConfigYaml(t)
 }
