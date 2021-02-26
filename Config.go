@@ -67,8 +67,6 @@ type Config struct {
 	// Snapshot specifies that that the container should be snapshoted with this name at the end of the configuration process.
 	Snapshot string `yaml:"snapshot,omitempty"`
 
-	// Properties are used for token substitution where patterns are used (e.g. in filesystem paths)
-	Properties map[string]string `yaml:"properties,omitempty"`
 	// ProfilePattern specifies how the instance profile should be named.
 	// It defaults to "(container).lxdops", where (container) is the name of the instance
 	ProfilePattern string `yaml:"profile-pattern"`

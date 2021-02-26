@@ -133,12 +133,6 @@ func (t *Config) Merge(c *Config) error {
 			return errors.New("cannot merge incompatible os versions: " + t.OS.Version + ", " + c.OS.Version)
 		}
 	}
-	for key, value := range c.Properties {
-		if t.Properties == nil {
-			t.Properties = make(map[string]string)
-		}
-		t.Properties[key] = value
-	}
 	if t.ProfilePattern == "" {
 		t.ProfilePattern = c.ProfilePattern
 	}
@@ -283,7 +277,7 @@ func (t *Config) merge(file string, included map[string]bool) error {
 
 func (t *Config) ProfileName(name string) string {
 	if t.ProfilePattern != "" {
-		pattern := util.Pattern{Properties: t.Properties}
+		pattern := util.Pattern{}
 		pattern.SetConstant("container", name)
 		profile, err := pattern.Substitute(t.ProfilePattern)
 		if err == nil {

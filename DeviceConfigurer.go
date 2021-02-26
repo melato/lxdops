@@ -32,7 +32,7 @@ func (t *DeviceConfigurer) AddFuncs(map[string]func() (string, error)) {
 }
 
 func (t *DeviceConfigurer) NewPattern(name string) *util.Pattern {
-	pattern := &util.Pattern{Properties: t.Config.Properties}
+	pattern := &util.Pattern{}
 	pattern.SetConstant("container", name)
 	pattern.SetFunction("zfsroot", func() (string, error) {
 		dataset, err := t.Client.GetDefaultDataset()
