@@ -25,7 +25,9 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.Rebuild).Short("stop, delete, launch")
 	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename).Short("rename a container, filesystems, config file, and rebuild its profile")
 	cmd.Command("filesystems").Flags(launcher).RunFunc(launcher.PrintFilesystems).Short("list filesystems")
-	cmd.Command("snapshot").Flags(launcher).RunFunc(launcher.Snapshot).Short("snapshot filesystems").Use("{config-file} {snapshot}")
+
+	snapshot := &Snapshot{Client: client}
+	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.Snapshot).Short("snapshot filesystems").Use("{config-file} {snapshot}")
 
 	configurer := &Configurer{Client: client}
 	cmd.Command("configure").Flags(configurer).RunFunc(configurer.Run).

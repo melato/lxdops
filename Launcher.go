@@ -367,12 +367,3 @@ func (t *Launcher) printFilesystems(name string, config *Config) error {
 func (t *Launcher) PrintFilesystems(arg string) error {
 	return t.ConfigOptions.Run([]string{arg}, t.printFilesystems)
 }
-
-func (t *Launcher) Snapshot(configFile string, snapshot string) error {
-	return t.ConfigOptions.Run([]string{configFile}, func(name string, config *Config) error {
-		dev := NewDeviceConfigurer(t.Client, config)
-		dev.Trace = t.Trace
-		dev.DryRun = t.DryRun
-		return dev.Snapshot(name, snapshot)
-	})
-}

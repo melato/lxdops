@@ -366,16 +366,3 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 	writer.End()
 	return nil
 }
-
-func (t *DeviceConfigurer) Snapshot(name string, snapshot string) error {
-	pattern := t.NewPattern(name)
-	s := t.NewScript()
-	for _, fs := range t.Config.Filesystems {
-		path, err := pattern.Substitute(fs.Pattern)
-		if err != nil {
-			return err
-		}
-		s.Run("sudo", "zfs", "snapshot", path+"@"+snapshot)
-	}
-	return s.Error()
-}
