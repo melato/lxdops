@@ -32,11 +32,11 @@ func RootCommand() *command.SimpleCommand {
 		Short("configure an existing container").
 		Example("configure c1 demo.yaml")
 	configOps := &ConfigOps{Client: client}
-	cmd.Command("verify").Flags(&configOps).RunFunc(configOps.Verify).
+	cmd.Command("verify").Flags(configOps).RunFunc(configOps.Verify).
 		Use("<config-file> ...").
 		Short("verify config files").
 		Example("verify *.yaml")
-	cmd.Command("create-devices").Flags(&configOps).RunFunc(configOps.CreateDevices).Use("{container-name} {configfile}...").Short("create devices")
+	cmd.Command("create-devices").Flags(configOps).RunFunc(configOps.CreateDevices).Use("{container-name} {configfile}...").Short("create devices")
 	/* add devices:
 	lxdops device add -p a.host -d /z/host/a -s 1 {configfile}...
 	- create subdirectories
