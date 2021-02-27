@@ -25,6 +25,7 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.Rebuild).Short("stop, delete, launch")
 	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename).Short("rename a container, filesystems, config file, and rebuild its profile")
 	cmd.Command("filesystems").Flags(launcher).RunFunc(launcher.PrintFilesystems).Short("list filesystems")
+	cmd.Command("devices").Flags(launcher).RunFunc(launcher.PrintDevices).Short("list devices")
 
 	snapshot := &Snapshot{Client: client}
 	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.Snapshot).Short("snapshot filesystems").Use("@{snapshot} {config-file}...")
@@ -79,6 +80,11 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd.Command("network").RunFunc(containerOps.Network)
 	containerCmd.Command("wait").RunFunc(containerOps.Wait)
 	containerCmd.Command("state").RunFunc(containerOps.State)
+
+	projectOps := &ProjectOps{Client: client}
+	projectCmd := cmd.Command("project")
+	projectCmd.Command("copy-profiles").Flags(projectOps).RunFunc(projectOps.CopyProfiles).
+		Short("copy profiles from one project to another").Use("{profile}...")
 
 	testCmd := cmd.Command("test")
 	testCmd.Command("file").RunFunc(containerOps.File)

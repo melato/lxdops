@@ -342,20 +342,20 @@ func (t *DeviceConfigurer) ListFilesystems(name string) ([]FSPath, error) {
 	return result, nil
 }
 
-type Row struct {
+type fsRow struct {
 	pattern *util.Pattern
 	x       *Filesystem
 }
 
-func (t *Row) Id() interface{} {
+func (t *fsRow) Id() interface{} {
 	return t.x.Id
 }
 
-func (t *Row) Pattern() interface{} {
+func (t *fsRow) Pattern() interface{} {
 	return t.x.Pattern
 }
 
-func (t *Row) Path() interface{} {
+func (t *fsRow) Path() interface{} {
 	path, err := t.pattern.Substitute(t.x.Pattern)
 	if err != nil {
 		return err
@@ -364,7 +364,7 @@ func (t *Row) Path() interface{} {
 }
 
 func (t *DeviceConfigurer) PrintFilesystems(name string) error {
-	var row Row
+	var row fsRow
 	row.pattern = t.NewPattern(name)
 	writer := &table.FixedWriter{Writer: os.Stdout}
 	writer.Columns(
@@ -374,6 +374,43 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 	)
 	for _, fs := range t.Config.Filesystems {
 		row.x = fs
+		writer.WriteRow()
+	}
+	writer.End()
+	return nil
+}
+
+type devRow struct {
+	x *Device
+}
+
+func (t *devRow) filesystem() interface{} {
+	return t.x.Filesystem
+}
+
+func (t *devRow) name() interface{} {
+	return t.x.Name
+}
+
+func (t *devRow) path() interface{} {
+	return t.x.Path
+}
+
+func (t *devRow) dir() interface{} {
+	return t.x.Dir
+}
+
+func (t *DeviceConfigurer) PrintDevices(name string) error {
+	var row devRow
+	writer := &table.FixedWriter{Writer: os.Stdout}
+	writer.Columns(
+		table.NewColumn("name", row.name),
+		table.NewColumn("path", row.path),
+		table.NewColumn("filesystem", row.filesystem),
+		table.NewColumn("dir", row.dir),
+	)
+	for _, d := range t.Config.Devices {
+		row.x = d
 		writer.WriteRow()
 	}
 	writer.End()

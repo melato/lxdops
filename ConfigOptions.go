@@ -75,8 +75,8 @@ func (t *ConfigOptions) Run(args []string, f func(name string, config *Config) e
 	if t.Name == "" {
 		return t.runMultiple(args, f)
 	}
-	if len(args) < 1 {
-		return errors.New("Usage: {config-file}...")
+	if len(args) != 1 {
+		return errors.New("Usage: -name {config-file}")
 	}
 	config, err := t.ReadConfig(args...)
 	if err != nil {
