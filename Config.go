@@ -27,18 +27,8 @@ type Config struct {
 	// It should have the form {container}/{snapshot}
 	Origin string `yaml:"origin,omitempty"`
 
-	// DeviceTemplate is the name of an instance, whose devices are copied (using rsync)
-	// to a new instance with launch.
-	// It should just have the form of (instance) where (instance) is an instance name
-	DeviceTemplate string `yaml:"device-template,omitempty"`
+	DeviceSource `yaml:",inline"`
 
-	// DeviceOrigin is the name an "instance" to clone its zfs devices from
-	// Each device zfs filesystem is cloned from @{snapshot}
-	// When basing an instance on a template, it is preferably to specify a DeviceTemplate,
-	// so that the files are copied, rather than cloned, so the container's disk devices
-	// are not tied to the template.
-	// DeviceOrigin is useful when cloning an instance, for testing or other purposes.
-	DeviceOrigin string `yaml:"device-origin,omitempty"`
 	// Filesystems are zfs filesystems or plain directories that are created
 	// when an instance is created.  Devices are created inside filesystems.
 	Filesystems []*Filesystem `yaml:"filesystems"`
@@ -70,6 +60,39 @@ type Config struct {
 	// ProfilePattern specifies how the instance profile should be named.
 	// It defaults to "(container).lxdops", where (container) is the name of the instance
 	ProfilePattern string `yaml:"profile-pattern"`
+}
+
+// DeviceSource specifies where to copy or clone device directories from
+type DeviceSource struct {
+	// DeviceTemplate is the name of an instance, whose devices are copied (using rsync)
+	// to a new instance with launch.
+	// It should just have the form of (instance) where (instance) is an instance name
+	DeviceTemplate string `yaml:"device-template,omitempty"`
+
+	// DeviceOrigin is the name an "instance" to clone its zfs devices from
+	// Each device zfs filesystem is cloned from @{snapshot}
+	// When basing an instance on a template, it is preferably to specify a DeviceTemplate,
+	// so that the files are copied, rather than cloned, so the container's disk devices
+	// are not tied to the template.
+	// DeviceOrigin is useful when cloning an instance, for testing or other purposes.
+	DeviceOrigin string `yaml:"device-origin,omitempty"`
+
+	// SourceFilesystems override the Filesystems defined in this config file for the purposes of specifying where to copy or clone the
+	// attached devices from.
+	// Example:
+	// suppose test-a.yaml has:
+	//   origin: a/copy
+	//   filesystems: "default": "z/test/(container)"
+	//   device-origin: a@copy
+	//   source-filesystems "default": "z/prod/(container)"
+	//   devices: home, path=/home, filesystem=default
+	// This would do something like:
+	//    zfs clone z/prod/a@copy z/test/test-a
+	//    lxc copy --container-only a/copy test-a
+	//    lxc profile create test-a.lxdops
+	//    lxc profile device add test-a.lxdops home disk path=/home source=/z/test/test-a/home
+	//    lxc profile add test-a test-a.lxdops
+	SourceFilesystems map[string]string `yaml:"source-filesystems,omitempty"`
 }
 
 // OS specifies the container OS

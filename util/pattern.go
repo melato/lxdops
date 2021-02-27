@@ -2,6 +2,10 @@ package util
 
 import (
 	"errors"
+	"fmt"
+	"io"
+	"os"
+	"sort"
 
 	"melato.org/export/template"
 )
@@ -12,7 +16,9 @@ Replaces parenthesized expressions as follows:
 (name) -> Functions[name]()
 */
 type Pattern struct {
+	Constants map[string]string
 	Functions map[string]func() (string, error)
+	didHelp   bool
 }
 
 /** Specify a function that is called to get the replacement value. */
@@ -25,9 +31,28 @@ func (t *Pattern) SetFunction(key string, f func() (string, error)) {
 
 /** Specify the replacement value for (key) */
 func (t *Pattern) SetConstant(key string, value string) {
-	t.SetFunction(key, func() (string, error) {
-		return value, nil
-	})
+	if t.Constants == nil {
+		t.Constants = make(map[string]string)
+	}
+	t.Constants[key] = value
+}
+
+func (t *Pattern) ShowHelp(w io.Writer) {
+	fmt.Fprintf(w, "available pattern keys:\n")
+	keys := make([]string, 0, len(t.Constants)+len(t.Functions))
+	for key, _ := range t.Functions {
+		keys = append(keys, key)
+	}
+	for key, _ := range t.Constants {
+		if _, exists := t.Functions[key]; !exists {
+			keys = append(keys, key)
+		}
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		value, _ := t.Get(key)
+		fmt.Fprintf(w, "(%s): %s\n", key, value)
+	}
 }
 
 func (t *Pattern) Get(key string) (string, error) {
@@ -39,7 +64,15 @@ func (t *Pattern) Get(key string) (string, error) {
 		}
 		return value, nil
 	}
-	return "", errors.New("no such function: " + key)
+	value, found := t.Constants[key]
+	if found {
+		return value, nil
+	}
+	if !t.didHelp {
+		t.ShowHelp(os.Stderr)
+		t.didHelp = true
+	}
+	return "", errors.New("no such key: " + key)
 }
 
 func (t *Pattern) Substitute(pattern string) (string, error) {

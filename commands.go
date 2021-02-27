@@ -54,6 +54,7 @@ func RootCommand() *command.SimpleCommand {
 	profile.Command("exists").RunFunc(lxdOps.ProfileExists).Use("<profile>").Short("check if a profile exists")
 	profile.Command("add-disk").RunFunc(lxdOps.AddDiskDevice).Use("<profile> <source> <path>").Short("add a disk device to a profile")
 	cmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot).Short("print zfs parent of lxd dataset")
+	cmd.Command("pattern").RunFunc(lxdOps.Pattern).Short("run pattern substitution")
 
 	parse := &ParseOp{}
 	cmd.Command("parse").Flags(parse).RunFunc(parse.Run).

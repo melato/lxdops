@@ -148,6 +148,12 @@ func (t *Config) Merge(c *Config) error {
 	if t.DeviceOrigin == "" {
 		t.DeviceOrigin = c.DeviceOrigin
 	}
+	if t.SourceFilesystems == nil {
+		t.SourceFilesystems = make(map[string]string)
+	}
+	for key, value := range c.SourceFilesystems {
+		t.SourceFilesystems[key] = value
+	}
 	if t.Snapshot == "" {
 		t.Snapshot = c.Snapshot
 	}

@@ -3,9 +3,12 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	lxd "github.com/lxc/lxd/client"
+	"melato.org/lxdops/util"
 )
 
 type LxdClient struct {
@@ -113,4 +116,41 @@ func FileExists(server lxd.InstanceServer, container string, file string) bool {
 	}
 	reader.Close()
 	return true
+}
+
+func (t *LxdClient) NewPattern(name string) *util.Pattern {
+	pattern := &util.Pattern{}
+	pattern.SetConstant("container", name)
+	pattern.SetConstant("instance", name)
+	pattern.SetConstant("", name)
+	pattern.SetFunction("lxd", func() (string, error) {
+		dataset, err := t.GetDefaultDataset()
+		if err != nil {
+			return "", err
+		}
+		return dataset, nil
+	})
+	pattern.SetFunction("lxdparent", func() (string, error) {
+		dataset, err := t.GetDefaultDataset()
+		if err != nil {
+			return "", err
+		}
+		root := filepath.Dir(dataset)
+		if root == "" {
+			return "", errors.New("cannot determine zfsroot for dataset: " + dataset)
+		}
+		return root, nil
+	})
+	pattern.SetFunction("lxdroot", func() (string, error) {
+		dataset, err := t.GetDefaultDataset()
+		if err != nil {
+			return "", err
+		}
+		i := strings.Index(dataset, "/")
+		if i >= 0 {
+			return dataset[0:i], nil
+		}
+		return dataset, nil
+	})
+	return pattern
 }
