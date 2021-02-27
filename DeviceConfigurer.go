@@ -366,3 +366,18 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 	writer.End()
 	return nil
 }
+
+func (t *DeviceConfigurer) IterateFilesystems(name string, f func(path string) error) error {
+	pattern := t.NewPattern(name)
+	for _, fs := range t.Config.Filesystems {
+		path, err := pattern.Substitute(fs.Pattern)
+		if err != nil {
+			return err
+		}
+		err = f(path)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
