@@ -83,12 +83,14 @@ func RootCommand() *command.SimpleCommand {
 
 	projectOps := &ProjectOps{Client: client}
 	projectCmd := cmd.Command("project")
+	projectCmd.Command("create").Flags(projectOps).RunFunc(projectOps.Create)
 	projectCmd.Command("copy-profiles").Flags(projectOps).RunFunc(projectOps.CopyProfiles).
 		Short("copy profiles from one project to another").Use("{profile}...")
 
 	testCmd := cmd.Command("test")
 	testCmd.Command("file").RunFunc(containerOps.File)
 	testCmd.Command("push").RunFunc(containerOps.Push)
+	testCmd.Command("project").RunFunc(projectOps.Use)
 
 	cmd.Long(`lxdops launches or copies containers and creates or clones zfs filesystem devices for them, using yaml config files.  It can also install packages, create users, setup authorized_keys for users, push files, attach profiles, and run scripts.
 One of its goals is to facilitate separating the container OS files from the user files, so that the container can be upgraded by relaunching it, thus replacing its OS, rather than upgrading the OS in place.  It is expected that such relaunching can be done by copying a template container and keeping the existing container devices.  The template container can be upgraded with the traditional way, or relaunched from scratch.

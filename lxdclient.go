@@ -12,8 +12,10 @@ import (
 )
 
 type LxdClient struct {
-	Socket string
-	server lxd.InstanceServer
+	Socket        string
+	Project       string
+	rootServer    lxd.InstanceServer
+	projectServer lxd.InstanceServer
 }
 
 func (t *LxdClient) Init() error {
@@ -21,16 +23,32 @@ func (t *LxdClient) Init() error {
 	return nil
 }
 
-func (t *LxdClient) Server() (lxd.InstanceServer, error) {
-	if t.server == nil {
+func (t *LxdClient) RootServer() (lxd.InstanceServer, error) {
+	if t.rootServer == nil {
 		// Connect to LXD over the Unix socket
 		server, err := lxd.ConnectLXDUnix(t.Socket, nil)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("%s: %s", t.Socket, err.Error()))
 		}
-		t.server = server
+		t.rootServer = server
 	}
-	return t.server, nil
+	return t.rootServer, nil
+}
+
+// Server returns the LXD server for the selected project (via the --project flag)
+func (t *LxdClient) Server() (lxd.InstanceServer, error) {
+	if t.projectServer == nil {
+		root, err := t.RootServer()
+		if err != nil {
+			return nil, err
+		}
+		if t.Project == "default" || t.Project == "" {
+			t.projectServer = root
+		} else {
+			t.projectServer = root.UseProject(t.Project)
+		}
+	}
+	return t.projectServer, nil
 }
 
 // InstanceServer returns an lxd.InstanceServer for the project indicated by name
@@ -42,10 +60,7 @@ func (t *LxdClient) InstanceServer(name string) (server lxd.InstanceServer, cont
 	}
 	project, container := SplitContainerName(name)
 	if project != "" {
-		server = server.UseProject(project)
-		if server == nil {
-			return server, container, errors.New("no such project:" + project)
-		}
+		server = t.rootServer.UseProject(project)
 	}
 	return server, container, nil
 }

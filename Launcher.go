@@ -116,6 +116,9 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	containerTemplate := config.Origin
 	script := t.NewScript()
 	project, container := SplitContainerName(name)
+	if project == "" {
+		project = t.Client.Project
+	}
 	projectArgs := ProjectArgs(project)
 	if containerTemplate == "" {
 		lxcArgs := append(projectArgs, "launch")

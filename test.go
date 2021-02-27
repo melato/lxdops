@@ -3,6 +3,7 @@ package lxdops
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 
 	"melato.org/lxdops/util"
@@ -43,6 +44,26 @@ func (t *ContainerOps) Push(name string, hostFile, containerFile string) error {
 	err = server.CreateContainerFile(container, containerFile, file)
 	if err != nil {
 		return AnnotateLXDError(containerFile, err)
+	}
+	return nil
+}
+
+func (t *ProjectOps) Use(project ...string) error {
+	server, err := t.Client.Server()
+	if err != nil {
+		return err
+	}
+	for _, name := range project {
+		server, err = t.projectServer(server, name)
+		if err != nil {
+			return err
+		}
+		profiles, err := server.GetProfileNames()
+		if err != nil {
+			return err
+		}
+		fmt.Printf("project: %s profiles: %d\n", name, len(profiles))
+
 	}
 	return nil
 }

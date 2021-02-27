@@ -369,8 +369,8 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 	writer := &table.FixedWriter{Writer: os.Stdout}
 	writer.Columns(
 		table.NewColumn("id", row.Id),
-		table.NewColumn("pattern", row.Pattern),
 		table.NewColumn("path", row.Path),
+		table.NewColumn("pattern", row.Pattern),
 	)
 	for _, fs := range t.Config.Filesystems {
 		row.x = fs

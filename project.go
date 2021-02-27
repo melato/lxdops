@@ -62,3 +62,16 @@ func (t *ProjectOps) CopyProfiles(profiles []string) error {
 	}
 	return nil
 }
+
+func (t *ProjectOps) Create() error {
+	if t.Client.Project == "" {
+		return errors.New("please specify --project")
+	}
+	server, err := t.Client.RootServer()
+	if err != nil {
+		return err
+	}
+	return server.CreateProject(api.ProjectsPost{Name: t.Client.Project, ProjectPut: api.ProjectPut{Config: map[string]string{
+		"features.images": "false",
+	}}})
+}
