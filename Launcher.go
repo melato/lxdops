@@ -3,6 +3,7 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/lxc/lxd/shared/api"
 	"melato.org/script/v2"
@@ -256,7 +257,7 @@ func (t *Launcher) deleteContainer(name string, config *Config) error {
 		return err
 	}
 	if len(filesystems) > 0 {
-		fmt.Println("not deleted filesystems:")
+		fmt.Fprintln(os.Stderr, "not deleted filesystems:")
 		for _, dir := range filesystems {
 			fmt.Println(dir)
 		}
