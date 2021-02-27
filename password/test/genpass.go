@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"melato.org/export/password"
 	"os"
 	"strconv"
+
+	"melato.org/lxdops/password"
 )
 
 func generate() error {
@@ -25,6 +26,8 @@ func generate() error {
 	}
 
 }
+
+// test password generation
 func main() {
 	err := generate()
 	if err != nil {
