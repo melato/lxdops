@@ -157,6 +157,9 @@ func (t *Config) Merge(c *Config) error {
 	if t.Snapshot == "" {
 		t.Snapshot = c.Snapshot
 	}
+	if t.SourceConfig == "" {
+		t.SourceConfig = c.SourceConfig
+	}
 	t.Stop = t.Stop || c.Stop
 	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
 	t.Filesystems = append(t.Filesystems, c.Filesystems...)
@@ -254,7 +257,7 @@ func (t *Config) ResolvePaths(dir string) {
 	for _, s := range t.Scripts {
 		s.File = s.File.Resolve(dir)
 	}
-	// t.SourceConfig = t.SourceConfig.Resolve(dir)
+	t.SourceConfig = t.SourceConfig.Resolve(dir)
 }
 
 func (t *Config) merge(file string, included map[string]bool) error {

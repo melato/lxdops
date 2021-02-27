@@ -1,5 +1,7 @@
 package lxdops
 
+// HostPath is a file path on the host, which is either absolute or relative to a base directory
+// When a config file includes another config file, the base directory is the directory of the including file
 type HostPath string
 
 // Config - Instance configuration
@@ -64,11 +66,14 @@ type Config struct {
 	ProfilePattern string `yaml:"profile-pattern"`
 }
 
-// DeviceSource specifies how to copy or clone device directories
+// DeviceSource specifies how to copy or clone device directories.
+// When DeviceTemplate is specified, the filesystems are copied with rsync.
+// When DeviceOrigin is specified, the filesystems are cloned with zfs-clone
+// The filesystems that are copied are determined by applying the source instance name to the filesystems of this config,
+// or to the filesystems of a source config.
 //
-// When basing an instance on a template, it is preferable to specify a DeviceTemplate,
-// so that the files are copied, rather than cloned, so the container's disk devices
-// are not tied to the template.
+// When basing an instance on a template with few skeleton files, it is preferable to copy with a DeviceTemplate,
+// so the container's disk devices are not tied to the template.
 //
 // Example:
 // suppose test-a.yaml has:
@@ -88,18 +93,18 @@ type DeviceSource struct {
 	// to a new instance with launch.
 	DeviceTemplate string `yaml:"device-template,omitempty"`
 
-	// device-origin is the name an instance to clone its zfs devices from
+	// device-origin is the name an instance and s short snapshot name.
 	// It has the form <instance>@<snapshot> where <instance> is an instance name,
 	// and @<snapshot> is a the short snapshot name of the instance filesystems.
 	// Each device zfs filesystem is cloned from @<snapshot>
 	DeviceOrigin string `yaml:"device-origin,omitempty"`
 
-	// source-filesystems override the Filesystems defined in this config file for the purposes of specifying where to copy or clone the
-	// attached devices from.
-	SourceFilesystems map[string]string `yaml:"source-filesystems,omitempty"`
-
 	// source-config specifies a config file whose filesystems are used as source-filesystems
-	// SourceConfig HostPath `yaml:"source-config,omitempty"`
+	// if it is empty, use the same config as this instance
+	SourceConfig HostPath `yaml:"source-config,omitempty"`
+
+	// source-filesystems override the Filesystems defined in source-config
+	SourceFilesystems map[string]string `yaml:"source-filesystems,omitempty"`
 }
 
 // OS specifies the container OS

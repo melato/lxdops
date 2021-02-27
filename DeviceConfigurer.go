@@ -18,6 +18,8 @@ type DeviceConfigurer struct {
 	Trace   bool
 	DryRun  bool
 	FuncMap map[string]func() (string, error)
+
+	sourceFilesystems map[string]string
 }
 
 func NewDeviceConfigurer(client *LxdClient, config *Config) *DeviceConfigurer {
@@ -51,35 +53,37 @@ func (t *DeviceConfigurer) CreateFilesystem(fs *Filesystem, name string) error {
 	if err != nil {
 		return err
 	}
-	script := t.NewScript()
 	if strings.HasPrefix(path, "/") {
 		return t.CreateDir(path, true)
-	} else {
-		if t.Config.DeviceOrigin == "" {
-			args := []string{"zfs", "create", "-p"}
-			for key, value := range fs.Zfsproperties {
-				args = append(args, "-o", key+"="+value)
-			}
-			args = append(args, path)
-			script.Run("sudo", args...)
-			t.chownDir(script, filepath.Join("/", path))
-		} else {
-			parts := strings.Split(t.Config.DeviceOrigin, "@")
-			if len(parts) != 2 {
-				return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
-			}
-			originPattern := t.NewPattern(parts[0])
-			fsPattern, overriden := t.Config.SourceFilesystems[fs.Id]
-			if !overriden {
-				fsPattern = fs.Pattern
-			}
-			originDataset, err := originPattern.Substitute(fsPattern)
+	}
+	script := t.NewScript()
+	if t.Config.DeviceOrigin != "" {
+		parts := strings.Split(t.Config.DeviceOrigin, "@")
+		if len(parts) != 2 {
+			return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
+		}
+		sourceInstance, sourceSnapshot := parts[0], parts[1]
+		sourcePattern := t.NewPattern(sourceInstance)
+		fsPattern, exists := t.sourceFilesystems[fs.Id]
+		if exists {
+			// clone
+			sourceDataset, err := sourcePattern.Substitute(fsPattern)
 			if err != nil {
 				return err
 			}
-			script.Run("sudo", "zfs", "clone", "-p", originDataset+"@"+parts[1], path)
+			script.Run("sudo", "zfs", "clone", "-p", sourceDataset+"@"+sourceSnapshot, path)
+			return script.Error()
 		}
 	}
+
+	// create
+	args := []string{"zfs", "create", "-p"}
+	for key, value := range fs.Zfsproperties {
+		args = append(args, "-o", key+"="+value)
+	}
+	args = append(args, path)
+	script.Run("sudo", args...)
+	t.chownDir(script, filepath.Join("/", path))
 	return script.Error()
 }
 
@@ -174,7 +178,35 @@ func (t *DeviceConfigurer) DeviceDir(filesystems map[string]FSPath, device *Devi
 	}
 }
 
+func (t *DeviceConfigurer) initSourceFilesystems() error {
+	var config *Config
+	var err error
+	if t.Config.SourceConfig != "" {
+		config, err = ReadConfigs(string(t.Config.SourceConfig))
+		if err != nil {
+			return err
+		}
+	} else {
+		config = t.Config
+	}
+	t.sourceFilesystems = make(map[string]string)
+	for _, fs := range config.Filesystems {
+		t.sourceFilesystems[fs.Id] = fs.Pattern
+	}
+	// use t.Config.SourceFilesystem, but don't use SourceConfig SourceFilesystems
+	for id, pattern := range t.Config.SourceFilesystems {
+		t.sourceFilesystems[id] = pattern
+	}
+
+	return nil
+}
+
 func (t *DeviceConfigurer) ConfigureDevices(name string) error {
+	err := t.initSourceFilesystems()
+	if err != nil {
+		return err
+	}
+
 	filesystems, err := t.FilesystemPaths(name, nil)
 	if err != nil {
 		return err
@@ -190,7 +222,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 	}
 	var templateFilesystems map[string]FSPath
 	if t.Config.DeviceTemplate != "" {
-		templateFilesystems, err = t.FilesystemPaths(t.Config.DeviceTemplate, t.Config.SourceFilesystems)
+		templateFilesystems, err = t.FilesystemPaths(t.Config.DeviceTemplate, t.sourceFilesystems)
 		if err != nil {
 			return err
 		}
