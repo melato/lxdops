@@ -116,7 +116,7 @@ func (path FSPath) Dir() string {
 	}
 }
 
-func (t *DeviceConfigurer) FilesystemPaths(name string, overrides map[string]string) (map[string]FSPath, error) {
+func (t *DeviceConfigurer) FilesystemMap(name string, overrides map[string]string) (map[string]FSPath, error) {
 	pattern := t.NewPattern(name)
 	filesystems := make(map[string]FSPath)
 	for _, fs := range t.Config.Filesystems {
@@ -131,6 +131,19 @@ func (t *DeviceConfigurer) FilesystemPaths(name string, overrides map[string]str
 		filesystems[fs.Id] = FSPath(path)
 	}
 	return filesystems, nil
+}
+
+func (t *DeviceConfigurer) FilesystemPaths(name string) ([]string, error) {
+	var result []string
+	pattern := t.NewPattern(name)
+	for _, fs := range t.Config.Filesystems {
+		path, err := pattern.Substitute(fs.Pattern)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, path)
+	}
+	return result, nil
 }
 
 func (t *DeviceConfigurer) DeviceFilesystem(device *Device) (*Filesystem, error) {
@@ -209,7 +222,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 		return err
 	}
 
-	filesystems, err := t.FilesystemPaths(name, nil)
+	filesystems, err := t.FilesystemMap(name, nil)
 	if err != nil {
 		return err
 	}
@@ -224,7 +237,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 	}
 	var templateFilesystems map[string]FSPath
 	if t.Config.DeviceTemplate != "" {
-		templateFilesystems, err = t.FilesystemPaths(t.Config.DeviceTemplate, t.sourceFilesystems)
+		templateFilesystems, err = t.FilesystemMap(t.Config.DeviceTemplate, t.sourceFilesystems)
 		if err != nil {
 			return err
 		}
@@ -260,7 +273,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 }
 
 func (t *DeviceConfigurer) CreateProfile(name string) error {
-	filesystems, err := t.FilesystemPaths(name, nil)
+	filesystems, err := t.FilesystemMap(name, nil)
 	if err != nil {
 		return err
 	}
@@ -315,7 +328,7 @@ func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
 }
 
 func (t *DeviceConfigurer) ListFilesystems(name string) ([]FSPath, error) {
-	filesystems, err := t.FilesystemPaths(name, nil)
+	filesystems, err := t.FilesystemMap(name, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -364,20 +377,5 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 		writer.WriteRow()
 	}
 	writer.End()
-	return nil
-}
-
-func (t *DeviceConfigurer) IterateFilesystems(name string, f func(path string) error) error {
-	pattern := t.NewPattern(name)
-	for _, fs := range t.Config.Filesystems {
-		path, err := pattern.Substitute(fs.Pattern)
-		if err != nil {
-			return err
-		}
-		err = f(path)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }

@@ -33,18 +33,27 @@ func (t *Snapshot) Snapshot(qsnapshot string, arg ...string) error {
 	snapshot := qsnapshot[1:]
 	return t.ConfigOptions.Run(arg, func(name string, config *Config) error {
 		dev := NewDeviceConfigurer(t.Client, config)
-		return dev.IterateFilesystems(name, func(path string) error {
-			s := &script.Script{Trace: true, DryRun: t.DryRun}
-			if t.Destroy {
-				args := []string{"zfs", "destroy", path + "@" + snapshot}
-				if t.Recursive {
-					args = append(args, "-R")
+		paths, err := dev.FilesystemPaths(name)
+		if err != nil {
+			return err
+		}
+		s := &script.Script{Trace: true, DryRun: t.DryRun}
+		if t.Destroy {
+			if t.Recursive {
+				roots := RootPaths(paths)
+				for _, path := range roots {
+					s.Run("sudo", "zfs", "destroy", "-R", path+"@"+snapshot)
 				}
-				s.Run("sudo", args...)
 			} else {
-				s.Run("sudo", "zfs", "snapshot", path+"@"+snapshot)
+				for _, path := range paths {
+					s.Run("sudo", "zfs", "destroy", path+"@"+snapshot)
+				}
 			}
-			return s.Error()
-		})
+		} else {
+			for _, path := range paths {
+				s.Run("sudo", "zfs", "snapshot", string(path)+"@"+snapshot)
+			}
+		}
+		return s.Error()
 	})
 }
