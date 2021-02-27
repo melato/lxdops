@@ -245,8 +245,8 @@ func (t *Config) ResolvePath(dir string, file string) string {
 }
 
 func (t *Config) ResolvePaths(dir string) {
-	for i, f := range t.Includes {
-		t.Includes[i] = t.ResolvePath(dir, f)
+	for i, f := range t.Include {
+		t.Include[i] = t.ResolvePath(dir, f)
 	}
 	for _, f := range t.Files {
 		f.Source = t.ResolvePath(dir, f.Source)
@@ -268,7 +268,7 @@ func (t *Config) merge(file string, included map[string]bool) error {
 	}
 	dir := filepath.Dir(file)
 	config.ResolvePaths(dir)
-	for _, f := range config.Includes {
+	for _, f := range config.Include {
 		err := t.merge(f, included)
 		if err != nil {
 			return err

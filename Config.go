@@ -16,9 +16,9 @@ type Config struct {
 	// Description is
 	Description string `yaml:"description,omitempty"`
 
-	// Includes is a list of other configs that are to be included.
+	// Include is a list of other configs that are to be included.
 	// Include paths are either absolute or relative to the path of the including config.
-	Includes []string `yaml:"include,omitempty"`
+	Include []string `yaml:"include,omitempty"`
 
 	// These are files or directories that must exist on the host.
 	RequiredFiles []string `yaml:"require,omitempty"`
@@ -81,7 +81,6 @@ type Config struct {
 //    lxc profile create test-a.lxdops
 //    lxc profile device add test-a.lxdops home disk path=/home source=/z/test/test-a/home
 //    lxc profile add test-a test-a.lxdops
-
 type DeviceSource struct {
 	// device-template is the name of an instance, whose devices are copied (using rsync)
 	// to a new instance with launch.
