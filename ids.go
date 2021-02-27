@@ -18,7 +18,7 @@ type idset struct {
 	Exec  *execRunner
 	Flag  string
 	Label string
-	ids   map[string]int
+	ids   map[string]int64
 }
 
 func (t *idset) IsNumber(s string) bool {
@@ -36,52 +36,46 @@ func (t *idset) IsNumber(s string) bool {
 	return true
 }
 
-func (t *idset) convert(s *script.Script, idString string) int {
-	id, err := strconv.Atoi(idString)
-	if err != nil {
-		s.Errors.Handle(err)
-		return -1
-	}
-	return id
+func (t *idset) convert(idString string) (int64, error) {
+	return strconv.ParseInt(idString, 10, 64)
 }
 
-func (t *idset) id(s *script.Script, sid string) int {
-	if s.HasError() {
-		return 0
-	}
+func (t *idset) id(sid string) (int64, error) {
 	if t.IsNumber(sid) {
-		return t.convert(s, sid)
+		return t.convert(sid)
 	}
 	if t.ids == nil {
-		t.ids = make(map[string]int)
+		t.ids = make(map[string]int64)
 	}
 	id, found := t.ids[sid]
 	if !found {
 		var lines []string
-		data, err := t.Exec.Output("", "id", "--", t.Flag, sid)
+		data, err := t.Exec.Output("", "id", t.Flag, sid)
 		if err == nil {
 			lines = script.BytesToLines(data)
 		}
 		if len(lines) != 1 {
-			s.Errors.Handle(errors.New(fmt.Sprintf("unknown %s: %s", t.Label, sid)))
-			return -1
+			return 0, errors.New(fmt.Sprintf("unknown %s: %s", t.Label, sid))
 		}
-		id = t.convert(s, lines[0])
+		id, err = t.convert(lines[0])
+		if err != nil {
+			return 0, err
+		}
 		t.ids[sid] = id
 	}
-	return id
+	return id, nil
 }
 
-func (t *Ids) Uid(s *script.Script, user string) int {
+func (t *Ids) Uid(user string) (int64, error) {
 	if t.uids == nil {
 		t.uids = &idset{Exec: t.Exec, Flag: "-u", Label: "user"}
 	}
-	return t.uids.id(s, user)
+	return t.uids.id(user)
 }
 
-func (t *Ids) Gid(s *script.Script, group string) int {
+func (t *Ids) Gid(group string) (int64, error) {
 	if t.gids == nil {
 		t.gids = &idset{Exec: t.Exec, Flag: "-g", Label: "group"}
 	}
-	return t.gids.id(s, group)
+	return t.gids.id(group)
 }

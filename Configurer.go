@@ -295,51 +295,64 @@ func (t *Configurer) runScripts(name string, scripts []*Script) error {
 }
 
 func (t *Configurer) copyFiles(config *Config, name string) error {
-	ids := Ids{Exec: t.NewExec(name)}
 	// copy any files
-	project, container := SplitContainerName(name)
-	s := t.NewScript()
+	ids := Ids{Exec: t.NewExec(name)}
+	server, container, err := t.Client.InstanceServer(name)
+	if err != nil {
+		return err
+	}
 	for _, f := range config.Files {
-		var path string
-		if strings.HasPrefix(f.Path, "/") {
-			path = container + f.Path
-		} else {
-			path = container + "/" + f.Path
+		file, err := os.Open(string(f.Source))
+		if err != nil {
+			return err
 		}
-		args := []string{"file"}
-		args = append(args, ProjectArgs(project)...)
-		args = append(args, "push", string(f.Source), path, "-p")
-		if f.Recursive {
-			args = append(args, "-r")
-		}
+		defer file.Close()
+		var args lxd.ContainerFileArgs
+		args.Content = file
 		if f.Mode != "" {
-			args = append(args, "--mode", f.Mode)
+			mode, err := strconv.ParseInt(f.Mode, 8, 32)
+			if err != nil {
+				return errors.New("cannot parse mode: " + f.Mode)
+			}
+			args.Mode = int(mode)
+		} else {
+			st, err := os.Stat(string(f.Source))
+			if err != nil {
+				return err
+			}
+			args.Mode = int(st.Mode().Perm())
 		}
 
-		var uid, gid int
+		var uid, gid int64
 		if f.User != "" {
 			if f.Uid != 0 {
 				return errors.New("both uid and user are specified")
 			}
-			uid = ids.Uid(s, f.User)
+			uid, err = ids.Uid(f.User)
+			if err != nil {
+				return err
+			}
 		}
 		if f.Group != "" {
 			if f.Gid != 0 {
 				return errors.New("both gid and group are specified")
 			}
-			gid = ids.Gid(s, f.Group)
+			gid, err = ids.Gid(f.Group)
+			if err != nil {
+				return err
+			}
 		}
 		// if we do not set --uid, --gid, lxd uses the calling users's uid/gid.
 		// If that is the desired behavior, specify uid: -1, gid: -1
 		if uid != -1 {
-			args = append(args, "--uid", strconv.Itoa(uid))
+			args.UID = int64(uid)
 		}
 		if gid != -1 {
-			args = append(args, "--gid", strconv.Itoa(gid))
+			args.GID = int64(gid)
 		}
-		s.Run("lxc", args...)
-		if s.HasError() {
-			return errors.New(fmt.Sprintf("failed to copy file %s: %v", f.Source, s.Error()))
+		err = server.CreateContainerFile(container, f.Path, args)
+		if err != nil {
+			return AnnotateLXDError(f.Path, err)
 		}
 	}
 	return nil
