@@ -251,13 +251,13 @@ func (t *Configurer) runScripts(name string, scripts []*Script) error {
 		ex.Uid(script.Uid)
 		ex.Gid(script.Gid)
 		if script.File != "" {
-			content, err := os.ReadFile(script.File)
+			content, err := os.ReadFile(string(script.File))
 			if err != nil {
 				return err
 			}
 			file := lxd.ContainerFileArgs{Content: bytes.NewReader(content),
 				Mode: 0555}
-			guestFile := filepath.Join("/root", filepath.Base(script.File))
+			guestFile := filepath.Join("/root", filepath.Base(string(script.File)))
 			err = server.CreateContainerFile(container, guestFile, file)
 			if err != nil {
 				return AnnotateLXDError(guestFile, err)
@@ -308,7 +308,7 @@ func (t *Configurer) copyFiles(config *Config, name string) error {
 		}
 		args := []string{"file"}
 		args = append(args, ProjectArgs(project)...)
-		args = append(args, "push", f.Source, path, "-p")
+		args = append(args, "push", string(f.Source), path, "-p")
 		if f.Recursive {
 			args = append(args, "-r")
 		}

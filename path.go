@@ -8,6 +8,7 @@ import (
 
 type Path string
 
+// IsDescendantOf returns true if c is under p's filesystem hierarchy
 func (c Path) IsDescendantOf(p string) bool {
 	if p == "" {
 		return false

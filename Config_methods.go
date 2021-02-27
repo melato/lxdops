@@ -24,9 +24,9 @@ func (t *OS) Equals(x *OS) bool {
 }
 
 /** Check that the requirements are met */
-func (t *Config) VerifyFileExists(file string) bool {
-	if file != "" && !util.FileExists(file) {
-		fmt.Fprintf(os.Stderr, "file does not exist: %s\n", file)
+func (t *Config) VerifyFileExists(file HostPath) bool {
+	if file != "" && !util.FileExists(string(file)) {
+		fmt.Fprintf(os.Stderr, "file does not exist: %s\n", string(file))
 		return false
 	}
 	return true
@@ -234,26 +234,27 @@ func ReadConfigs1(files ...string) (*Config, error) {
 	return result, nil
 }
 
-func (t *Config) ResolvePath(dir string, file string) string {
-	if file == "" {
+func (path HostPath) Resolve(dir string) HostPath {
+	if path == "" {
 		return ""
 	}
-	if filepath.IsAbs(file) {
-		return file
+	if filepath.IsAbs(string(path)) {
+		return path
 	}
-	return filepath.Join(dir, file)
+	return HostPath(filepath.Join(dir, string(path)))
 }
 
 func (t *Config) ResolvePaths(dir string) {
 	for i, f := range t.Include {
-		t.Include[i] = t.ResolvePath(dir, f)
+		t.Include[i] = f.Resolve(dir)
 	}
 	for _, f := range t.Files {
-		f.Source = t.ResolvePath(dir, f.Source)
+		f.Source = f.Source.Resolve(dir)
 	}
 	for _, s := range t.Scripts {
-		s.File = t.ResolvePath(dir, s.File)
+		s.File = s.File.Resolve(dir)
 	}
+	// t.SourceConfig = t.SourceConfig.Resolve(dir)
 }
 
 func (t *Config) merge(file string, included map[string]bool) error {
@@ -269,7 +270,7 @@ func (t *Config) merge(file string, included map[string]bool) error {
 	dir := filepath.Dir(file)
 	config.ResolvePaths(dir)
 	for _, f := range config.Include {
-		err := t.merge(f, included)
+		err := t.merge(string(f), included)
 		if err != nil {
 			return err
 		}

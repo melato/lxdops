@@ -1,5 +1,7 @@
 package lxdops
 
+type HostPath string
+
 // Config - Instance configuration
 // An instance is a name that is used to launch a container or create LXD disk devices, typically both.
 // The instance name, is the same as the base name of the config file, without the extension.
@@ -18,10 +20,10 @@ type Config struct {
 
 	// Include is a list of other configs that are to be included.
 	// Include paths are either absolute or relative to the path of the including config.
-	Include []string `yaml:"include,omitempty"`
+	Include []HostPath `yaml:"include,omitempty"`
 
 	// These are files or directories that must exist on the host.
-	RequiredFiles []string `yaml:"require,omitempty"`
+	RequiredFiles []HostPath `yaml:"require,omitempty"`
 
 	// Origin is the name of a container and a snapshot to clone from.
 	// It should have the form {container}/{snapshot}
@@ -95,6 +97,9 @@ type DeviceSource struct {
 	// source-filesystems override the Filesystems defined in this config file for the purposes of specifying where to copy or clone the
 	// attached devices from.
 	SourceFilesystems map[string]string `yaml:"source-filesystems,omitempty"`
+
+	// source-config specifies a config file whose filesystems are used as source-filesystems
+	// SourceConfig HostPath `yaml:"source-config,omitempty"`
 }
 
 // OS specifies the container OS
@@ -150,7 +155,7 @@ type File struct {
 	Path string
 
 	// Source is the file path on the host
-	Source string
+	Source HostPath
 
 	// Recursive is not supported and will be removed.  Only single files are supported.
 	Recursive bool
@@ -178,7 +183,7 @@ type Script struct {
 
 	// File is an optional host file that contains the script content.
 	// It should be an executable.  It is copied to the container in /root/ and run there.
-	File string `yaml:"file,omitempty"`
+	File HostPath `yaml:"file,omitempty"`
 
 	// Reboot specifies that the container should be rebooted after running this script
 	// This may be needed when replacing /etc files
