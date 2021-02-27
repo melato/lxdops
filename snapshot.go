@@ -1,6 +1,9 @@
 package lxdops
 
 import (
+	"errors"
+	"strings"
+
 	"melato.org/script/v2"
 )
 
@@ -13,8 +16,13 @@ type Snapshot struct {
 func (t *Snapshot) Init() error {
 	return t.ConfigOptions.Init()
 }
-func (t *Snapshot) Snapshot(configFile string, snapshot string) error {
-	return t.ConfigOptions.Run([]string{configFile}, func(name string, config *Config) error {
+
+func (t *Snapshot) Snapshot(qsnapshot string, arg ...string) error {
+	if !strings.HasPrefix(qsnapshot, "@") {
+		return errors.New("snapshot should begin with '@': " + qsnapshot)
+	}
+	snapshot := qsnapshot[1:]
+	return t.ConfigOptions.Run(arg, func(name string, config *Config) error {
 		dev := NewDeviceConfigurer(t.Client, config)
 		dev.DryRun = t.DryRun
 		return dev.Snapshot(name, snapshot)

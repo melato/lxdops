@@ -27,7 +27,7 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("filesystems").Flags(launcher).RunFunc(launcher.PrintFilesystems).Short("list filesystems")
 
 	snapshot := &Snapshot{Client: client}
-	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.Snapshot).Short("snapshot filesystems").Use("{config-file} {snapshot}")
+	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.Snapshot).Short("snapshot filesystems").Use("@{snapshot} {config-file}...")
 
 	configurer := &Configurer{Client: client}
 	cmd.Command("configure").Flags(configurer).RunFunc(configurer.Run).
