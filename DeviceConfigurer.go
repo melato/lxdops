@@ -3,11 +3,13 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"strings"
 
 	"github.com/lxc/lxd/shared/api"
+	"melato.org/export/table3"
 	"melato.org/lxdops/util"
 	"melato.org/script/v2"
 )
@@ -327,15 +329,53 @@ func (t *DeviceConfigurer) ListFilesystems(name string) ([]FSPath, error) {
 	return result, nil
 }
 
+type Row struct {
+	pattern *util.Pattern
+	x       *Filesystem
+}
+
+func (t *Row) Id() interface{} {
+	return t.x.Id
+}
+
+func (t *Row) Pattern() interface{} {
+	return t.x.Pattern
+}
+
+func (t *Row) Path() interface{} {
+	path, err := t.pattern.Substitute(t.x.Pattern)
+	if err != nil {
+		return err
+	}
+	return path
+}
+
 func (t *DeviceConfigurer) PrintFilesystems(name string) error {
+	var row Row
+	row.pattern = t.NewPattern(name)
+	writer := &table.FixedWriter{Writer: os.Stdout}
+	writer.Columns(
+		table.NewColumn("id", row.Id),
+		table.NewColumn("pattern", row.Pattern),
+		table.NewColumn("path", row.Path),
+	)
+	for _, fs := range t.Config.Filesystems {
+		row.x = fs
+		writer.WriteRow()
+	}
+	writer.End()
+	return nil
+}
+
+func (t *DeviceConfigurer) Snapshot(name string, snapshot string) error {
 	pattern := t.NewPattern(name)
-	fmt.Printf("%s: %s -> %s\n", "id", "pattern", "path")
+	s := t.NewScript()
 	for _, fs := range t.Config.Filesystems {
 		path, err := pattern.Substitute(fs.Pattern)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%s: %s -> %s\n", fs.Id, fs.Pattern, path)
+		s.Run("sudo", "zfs", "snapshot", path+"@"+snapshot)
 	}
-	return nil
+	return s.Error()
 }
