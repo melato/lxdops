@@ -2,6 +2,10 @@
 package usage
 
 import (
+	"fmt"
+	"os"
+
+	"gopkg.in/yaml.v2"
 	"melato.org/command"
 )
 
@@ -10,19 +14,8 @@ type Usage struct {
 	Commands      map[string]*Usage `yaml:"commands,omitempty"`
 }
 
-func (t *Usage) Get(command ...string) *Usage {
-	u := t
-	for _, c := range command {
-		var found bool
-		u, found = u.Commands[c]
-		if !found {
-			return &Usage{}
-		}
-	}
-	return u
-}
-
-// Apply copies the usage fields to the command, if they are not empty.
+// Apply copies the usage to the command, recursively.
+// Only non-empty fields are copied.
 func (u *Usage) Apply(cmd *command.SimpleCommand) {
 	if u.Short != "" {
 		cmd.Short(u.Short)
@@ -45,6 +38,19 @@ func (u *Usage) Apply(cmd *command.SimpleCommand) {
 	}
 }
 
+// ApplyYaml Unmarshal usage from []byte and applies it to the command, recursively
+func ApplyYaml(cmd *command.SimpleCommand, yamlUsage []byte) {
+	var use Usage
+	err := yaml.Unmarshal(yamlUsage, &use)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	use.Apply(cmd)
+}
+
+// Extract copies the usage fields from the command, recursively.
+// It can be used to generate an external usage file from hardcoded usage strings
 func Extract(cmd *command.SimpleCommand) Usage {
 	var u Usage
 	u.Usage = cmd.Usage

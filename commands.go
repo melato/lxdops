@@ -2,10 +2,7 @@ package lxdops
 
 import (
 	_ "embed"
-	"fmt"
-	"os"
 
-	"gopkg.in/yaml.v2"
 	"melato.org/command"
 	"melato.org/lxdops/usage"
 )
@@ -22,11 +19,6 @@ type DryRun struct {
 }
 
 func RootCommand() *command.SimpleCommand {
-	var use usage.Usage
-	err := yaml.Unmarshal(usageData, &use)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
 	client := &LxdClient{}
 	var cmd command.SimpleCommand
 	cmd.Flags(client)
@@ -107,7 +99,7 @@ func RootCommand() *command.SimpleCommand {
 	testCmd.Command("push").RunFunc(containerOps.Push)
 	testCmd.Command("project").RunFunc(projectOps.Use)
 
-	use.Apply(&cmd)
+	usage.ApplyYaml(&cmd, usageData)
 
 	return &cmd
 }
