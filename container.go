@@ -41,11 +41,11 @@ func (t *ContainerOps) Network(container string) error {
 	var network string
 	var a *api.ContainerStateNetworkAddress
 	writer.Columns(
-		table.NewColumn("network", func() interface{} { return network }),
-		table.NewColumn("family", func() interface{} { return a.Family }),
-		table.NewColumn("scope", func() interface{} { return a.Scope }),
-		table.NewColumn("address", func() interface{} { return a.Address }),
-		table.NewColumn("netmask", func() interface{} { return a.Netmask }),
+		table.NewColumn("NETWORK", func() interface{} { return network }),
+		table.NewColumn("FAMILY", func() interface{} { return a.Family }),
+		table.NewColumn("SCOPE", func() interface{} { return a.Scope }),
+		table.NewColumn("ADDRESS", func() interface{} { return a.Address }),
+		table.NewColumn("NETMASK", func() interface{} { return a.Netmask }),
 	)
 	for name, net := range state.Network {
 		network = name

@@ -334,15 +334,15 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 	writer := &table.FixedWriter{Writer: os.Stdout}
 	var fs *Filesystem
 	writer.Columns(
-		table.NewColumn("id", func() interface{} { return fs.Id }),
-		table.NewColumn("path", func() interface{} {
+		table.NewColumn("FILESYSTEM", func() interface{} { return fs.Id }),
+		table.NewColumn("PATH", func() interface{} {
 			path, err := pattern.Substitute(fs.Pattern)
 			if err != nil {
 				return err
 			}
 			return path
 		}),
-		table.NewColumn("pattern", func() interface{} { return fs.Pattern }),
+		table.NewColumn("PATTERN", func() interface{} { return fs.Pattern }),
 	)
 	for _, fs = range t.Config.Filesystems {
 		writer.WriteRow()
@@ -355,10 +355,10 @@ func (t *DeviceConfigurer) PrintDevices(name string) error {
 	writer := &table.FixedWriter{Writer: os.Stdout}
 	var d *Device
 	writer.Columns(
-		table.NewColumn("name", func() interface{} { return d.Name }),
-		table.NewColumn("path", func() interface{} { return d.Path }),
-		table.NewColumn("filesystem", func() interface{} { return d.Filesystem }),
-		table.NewColumn("dir", func() interface{} { return d.Dir }),
+		table.NewColumn("NAME", func() interface{} { return d.Name }),
+		table.NewColumn("PATH", func() interface{} { return d.Path }),
+		table.NewColumn("FILESYSTEM", func() interface{} { return d.Filesystem }),
+		table.NewColumn("DIR", func() interface{} { return d.Dir }),
 	)
 	for _, d = range t.Config.Devices {
 		writer.WriteRow()
