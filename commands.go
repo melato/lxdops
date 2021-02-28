@@ -23,32 +23,21 @@ func RootCommand() *command.SimpleCommand {
 	var cmd command.SimpleCommand
 	cmd.Flags(client)
 	launcher := &Launcher{Client: client}
-	cmd.Command("launch").Flags(launcher).RunFunc(launcher.Launch).
-		Use("<container> <config-file> ...").
-		Short("launch a container").
-		Example("launch php php.yaml")
-	cmd.Command("delete").Flags(launcher).RunFunc(launcher.Delete).Short("delete a stopped container and its profile")
-	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.Rebuild).Short("stop, delete, launch").
-		Long("Rebuild stops, deletes, and relaunches the container.")
-	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename).Short("rename an instance").
-		Long("Renames the container, its filesystems, and its devices profile")
-	cmd.Command("filesystems").Flags(launcher).RunFunc(launcher.PrintFilesystems).Short("list filesystems")
-	cmd.Command("devices").Flags(launcher).RunFunc(launcher.PrintDevices).Short("list devices")
+	cmd.Command("launch").Flags(launcher).RunFunc(launcher.Launch)
+	cmd.Command("delete").Flags(launcher).RunFunc(launcher.Delete)
+	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.Rebuild)
+	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename)
+	cmd.Command("filesystems").Flags(launcher).RunFunc(launcher.PrintFilesystems)
+	cmd.Command("devices").Flags(launcher).RunFunc(launcher.PrintDevices)
 
 	snapshot := &Snapshot{Client: client}
-	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.Snapshot).Short("snapshot filesystems").Use("@{snapshot} {config-file}...")
+	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.Snapshot)
 
 	configurer := &Configurer{Client: client}
-	cmd.Command("configure").Flags(configurer).RunFunc(configurer.Run).
-		Use("<container> <config-file> ...").
-		Short("configure an existing container").
-		Example("configure c1 demo.yaml")
+	cmd.Command("configure").Flags(configurer).RunFunc(configurer.Run)
 	configOps := &ConfigOps{Client: client}
-	cmd.Command("verify").Flags(configOps).RunFunc(configOps.Verify).
-		Use("<config-file> ...").
-		Short("verify config files").
-		Example("verify *.yaml")
-	cmd.Command("create-devices").Flags(configOps).RunFunc(configOps.CreateDevices).Use("{container-name} {configfile}...").Short("create devices")
+	cmd.Command("verify").Flags(configOps).RunFunc(configOps.Verify)
+	cmd.Command("create-devices").Flags(configOps).RunFunc(configOps.CreateDevices)
 	/* add devices:
 	lxdops device add -p a.host -d /z/host/a -s 1 {configfile}...
 	- create subdirectories
@@ -69,15 +58,8 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("pattern").RunFunc(lxdOps.Pattern).Short("run pattern substitution")
 
 	parse := &ParseOp{}
-	cmd.Command("parse").Flags(parse).RunFunc(parse.Run).
-		Short("parse a config file").
-		Use("<config-file>").
-		Example("parse test.yaml")
-
-	cmd.Command("description").RunFunc(configOps.Description).
-		Short("print the description of a config file").
-		Use("<config-file>").
-		Example("test.yaml")
+	cmd.Command("parse").Flags(parse).RunFunc(parse.Run)
+	cmd.Command("description").RunFunc(configOps.Description).Use("<config-file>")
 
 	networkOp := &NetworkOp{Client: client}
 	cmd.Command("addresses").Flags(&networkOp).RunMethodE(networkOp.ExportAddresses).Short("export container addresses")
@@ -99,7 +81,7 @@ func RootCommand() *command.SimpleCommand {
 	testCmd.Command("push").RunFunc(containerOps.Push)
 	testCmd.Command("project").RunFunc(projectOps.Use)
 
-	usage.ApplyYaml(&cmd, usageData)
+	_ = usage.ApplyEnv(&cmd, "USAGE_FILE") || usage.ApplyYaml(&cmd, usageData)
 
 	return &cmd
 }

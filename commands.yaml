@@ -1,9 +1,29 @@
-short: create containers
+short: manage LXD containers together with attached ZFS disk devices
 long: |
-  lxdops launches or copies containers and creates or clones zfs filesystem devices for them, using yaml config files.  It can also install packages, create users, setup authorized_keys for users, push files, attach profiles, and run scripts.
-  One of its goals is to facilitate separating the container OS files from the user files, so that the container can be upgraded by relaunching it, thus replacing its OS, rather than upgrading the OS in place.  It is expected that such relaunching can be done by copying a template container and keeping the existing container devices.  The template container can be upgraded with the traditional way, or relaunched from scratch.
-  A config file provides the recipe for how the container should be created.
-  Devices are attached to the container via a .devices profile.
+  lxdops launches LXD containers and creates or clones ZFS filesystem devices for them.
+  lxdops launches an "instance" by:
+    - Creating or cloning a set of ZFS filesystems
+    - Creating and initializing a set of sub-directories under these filesystems
+    - Creating an LXD profile with disk devices for these directories
+    - Launching or copying an LXD container with this profile
+    
+  lxdops can also install packages, create users, setup .ssh/authorized_keys for users,
+  push files from the host to the container, attach profiles, and run scripts.
+  
+  One of its goals is to separate the container OS files from user files,
+  so that the container can be upgraded by swapping its OS with a new one,
+  instead of upgrading the OS in place.
+  Such rebuilding  can be done by copying a template container
+  whie keeping the existing container disk devices.
+  
+  The template container can be upgraded manually, using the OS upgrade procedure,
+  or relaunched from scratch.
+  
+  A Yaml configuration file provides the recipe for how the container should be created.
+  It can include other config files, so that common configuration
+  can be reused across instances.
+  
+  Devices are attached to the container via an instance profile.
 commands:
   addresses:
     short: export container addresses
@@ -25,7 +45,7 @@ commands:
         short: wait until the container has an ip address
   create-devices:
     short: create devices
-    use: '{container-name} {configfile}...'
+    use: <container-name> <configfile>...
   delete:
     short: delete a stopped container and its profile
   description:
@@ -84,7 +104,7 @@ commands:
     long: Renames the container, its filesystems, and its devices profile
   snapshot:
     short: snapshot filesystems
-    use: '@{snapshot} {config-file}...'
+    use: '@<snapshot> <config-file>...'
   test:
     short: ""
     commands:

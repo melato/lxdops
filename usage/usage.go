@@ -9,6 +9,7 @@ import (
 	"melato.org/command"
 )
 
+// Usage provides a tree structure for command usage that parallels a command tree structure
 type Usage struct {
 	command.Usage `yaml:",inline"`
 	Commands      map[string]*Usage `yaml:"commands,omitempty"`
@@ -38,29 +39,37 @@ func (u *Usage) Apply(cmd *command.SimpleCommand) {
 	}
 }
 
-// ApplyYaml Extract usage from Yaml data and applies it to the command, recursively
-// But first it tries to read usage data from the file specified by the environment variable USAGE_FILE.
-// This way you can make changes to the usage data and try it without recompiling.
+// ApplyEnv looks for a file specified in an environment variable,
+// reads this file, if it exists, reads this file and calls ApplyYaml with its content
+// Returns true if it found usage data without errors.
+// This way you can make changes to the usage data and see how it looks without recompiling.
 // It prints any errors to stderr.
-func ApplyYaml(cmd *command.SimpleCommand, yamlUsage []byte) {
-	file, env := os.LookupEnv("USAGE_FILE")
+func ApplyEnv(cmd *command.SimpleCommand, envVar string) bool {
+	file, env := os.LookupEnv(envVar)
 	if env {
 		if _, err := os.Stat(file); err == nil {
 			fileContent, err := os.ReadFile(file)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-			} else {
-				yamlUsage = fileContent
+			if err == nil {
+				ApplyYaml(cmd, fileContent)
+				return true
 			}
+			fmt.Fprintln(os.Stderr, err)
 		}
 	}
+	return false
+}
+
+// ApplyYaml Extract usage from Yaml data and applies it to the command hierarchy.
+// It prints any errors to stderr.
+func ApplyYaml(cmd *command.SimpleCommand, yamlUsage []byte) bool {
 	var use Usage
 	err := yaml.Unmarshal(yamlUsage, &use)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return
+		return false
 	}
 	use.Apply(cmd)
+	return true
 }
 
 // Extract copies the usage fields from the command, recursively.
