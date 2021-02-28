@@ -1,0 +1,104 @@
+short: create containers
+long: |
+  lxdops launches or copies containers and creates or clones zfs filesystem devices for them, using yaml config files.  It can also install packages, create users, setup authorized_keys for users, push files, attach profiles, and run scripts.
+  One of its goals is to facilitate separating the container OS files from the user files, so that the container can be upgraded by relaunching it, thus replacing its OS, rather than upgrading the OS in place.  It is expected that such relaunching can be done by copying a template container and keeping the existing container devices.  The template container can be upgraded with the traditional way, or relaunched from scratch.
+  A config file provides the recipe for how the container should be created.
+  Devices are attached to the container via a .devices profile.
+commands:
+  addresses:
+    short: export container addresses
+  configure:
+    short: configure an existing container
+    use: <container> <config-file> ...
+    examples:
+    - configure c1 demo.yaml
+  container:
+    short: LXD container utilities
+    commands:
+      network:
+        short: print network addresses for the container
+      profiles:
+        short: print the container profiles
+      state:
+        short: dump the container state, in yaml
+      wait: 
+        short: wait until the container has an ip address
+  create-devices:
+    short: create devices
+    use: '{container-name} {configfile}...'
+  delete:
+    short: delete a stopped container and its profile
+  description:
+    short: print the description of a config file
+    use: <config-file>
+    examples:
+    - test.yaml
+  devices:
+    short: list devices
+  filesystems:
+    short: list filesystems
+  launch:
+    short: launch a container
+    use: <container> <config-file> ...
+    examples:
+    - launch php php.yaml
+  parse:
+    short: parse a config file
+    use: <config-file>
+    examples:
+    - parse test.yaml
+  pattern:
+    short: run pattern substitution
+  profile:
+    short: profile utilities
+    commands:
+      add-disk:
+        short: add a disk device to a profile
+        use: <profile> <source> <path>
+      apply:
+        short: apply the config profiles to a container
+      diff:
+        short: compare container profiles with config
+      exists:
+        short: check if a profile exists
+        use: <profile>
+      list:
+        short: list config profiles
+      reorder:
+        short: reorder container profiles to match config order
+  project:
+    short: project utilities
+    commands:
+      copy-profiles:
+        short: copy profiles from one project to another
+        long: profile
+      create:
+        short: create a project with a default profile
+        long: Creates a new project, if it doesn't exist, and copies the default profile
+          from the default project to the new project
+  rebuild:
+    short: stop, delete, launch
+    long: Rebuild stops, deletes, and relaunches the container.
+  rename:
+    short: rename an instance
+    long: Renames the container, its filesystems, and its devices profile
+  snapshot:
+    short: snapshot filesystems
+    use: '@{snapshot} {config-file}...'
+  test:
+    short: ""
+    commands:
+      file:
+        short: ""
+      project:
+        short: ""
+      push:
+        short: ""
+  verify:
+    short: verify config files
+    use: <config-file> ...
+    examples:
+    - verify *.yaml
+  zfsroot:
+    short: print zfs parent of lxd dataset
+

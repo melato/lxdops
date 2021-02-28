@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"melato.org/command"
+	"melato.org/lxdops"
 	"melato.org/lxdops/usage"
 )
 
@@ -16,7 +17,16 @@ type Parse struct {
 }
 
 func (t *Parse) Init() error {
-	t.File = "../usage.yaml"
+	t.File = "../commands.yaml"
+	return nil
+}
+
+func Print(u *usage.Usage) error {
+	data, err := yaml.Marshal(u)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(data))
 	return nil
 }
 
@@ -33,23 +43,21 @@ func (t *Parse) Parse() error {
 	if err != nil {
 		return err
 	}
-	data, err = yaml.Marshal(&use)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(data))
-	return nil
+	return Print(&use)
 }
 
 func Example() error {
-	u1 := &usage.Usage{Short: "short1"}
-	u1.Commands = map[string]*usage.Usage{"b": &usage.Usage{Short: "b2"}}
-	data, err := yaml.Marshal(u1)
-	if err != nil {
-		return err
+	u1 := &usage.Usage{Usage: command.Usage{Short: "short1"}}
+	u1.Commands = map[string]*usage.Usage{
+		"b": &usage.Usage{Usage: command.Usage{Short: "b1"}},
+		"c": &usage.Usage{Usage: command.Usage{Short: "b2"}},
 	}
-	fmt.Println(string(data))
-	return nil
+	return Print(u1)
+}
+
+func Extract() error {
+	u := usage.Extract(lxdops.RootCommand())
+	return Print(&u)
 }
 
 func main() {
@@ -57,5 +65,6 @@ func main() {
 	parse := &Parse{}
 	cmd.Command("parse").Flags(parse).RunFunc(parse.Parse)
 	cmd.Command("example").RunFunc(Example)
+	cmd.Command("extract").RunFunc(Extract)
 	command.Main(&cmd)
 }

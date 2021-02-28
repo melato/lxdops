@@ -10,7 +10,7 @@ import (
 	"melato.org/lxdops/usage"
 )
 
-//go:embed usage.yaml
+//go:embed commands.yaml
 var usageData []byte
 
 type Trace struct {
@@ -99,18 +99,15 @@ func RootCommand() *command.SimpleCommand {
 
 	projectOps := &ProjectOps{Client: client}
 	projectCmd := cmd.Command("project").Short("project utilities")
-	var c *command.SimpleCommand
-	c = projectCmd.Command("create").Flags(projectOps).RunFunc(projectOps.Create)
-	use.Get("project", "create").Apply(c)
-	c = projectCmd.Command("copy-profiles").Flags(projectOps).RunFunc(projectOps.CopyProfiles).
-		use.Get("project", "copy-profiles").Apply(c)
+	projectCmd.Command("create").Flags(projectOps).RunFunc(projectOps.Create)
+	projectCmd.Command("copy-profiles").Flags(projectOps).RunFunc(projectOps.CopyProfiles)
 
 	testCmd := cmd.Command("test")
 	testCmd.Command("file").RunFunc(containerOps.File)
 	testCmd.Command("push").RunFunc(containerOps.Push)
 	testCmd.Command("project").RunFunc(projectOps.Use)
 
-	use.Get().Apply(&cmd)
+	use.Apply(&cmd)
 
 	return &cmd
 }
