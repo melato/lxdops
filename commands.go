@@ -44,25 +44,25 @@ func RootCommand() *command.SimpleCommand {
 	- change ownership
 	- add devices to profile, with optional suffix
 	*/
-	profile := cmd.Command("profile").Short("profile utilities")
+	profile := cmd.Command("profile")
 	profileConfigurer := &ProfileConfigurer{Client: client}
-	profile.Command("list").Flags(profileConfigurer).RunFunc(profileConfigurer.List).Short("list config profiles")
-	profile.Command("diff").Flags(profileConfigurer).RunFunc(profileConfigurer.Diff).Short("compare container profiles with config")
-	profile.Command("apply").Flags(profileConfigurer).RunFunc(profileConfigurer.Apply).Short("apply the config profiles to a container")
-	profile.Command("reorder").Flags(profileConfigurer).RunFunc(profileConfigurer.Reorder).Short("reorder container profiles to match config order")
+	profile.Command("list").Flags(profileConfigurer).RunFunc(profileConfigurer.List)
+	profile.Command("diff").Flags(profileConfigurer).RunFunc(profileConfigurer.Diff)
+	profile.Command("apply").Flags(profileConfigurer).RunFunc(profileConfigurer.Apply)
+	profile.Command("reorder").Flags(profileConfigurer).RunFunc(profileConfigurer.Reorder)
 
 	lxdOps := &LxdOps{Client: client}
-	profile.Command("exists").RunFunc(lxdOps.ProfileExists).Use("<profile>").Short("check if a profile exists")
-	profile.Command("add-disk").RunFunc(lxdOps.AddDiskDevice).Use("<profile> <source> <path>").Short("add a disk device to a profile")
-	cmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot).Short("print zfs parent of lxd dataset")
-	cmd.Command("pattern").RunFunc(lxdOps.Pattern).Short("run pattern substitution")
+	profile.Command("exists").RunFunc(lxdOps.ProfileExists)
+	profile.Command("add-disk").RunFunc(lxdOps.AddDiskDevice)
+	cmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot)
+	cmd.Command("pattern").RunFunc(lxdOps.Pattern)
 
 	parse := &ParseOp{}
 	cmd.Command("parse").Flags(parse).RunFunc(parse.Run)
-	cmd.Command("description").RunFunc(configOps.Description).Use("<config-file>")
+	cmd.Command("description").RunFunc(configOps.Description)
 
 	networkOp := &NetworkOp{Client: client}
-	cmd.Command("addresses").Flags(&networkOp).RunMethodE(networkOp.ExportAddresses).Short("export container addresses")
+	cmd.Command("addresses").Flags(&networkOp).RunMethodE(networkOp.ExportAddresses)
 
 	containerOps := &ContainerOps{Client: client}
 	containerCmd := cmd.Command("container")
@@ -72,7 +72,7 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd.Command("state").RunFunc(containerOps.State)
 
 	projectOps := &ProjectOps{Client: client}
-	projectCmd := cmd.Command("project").Short("project utilities")
+	projectCmd := cmd.Command("project")
 	projectCmd.Command("create").Flags(projectOps).RunFunc(projectOps.Create)
 	projectCmd.Command("copy-profiles").Flags(projectOps).RunFunc(projectOps.CopyProfiles)
 
