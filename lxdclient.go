@@ -13,7 +13,7 @@ import (
 
 type LxdClient struct {
 	Socket        string
-	Project       string
+	Project       string `name:"project" usage:"the LXD project to use"`
 	rootServer    lxd.InstanceServer
 	projectServer lxd.InstanceServer
 }
@@ -138,13 +138,16 @@ func (t *LxdClient) NewPattern(name string) *util.Pattern {
 	pattern.SetConstant("container", name)
 	pattern.SetConstant("instance", name)
 	pattern.SetConstant("", name)
-	pattern.SetFunction("lxd", func() (string, error) {
-		dataset, err := t.GetDefaultDataset()
-		if err != nil {
-			return "", err
-		}
-		return dataset, nil
-	})
+	project := t.Project
+	var slashProject string
+	if project == "" || project == "default" {
+		project = "default"
+		slashProject = ""
+	} else {
+		slashProject = "/" + project
+	}
+	pattern.SetConstant("project", project)
+	pattern.SetConstant("/project", slashProject)
 	pattern.SetFunction("lxdparent", func() (string, error) {
 		dataset, err := t.GetDefaultDataset()
 		if err != nil {
@@ -156,7 +159,7 @@ func (t *LxdClient) NewPattern(name string) *util.Pattern {
 		}
 		return root, nil
 	})
-	pattern.SetFunction("lxdroot", func() (string, error) {
+	pattern.SetFunction("zfsroot", func() (string, error) {
 		dataset, err := t.GetDefaultDataset()
 		if err != nil {
 			return "", err

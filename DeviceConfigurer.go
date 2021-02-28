@@ -33,20 +33,7 @@ func (t *DeviceConfigurer) NewScript() *script.Script {
 }
 
 func (t *DeviceConfigurer) NewPattern(name string) *util.Pattern {
-	pattern := &util.Pattern{}
-	pattern.SetConstant("container", name)
-	pattern.SetFunction("zfsroot", func() (string, error) {
-		dataset, err := t.Client.GetDefaultDataset()
-		if err != nil {
-			return "", err
-		}
-		root := filepath.Dir(dataset)
-		if root == "" {
-			return "", errors.New("cannot determine zfsroot for dataset: " + dataset)
-		}
-		return root, nil
-	})
-	return pattern
+	return t.Client.NewPattern(name)
 }
 
 func (t *DeviceConfigurer) CreateFilesystem(fs *Filesystem, name string) error {

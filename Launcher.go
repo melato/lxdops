@@ -106,7 +106,6 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	profileName := config.ProfileName(name)
 	var profiles []string
 	profiles = append(profiles, config.Profiles...)
-	//profiles := []string{"default", "dev", "opt", "tools"}
 	if config.Devices != nil {
 		if len(profiles) == 0 {
 			profiles = append(profiles, "default")
@@ -144,6 +143,9 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		}
 	} else {
 		sn := SplitSnapshotName(containerTemplate)
+		if sn.Project == "" {
+			sn.Project = project
+		}
 		copyArgs := append(ProjectArgs(sn.Project), "copy")
 		if project != "" {
 			copyArgs = append(copyArgs, "--target-project", project)
