@@ -3,11 +3,13 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	lxd "github.com/lxc/lxd/client"
+	"github.com/lxc/lxd/lxc/config"
 	"melato.org/lxdops/util"
 )
 
@@ -18,7 +20,47 @@ type LxdClient struct {
 	projectServer lxd.InstanceServer
 }
 
+func (t *LxdClient) configDir() (string, error) {
+	configDir := os.Getenv("LXD_CONF")
+	if configDir != "" {
+		return configDir, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	configDir = filepath.Join(home, "snap", "lxd", "current", ".config", "lxc")
+	if _, err = os.Stat(configDir); err == nil {
+		return configDir, nil
+	}
+	configDir = filepath.Join(home, ".config", "lxc")
+	if _, err = os.Stat(configDir); err == nil {
+		return configDir, nil
+	}
+	return "", err
+}
+
+func (t *LxdClient) initLxcConfig() {
+	configDir, err := t.configDir()
+	if err != nil {
+		return
+	}
+
+	var cfg config.Config
+	err = util.ReadYaml(filepath.Join(configDir, "config.yml"), &cfg)
+	if err != nil {
+		return
+	}
+	if err == nil {
+		local, found := cfg.Remotes["local"]
+		if found {
+			t.Project = local.Project
+		}
+	}
+}
+
 func (t *LxdClient) Init() error {
+	t.initLxcConfig()
 	t.Socket = "/var/snap/lxd/common/lxd/unix.socket"
 	return nil
 }
@@ -135,19 +177,21 @@ func FileExists(server lxd.InstanceServer, container string, file string) bool {
 
 func (t *LxdClient) NewPattern(name string) *util.Pattern {
 	pattern := &util.Pattern{}
-	pattern.SetConstant("container", name)
 	pattern.SetConstant("instance", name)
 	pattern.SetConstant("", name)
 	project := t.Project
-	var slashProject string
+	var slashProject, project_instance string
 	if project == "" || project == "default" {
 		project = "default"
 		slashProject = ""
+		project_instance = name
 	} else {
 		slashProject = "/" + project
+		project_instance = project + "_" + name
 	}
 	pattern.SetConstant("project", project)
 	pattern.SetConstant("/project", slashProject)
+	pattern.SetConstant("project_instance", project_instance)
 	pattern.SetFunction("lxdparent", func() (string, error) {
 		dataset, err := t.GetDefaultDataset()
 		if err != nil {
@@ -155,7 +199,7 @@ func (t *LxdClient) NewPattern(name string) *util.Pattern {
 		}
 		root := filepath.Dir(dataset)
 		if root == "" {
-			return "", errors.New("cannot determine zfsroot for dataset: " + dataset)
+			return "", errors.New("cannot determine parent of LXD dataset: " + dataset)
 		}
 		return root, nil
 	})
@@ -168,6 +212,7 @@ func (t *LxdClient) NewPattern(name string) *util.Pattern {
 		if i >= 0 {
 			return dataset[0:i], nil
 		}
+		return "", errors.New("the LXD dataset uses root ZFS dataset: " + dataset)
 		return dataset, nil
 	})
 	return pattern

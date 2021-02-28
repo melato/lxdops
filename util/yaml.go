@@ -15,3 +15,12 @@ func PrintYaml(v interface{}) {
 	os.Stdout.Write(data)
 	fmt.Println()
 }
+
+func ReadYaml(file string, v interface{}) error {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	return yaml.Unmarshal(data, v)
+}

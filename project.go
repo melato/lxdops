@@ -2,9 +2,11 @@ package lxdops
 
 import (
 	"errors"
+	"fmt"
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
+	"melato.org/lxdops/util"
 )
 
 type ProjectOps struct {
@@ -41,10 +43,7 @@ func (t *ProjectOps) CopyProfiles(profiles []string) error {
 	if err != nil {
 		return err
 	}
-	targetProfiles := make(map[string]bool)
-	for _, name := range targetProfileNames {
-		targetProfiles[name] = true
-	}
+	targetProfiles := util.StringSlice(targetProfileNames).ToMap()
 	for _, name := range profiles {
 		source, _, err := sourceServer.GetProfile(name)
 		if err != nil {
@@ -63,15 +62,38 @@ func (t *ProjectOps) CopyProfiles(profiles []string) error {
 	return nil
 }
 
-func (t *ProjectOps) Create() error {
-	if t.Client.Project == "" {
-		return errors.New("please specify --project")
-	}
+func (t *ProjectOps) Create(projects ...string) error {
 	server, err := t.Client.RootServer()
 	if err != nil {
 		return err
 	}
-	return server.CreateProject(api.ProjectsPost{Name: t.Client.Project, ProjectPut: api.ProjectPut{Config: map[string]string{
+	projectNames, err := server.GetProjectNames()
+	if err != nil {
+		return err
+	}
+	projectSet := util.StringSlice(projectNames).ToMap()
+	projectPut := api.ProjectPut{Config: map[string]string{
 		"features.images": "false",
-	}}})
+	}}
+	profile, _, err := server.GetProfile("default")
+	if err != nil {
+		return errors.New("cannot get default profile")
+	}
+
+	for _, project := range projects {
+		if !projectSet[project] {
+			fmt.Printf("create project %s: %v\n", project, projectPut.Config)
+			err := server.CreateProject(api.ProjectsPost{Name: project, ProjectPut: projectPut})
+			if err != nil {
+				return err
+			}
+			projectServer := server.UseProject(project)
+			fmt.Printf("copy default profile from %s project to %s\n", "default", project)
+			err = projectServer.UpdateProfile("default", profile.ProfilePut, "")
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

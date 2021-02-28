@@ -22,8 +22,10 @@ func RootCommand() *command.SimpleCommand {
 		Short("launch a container").
 		Example("launch php php.yaml")
 	cmd.Command("delete").Flags(launcher).RunFunc(launcher.Delete).Short("delete a stopped container and its profile")
-	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.Rebuild).Short("stop, delete, launch")
-	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename).Short("rename a container, filesystems, config file, and rebuild its profile")
+	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.Rebuild).Short("stop, delete, launch").
+		Long("Rebuild stops, deletes, and relaunches the container.")
+	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename).Short("rename an instance").
+		Long("Renames the container, its filesystems, and its devices profile")
 	cmd.Command("filesystems").Flags(launcher).RunFunc(launcher.PrintFilesystems).Short("list filesystems")
 	cmd.Command("devices").Flags(launcher).RunFunc(launcher.PrintDevices).Short("list devices")
 
@@ -82,8 +84,9 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd.Command("state").RunFunc(containerOps.State)
 
 	projectOps := &ProjectOps{Client: client}
-	projectCmd := cmd.Command("project")
-	projectCmd.Command("create").Flags(projectOps).RunFunc(projectOps.Create)
+	projectCmd := cmd.Command("project").Short("project utilities")
+	projectCmd.Command("create").Flags(projectOps).RunFunc(projectOps.Create).Short("create a project with a default profile").
+		Long("Creates a new project, if it doesn't exist, and copies the default profile from the default project to the new project")
 	projectCmd.Command("copy-profiles").Flags(projectOps).RunFunc(projectOps.CopyProfiles).
 		Short("copy profiles from one project to another").Use("{profile}...")
 

@@ -139,7 +139,7 @@ func (t *Config) Merge(c *Config) error {
 	} else if c.OS == nil {
 		// keep the one we have
 	} else if t.OS.Name != c.OS.Name {
-		return errors.New("cannot merge incompatible oses: " + t.OS.Name + ", " + c.OS.Name)
+		return errors.New("cannot merge incompatible OSs: " + t.OS.Name + ", " + c.OS.Name)
 	} else if t.OS.Version != c.OS.Version {
 		if t.OS.Version == "" {
 			t.OS.Version = c.OS.Version

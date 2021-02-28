@@ -21,10 +21,7 @@ func (t StringSlice) Equals(b []string) bool {
 /** Return the elements of this slice that are not in the b slice */
 func (t StringSlice) Diff(b []string) []string {
 	var result []string
-	m := make(map[string]bool)
-	for _, s := range b {
-		m[s] = true
-	}
+	m := StringSlice(b).ToMap()
 	for _, s := range t {
 		_, inB := m[s]
 		if !inB {
@@ -74,4 +71,12 @@ func (t StringSlice) Remove(remove string) []string {
 	} else {
 		return t
 	}
+}
+
+func (t StringSlice) ToMap() map[string]bool {
+	result := make(map[string]bool)
+	for _, s := range t {
+		result[s] = true
+	}
+	return result
 }
