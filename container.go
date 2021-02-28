@@ -28,31 +28,6 @@ func (t *ContainerOps) Profiles(container string) error {
 	return nil
 }
 
-type addressColumns struct {
-	net string
-	x   *api.ContainerStateNetworkAddress
-}
-
-func (t *addressColumns) network() interface{} {
-	return t.net
-}
-
-func (t *addressColumns) family() interface{} {
-	return t.x.Family
-}
-
-func (t *addressColumns) scope() interface{} {
-	return t.x.Scope
-}
-
-func (t *addressColumns) address() interface{} {
-	return t.x.Address
-}
-
-func (t *addressColumns) netmask() interface{} {
-	return t.x.Netmask
-}
-
 func (t *ContainerOps) Network(container string) error {
 	server, err := t.Client.Server()
 	if err != nil {
@@ -62,19 +37,20 @@ func (t *ContainerOps) Network(container string) error {
 	if err != nil {
 		return AnnotateLXDError(container, err)
 	}
-	var col addressColumns
 	writer := &table.FixedWriter{Writer: os.Stdout}
+	var network string
+	var a *api.ContainerStateNetworkAddress
 	writer.Columns(
-		table.NewColumn("network", col.network),
-		table.NewColumn("family", col.family),
-		table.NewColumn("scope", col.scope),
-		table.NewColumn("address", col.address),
-		table.NewColumn("netmask", col.netmask),
+		table.NewColumn("network", func() interface{} { return network }),
+		table.NewColumn("family", func() interface{} { return a.Family }),
+		table.NewColumn("scope", func() interface{} { return a.Scope }),
+		table.NewColumn("address", func() interface{} { return a.Address }),
+		table.NewColumn("netmask", func() interface{} { return a.Netmask }),
 	)
 	for name, net := range state.Network {
-		col.net = name
-		for _, a := range net.Addresses {
-			col.x = &a
+		network = name
+		for _, address := range net.Addresses {
+			a = &address
 			writer.WriteRow()
 		}
 	}

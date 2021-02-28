@@ -329,75 +329,38 @@ func (t *DeviceConfigurer) ListFilesystems(name string) ([]FSPath, error) {
 	return result, nil
 }
 
-type fsRow struct {
-	pattern *util.Pattern
-	x       *Filesystem
-}
-
-func (t *fsRow) Id() interface{} {
-	return t.x.Id
-}
-
-func (t *fsRow) Pattern() interface{} {
-	return t.x.Pattern
-}
-
-func (t *fsRow) Path() interface{} {
-	path, err := t.pattern.Substitute(t.x.Pattern)
-	if err != nil {
-		return err
-	}
-	return path
-}
-
 func (t *DeviceConfigurer) PrintFilesystems(name string) error {
-	var row fsRow
-	row.pattern = t.NewPattern(name)
+	pattern := t.NewPattern(name)
 	writer := &table.FixedWriter{Writer: os.Stdout}
+	var fs *Filesystem
 	writer.Columns(
-		table.NewColumn("id", row.Id),
-		table.NewColumn("path", row.Path),
-		table.NewColumn("pattern", row.Pattern),
+		table.NewColumn("id", func() interface{} { return fs.Id }),
+		table.NewColumn("path", func() interface{} {
+			path, err := pattern.Substitute(fs.Pattern)
+			if err != nil {
+				return err
+			}
+			return path
+		}),
+		table.NewColumn("pattern", func() interface{} { return fs.Pattern }),
 	)
-	for _, fs := range t.Config.Filesystems {
-		row.x = fs
+	for _, fs = range t.Config.Filesystems {
 		writer.WriteRow()
 	}
 	writer.End()
 	return nil
 }
 
-type devRow struct {
-	x *Device
-}
-
-func (t *devRow) filesystem() interface{} {
-	return t.x.Filesystem
-}
-
-func (t *devRow) name() interface{} {
-	return t.x.Name
-}
-
-func (t *devRow) path() interface{} {
-	return t.x.Path
-}
-
-func (t *devRow) dir() interface{} {
-	return t.x.Dir
-}
-
 func (t *DeviceConfigurer) PrintDevices(name string) error {
-	var row devRow
 	writer := &table.FixedWriter{Writer: os.Stdout}
+	var d *Device
 	writer.Columns(
-		table.NewColumn("name", row.name),
-		table.NewColumn("path", row.path),
-		table.NewColumn("filesystem", row.filesystem),
-		table.NewColumn("dir", row.dir),
+		table.NewColumn("name", func() interface{} { return d.Name }),
+		table.NewColumn("path", func() interface{} { return d.Path }),
+		table.NewColumn("filesystem", func() interface{} { return d.Filesystem }),
+		table.NewColumn("dir", func() interface{} { return d.Dir }),
 	)
-	for _, d := range t.Config.Devices {
-		row.x = d
+	for _, d = range t.Config.Devices {
 		writer.WriteRow()
 	}
 	writer.End()
