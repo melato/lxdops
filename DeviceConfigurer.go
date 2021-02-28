@@ -142,8 +142,7 @@ func (t *DeviceConfigurer) DeviceFilesystem(device *Device) (*Filesystem, error)
 	return nil, errors.New("no such filesystem: " + device.Filesystem)
 }
 
-func (t *DeviceConfigurer) DeviceDir(filesystems map[string]FSPath, device *Device, name string) (string, error) {
-	pattern := t.NewPattern(name)
+func (t *DeviceConfigurer) DeviceDir(pattern *util.Pattern, filesystems map[string]FSPath, device *Device) (string, error) {
 	var fsPath FSPath
 	var dir string
 	var substituteDir bool
@@ -223,15 +222,18 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 		}
 	}
 	var templateFilesystems map[string]FSPath
+	var templatePattern *util.Pattern
 	if t.Config.DeviceTemplate != "" {
 		templateFilesystems, err = t.FilesystemMap(t.Config.DeviceTemplate, t.sourceFilesystems)
 		if err != nil {
 			return err
 		}
+		templatePattern = t.NewPattern(t.Config.DeviceTemplate)
 	}
 	script := t.NewScript()
+	pattern := t.NewPattern(name)
 	for _, device := range t.Config.Devices {
-		dir, err := t.DeviceDir(filesystems, device, name)
+		dir, err := t.DeviceDir(pattern, filesystems, device)
 		if err != nil {
 			return err
 		}
@@ -242,7 +244,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 			}
 		}
 		if t.Config.DeviceTemplate != "" {
-			templateDir, err := t.DeviceDir(templateFilesystems, device, t.Config.DeviceTemplate)
+			templateDir, err := t.DeviceDir(templatePattern, templateFilesystems, device)
 			if err != nil {
 				return err
 			}
@@ -264,10 +266,11 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 	if err != nil {
 		return err
 	}
+	pattern := t.NewPattern(name)
 	devices := make(map[string]map[string]string)
 
 	for _, device := range t.Config.Devices {
-		dir, err := t.DeviceDir(filesystems, device, name)
+		dir, err := t.DeviceDir(pattern, filesystems, device)
 		if err != nil {
 			return err
 		}
@@ -352,11 +355,23 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 }
 
 func (t *DeviceConfigurer) PrintDevices(name string) error {
+	pattern := t.NewPattern(name)
+	filesystems, err := t.FilesystemMap(name, nil)
+	if err != nil {
+		return err
+	}
 	writer := &table.FixedWriter{Writer: os.Stdout}
 	var d *Device
 	writer.Columns(
-		table.NewColumn("NAME", func() interface{} { return d.Name }),
 		table.NewColumn("PATH", func() interface{} { return d.Path }),
+		table.NewColumn("SOURCE", func() interface{} {
+			dir, err := t.DeviceDir(pattern, filesystems, d)
+			if err != nil {
+				return err
+			}
+			return dir
+		}),
+		table.NewColumn("NAME", func() interface{} { return d.Name }),
 		table.NewColumn("FILESYSTEM", func() interface{} { return d.Filesystem }),
 		table.NewColumn("DIR", func() interface{} { return d.Dir }),
 	)

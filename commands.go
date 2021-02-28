@@ -1,8 +1,17 @@
 package lxdops
 
 import (
+	_ "embed"
+	"fmt"
+	"os"
+
+	"gopkg.in/yaml.v2"
 	"melato.org/command"
+	"melato.org/lxdops/usage"
 )
+
+//go:embed usage.yaml
+var usageData []byte
 
 type Trace struct {
 	Trace bool `name:"trace,t" usage:"print exec arguments"`
@@ -13,6 +22,11 @@ type DryRun struct {
 }
 
 func RootCommand() *command.SimpleCommand {
+	var use usage.Usage
+	err := yaml.Unmarshal(usageData, &use)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
 	client := &LxdClient{}
 	var cmd command.SimpleCommand
 	cmd.Flags(client)
@@ -85,21 +99,18 @@ func RootCommand() *command.SimpleCommand {
 
 	projectOps := &ProjectOps{Client: client}
 	projectCmd := cmd.Command("project").Short("project utilities")
-	projectCmd.Command("create").Flags(projectOps).RunFunc(projectOps.Create).Short("create a project with a default profile").
-		Long("Creates a new project, if it doesn't exist, and copies the default profile from the default project to the new project")
-	projectCmd.Command("copy-profiles").Flags(projectOps).RunFunc(projectOps.CopyProfiles).
-		Short("copy profiles from one project to another").Use("{profile}...")
+	var c *command.SimpleCommand
+	c = projectCmd.Command("create").Flags(projectOps).RunFunc(projectOps.Create)
+	use.Get("project", "create").Apply(c)
+	c = projectCmd.Command("copy-profiles").Flags(projectOps).RunFunc(projectOps.CopyProfiles).
+		use.Get("project", "copy-profiles").Apply(c)
 
 	testCmd := cmd.Command("test")
 	testCmd.Command("file").RunFunc(containerOps.File)
 	testCmd.Command("push").RunFunc(containerOps.Push)
 	testCmd.Command("project").RunFunc(projectOps.Use)
 
-	cmd.Long(`lxdops launches or copies containers and creates or clones zfs filesystem devices for them, using yaml config files.  It can also install packages, create users, setup authorized_keys for users, push files, attach profiles, and run scripts.
-One of its goals is to facilitate separating the container OS files from the user files, so that the container can be upgraded by relaunching it, thus replacing its OS, rather than upgrading the OS in place.  It is expected that such relaunching can be done by copying a template container and keeping the existing container devices.  The template container can be upgraded with the traditional way, or relaunched from scratch.
-A config file provides the recipe for how the container should be created.
-Devices are attached to the container via a .devices profile
-`)
+	use.Get().Apply(&cmd)
 
 	return &cmd
 }
