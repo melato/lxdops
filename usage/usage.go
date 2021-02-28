@@ -38,8 +38,22 @@ func (u *Usage) Apply(cmd *command.SimpleCommand) {
 	}
 }
 
-// ApplyYaml Unmarshal usage from []byte and applies it to the command, recursively
+// ApplyYaml Extract usage from Yaml data and applies it to the command, recursively
+// But first it tries to read usage data from the file specified by the environment variable USAGE_FILE.
+// This way you can make changes to the usage data and try it without recompiling.
+// It prints any errors to stderr.
 func ApplyYaml(cmd *command.SimpleCommand, yamlUsage []byte) {
+	file, env := os.LookupEnv("USAGE_FILE")
+	if env {
+		if _, err := os.Stat(file); err == nil {
+			fileContent, err := os.ReadFile(file)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			} else {
+				yamlUsage = fileContent
+			}
+		}
+	}
 	var use Usage
 	err := yaml.Unmarshal(yamlUsage, &use)
 	if err != nil {
