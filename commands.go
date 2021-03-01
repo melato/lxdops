@@ -4,7 +4,7 @@ import (
 	_ "embed"
 
 	"melato.org/command"
-	"melato.org/lxdops/usage"
+	"melato.org/command/usage"
 )
 
 //go:embed commands.yaml
