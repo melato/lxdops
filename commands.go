@@ -62,7 +62,7 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("description").RunFunc(configOps.Description)
 
 	networkOp := &NetworkOp{Client: client}
-	cmd.Command("addresses").Flags(&networkOp).RunMethodE(networkOp.ExportAddresses)
+	cmd.Command("addresses").Flags(networkOp).RunMethodE(networkOp.ExportAddresses)
 
 	containerOps := &ContainerOps{Client: client}
 	containerCmd := cmd.Command("container")
