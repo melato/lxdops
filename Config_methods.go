@@ -304,7 +304,7 @@ func (t *Config) merge(file string, included map[string]bool) error {
 func (t *Config) ProfileName(name string) string {
 	if t.ProfilePattern != "" {
 		pattern := util.Pattern{}
-		pattern.SetConstant("container", name)
+		pattern.SetConstant("instance", name)
 		profile, err := pattern.Substitute(t.ProfilePattern)
 		if err == nil {
 			return profile
