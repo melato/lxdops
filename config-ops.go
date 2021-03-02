@@ -39,14 +39,10 @@ func (t *ConfigOps) CreateDevices(args []string) error {
 	return t.ConfigOptions.Run(args, t.createDevices)
 }
 
-func (t *ConfigOps) printDescription(name string, config *Config) error {
+// Print the description of a config file.
+func (t *ConfigOps) Description(name string, config *Config) error {
 	fmt.Println(name, config.Description)
 	return nil
-}
-
-/** Print the description of a config file. */
-func (t *ConfigOps) Description(args []string) error {
-	return t.ConfigOptions.Run(args, t.printDescription)
 }
 
 func (t *ConfigOps) Properties(name string, config *Config) error {
