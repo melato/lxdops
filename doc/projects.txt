@@ -1,0 +1,14 @@
+lxdops project handling:
+
+
+containers:
+If an lxdops (container) name contains "_", then it is assumed to fully specify the project and the container as {project}_{container}.
+If the project is thus specified, lxdops adds a --project flag to "lxc", and/or a --target-project flac to "lxc copy".
+
+devices:
+When creating devices, the container name in the device pattern will be the normalized fully qualified container name, i.e. {container} for the "default" project and {project}_{container} for any other project.
+
+profiles:
+lxdops does not use a --project qualification for profiles.  Profiles are created and/or used in the current project.
+If you launch x.yaml in the default project, then switch projects and launch x.yaml in the new project, lxdops will use the same x.devices profile for both containers.
+
