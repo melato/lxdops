@@ -1,0 +1,15 @@
+os:
+  name: alpine
+packages:
+scripts:
+- name: ssh
+  body: |
+    if grep 'PasswordAuthentication yes' /etc/ssh/sshd_config > /dev/null
+    then
+      cat /etc/ssh/sshd_config | sed 's/.*PasswordAuthentication yes/PasswordAuthentication no/' > /tmp/sshd_config.$$
+      cp /tmp/sshd_config.$$ /etc/ssh/sshd_config
+      rm /tmp/sshd_config.$$
+    fi
+
+    rc-update add sshd
+    rc-service sshd start

@@ -1,5 +1,12 @@
 lxdops project handling:
 
+Config.Project:
+    specifies the project that the container will be launched at.
+    if empty, use the lxc current project
+
+--project
+    overrides Config.Project
+
 
 containers:
 If an lxdops (container) name contains "_", then it is assumed to fully specify the project and the container as {project}_{container}.

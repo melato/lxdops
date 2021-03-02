@@ -77,12 +77,7 @@ func RootCommand() *command.SimpleCommand {
 	projectCmd.Command("create").Flags(projectOps).RunFunc(projectOps.Create)
 	projectCmd.Command("copy-profiles").Flags(projectOps).RunFunc(projectOps.CopyProfiles)
 
-	testCmd := cmd.Command("test")
-	testCmd.Command("file").RunFunc(containerOps.File)
-	testCmd.Command("push").RunFunc(containerOps.Push)
-	testCmd.Command("project").RunFunc(projectOps.Use)
-
-	usage.Apply(&cmd, "USAGE_FILE", usageData)
+	usage.ApplyEnv(&cmd, "LXDOPS_USAGE", usageData)
 
 	return &cmd
 }

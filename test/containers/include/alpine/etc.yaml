@@ -1,0 +1,9 @@
+os:
+  name: alpine
+scripts:
+  - name: etc
+    reboot: true
+    body: |
+      if [ -d /etc/opt/etc ]; then
+        cp -R /etc/opt/etc /
+      fi

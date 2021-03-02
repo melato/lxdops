@@ -14,10 +14,11 @@ import (
 )
 
 type LxdClient struct {
-	Socket        string
-	Project       string `name:"project" usage:"the LXD project to use"`
-	rootServer    lxd.InstanceServer
-	projectServer lxd.InstanceServer
+	Socket string
+	//Project        string `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
+	rootServer     lxd.InstanceServer
+	projectServer  lxd.InstanceServer
+	currentProject string
 }
 
 func (t *LxdClient) configDir() (string, error) {
@@ -40,27 +41,36 @@ func (t *LxdClient) configDir() (string, error) {
 	return "", err
 }
 
-func (t *LxdClient) initLxcConfig() {
+func (t *LxdClient) getCurrentProject() (string, error) {
 	configDir, err := t.configDir()
 	if err != nil {
-		return
+		return "", err
 	}
 
 	var cfg config.Config
 	err = util.ReadYaml(filepath.Join(configDir, "config.yml"), &cfg)
 	if err != nil {
-		return
+		return "", err
 	}
-	if err == nil {
-		local, found := cfg.Remotes["local"]
-		if found {
-			t.Project = local.Project
+	local, found := cfg.Remotes["local"]
+	if found {
+		return local.Project, nil
+	}
+	return "", nil
+}
+
+func (t *LxdClient) CurrentProject() string {
+	if t.currentProject == "" {
+		project, err := t.getCurrentProject()
+		if err != nil || project == "" {
+			project = "default"
 		}
+		t.currentProject = project
 	}
+	return t.currentProject
 }
 
 func (t *LxdClient) Init() error {
-	t.initLxcConfig()
 	t.Socket = "/var/snap/lxd/common/lxd/unix.socket"
 	return nil
 }
@@ -77,38 +87,19 @@ func (t *LxdClient) RootServer() (lxd.InstanceServer, error) {
 	return t.rootServer, nil
 }
 
-// Server returns the LXD server for the selected project (via the --project flag)
-func (t *LxdClient) Server() (lxd.InstanceServer, error) {
-	if t.projectServer == nil {
-		root, err := t.RootServer()
-		if err != nil {
-			return nil, err
-		}
-		if t.Project == "default" || t.Project == "" {
-			t.projectServer = root
-		} else {
-			t.projectServer = root.UseProject(t.Project)
-		}
+func (t *LxdClient) ProjectServer(project string) (lxd.InstanceServer, error) {
+	var err error
+	if project == "" {
+		project = t.CurrentProject()
 	}
-	return t.projectServer, nil
-}
-
-// InstanceServer returns an lxd.InstanceServer for the project indicated by name
-// name is a composite {project}_{container}, or just {container} for the default project
-func (t *LxdClient) InstanceServer(name string) (server lxd.InstanceServer, container string, err error) {
-	server, err = t.Server()
+	server, err := t.RootServer()
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	project, container := SplitContainerName(name)
-	if project != "" {
-		server = t.rootServer.UseProject(project)
+	if project == "default" {
+		return server, nil
 	}
-	return server, container, nil
-}
-
-func (t *LxdClient) ContainerServer(name string) (server lxd.InstanceServer, container string, err error) {
-	return t.InstanceServer(name)
+	return server.UseProject(project), nil
 }
 
 func AnnotateLXDError(name string, err error) error {
@@ -118,11 +109,7 @@ func AnnotateLXDError(name string, err error) error {
 	return errors.New(name + ": " + err.Error())
 }
 
-func (t *LxdClient) WaitForNetwork(container string) error {
-	server, err := t.Server()
-	if err != nil {
-		return err
-	}
+func WaitForNetwork(server lxd.InstanceServer, container string) error {
 	for i := 0; i < 30; i++ {
 		state, _, err := server.GetContainerState(container)
 		if err != nil {
@@ -146,7 +133,7 @@ func (t *LxdClient) WaitForNetwork(container string) error {
 }
 
 func (t *LxdClient) GetDefaultDataset() (string, error) {
-	server, err := t.Server()
+	server, err := t.RootServer()
 	if err != nil {
 		return "", err
 	}
@@ -161,11 +148,6 @@ func (t *LxdClient) GetDefaultDataset() (string, error) {
 	return name, nil
 }
 
-func (t *LxdClient) NewExec(name string) *execRunner {
-	server, container, err := t.InstanceServer(name)
-	return &execRunner{Server: server, Container: container, Error: err}
-}
-
 func FileExists(server lxd.InstanceServer, container string, file string) bool {
 	reader, _, err := server.GetContainerFile(container, file)
 	if err != nil {
@@ -175,10 +157,10 @@ func FileExists(server lxd.InstanceServer, container string, file string) bool {
 	return true
 }
 
-func (t *LxdClient) NewProperties(name string, customProperties map[string]string) *util.PatternProperties {
-	properties := &util.PatternProperties{Properties: customProperties}
+func (t *LxdClient) NewProperties(name string, config *Config) *util.PatternProperties {
+	properties := &util.PatternProperties{Properties: config.Properties}
 	properties.SetConstant("instance", name)
-	project := t.Project
+	project := config.Project
 	var projectSlash, project_instance string
 	if project == "" || project == "default" {
 		project = "default"

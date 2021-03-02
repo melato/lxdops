@@ -20,7 +20,8 @@ func (t *LxdOps) ZFSRoot() error {
 }
 
 func (t *LxdOps) AddDiskDevice(profile, source, path string) error {
-	server, err := t.Client.Server()
+	project := t.Client.CurrentProject()
+	server, err := t.Client.ProjectServer(project)
 	if err != nil {
 		return err
 	}
@@ -35,7 +36,8 @@ func (t *LxdOps) AddDiskDevice(profile, source, path string) error {
 }
 
 func (t *LxdOps) ProfileExists(profile string) error {
-	server, err := t.Client.Server()
+	project := t.Client.CurrentProject()
+	server, err := t.Client.ProjectServer(project)
 	if err != nil {
 		return err
 	}

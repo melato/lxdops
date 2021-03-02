@@ -13,6 +13,7 @@ const (
 type ConfigOptions struct {
 	ProfilePattern Pattern `name:"profile-pattern" usage:"pattern for device profiles, overrides config"`
 	ProfileSuffix  string  `name:"profile-suffix" usage:"suffix for device profiles, overrides config"`
+	Project        string  `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
 	Name           string  `name:"name" usage:"The name of the container to launch or configure.  If missing, use a separate container for each config, using the name of the config."`
 }
 
@@ -21,6 +22,9 @@ func (t *ConfigOptions) Init() error {
 }
 
 func (t *ConfigOptions) UpdateConfig(config *Config) {
+	if t.Project != "" {
+		config.Project = t.Project
+	}
 	pattern := t.ProfilePattern
 	if pattern == "" && t.ProfileSuffix != "" {
 		pattern = Pattern("(container)." + t.ProfileSuffix)

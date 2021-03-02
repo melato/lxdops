@@ -35,13 +35,13 @@ func (t *ProfileConfigurer) Profiles(name string, config *Config) []string {
 }
 
 func (t *ProfileConfigurer) diffProfiles(name string, config *Config) error {
-	server, container, err := t.Client.ContainerServer(name)
+	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
 	}
-	c, _, err := server.GetContainer(container)
+	c, _, err := server.GetContainer(name)
 	if err != nil {
-		return AnnotateLXDError(container, err)
+		return AnnotateLXDError(name, err)
 	}
 	profiles := t.Profiles(name, config)
 	if util.StringSlice(profiles).Equals(c.Profiles) {
@@ -62,8 +62,8 @@ func (t *ProfileConfigurer) diffProfiles(name string, config *Config) error {
 	return nil
 }
 
-func (t *ProfileConfigurer) reorderProfiles(name string, config *Config) error {
-	server, container, err := t.Client.ContainerServer(name)
+func (t *ProfileConfigurer) reorderProfiles(container string, config *Config) error {
+	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (t *ProfileConfigurer) reorderProfiles(name string, config *Config) error {
 	if err != nil {
 		return AnnotateLXDError(container, err)
 	}
-	profiles := t.Profiles(name, config)
+	profiles := t.Profiles(container, config)
 	if util.StringSlice(profiles).Equals(c.Profiles) {
 		return nil
 	}
@@ -88,12 +88,12 @@ func (t *ProfileConfigurer) reorderProfiles(name string, config *Config) error {
 			return AnnotateLXDError(container, err)
 		}
 	}
-	fmt.Println("profiles differ: " + name)
+	fmt.Println("profiles differ: " + container)
 	return nil
 }
 
-func (t *ProfileConfigurer) applyProfiles(name string, config *Config) error {
-	server, container, err := t.Client.ContainerServer(name)
+func (t *ProfileConfigurer) applyProfiles(container string, config *Config) error {
+	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (t *ProfileConfigurer) applyProfiles(name string, config *Config) error {
 	if err != nil {
 		return AnnotateLXDError(container, err)
 	}
-	c.Profiles = t.Profiles(name, config)
+	c.Profiles = t.Profiles(container, config)
 	op, err := server.UpdateContainer(container, c.ContainerPut, "")
 	if err != nil {
 		return err
@@ -123,8 +123,8 @@ func (t *ProfileConfigurer) Apply(args []string) error {
 	return t.ConfigOptions.Run(t.applyProfiles, args...)
 }
 
-func (t *ProfileConfigurer) List(args []string) error {
-	return t.ConfigOptions.Run(t.listProfiles, args...)
+func (t *ProfileConfigurer) List(arg string) error {
+	return t.ConfigOptions.Run(t.listProfiles, arg)
 }
 
 func (t *ProfileConfigurer) Diff(args []string) error {

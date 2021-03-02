@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
 	"melato.org/export/table3"
 	"melato.org/lxdops/util"
@@ -11,14 +12,21 @@ import (
 
 type ContainerOps struct {
 	Client *LxdClient `name:"-"`
+	server lxd.InstanceServer
 }
 
-func (t *ContainerOps) Profiles(container string) error {
-	server, err := t.Client.Server()
+func (t *ContainerOps) Configured() error {
+	project := t.Client.CurrentProject()
+	server, err := t.Client.ProjectServer(project)
 	if err != nil {
 		return err
 	}
-	c, _, err := server.GetContainer(container)
+	t.server = server
+	return nil
+}
+
+func (t *ContainerOps) Profiles(container string) error {
+	c, _, err := t.server.GetContainer(container)
 	if err != nil {
 		return AnnotateLXDError(container, err)
 	}
@@ -29,10 +37,7 @@ func (t *ContainerOps) Profiles(container string) error {
 }
 
 func (t *ContainerOps) Network(container string) error {
-	server, err := t.Client.Server()
-	if err != nil {
-		return err
-	}
+	server := t.server
 	state, _, err := server.GetContainerState(container)
 	if err != nil {
 		return AnnotateLXDError(container, err)
@@ -60,7 +65,7 @@ func (t *ContainerOps) Network(container string) error {
 
 func (t *ContainerOps) Wait(args []string) error {
 	for _, container := range args {
-		err := t.Client.WaitForNetwork(container)
+		err := WaitForNetwork(t.server, container)
 		if err != nil {
 			return err
 		}
@@ -68,11 +73,8 @@ func (t *ContainerOps) Wait(args []string) error {
 	return nil
 }
 
-func (t *ContainerOps) State(name string, action ...string) error {
-	server, container, err := t.Client.ContainerServer(name)
-	if err != nil {
-		return err
-	}
+func (t *ContainerOps) State(container string, action ...string) error {
+	server := t.server
 	state, etag, err := server.GetContainerState(container)
 	if err != nil {
 		return AnnotateLXDError(container, err)

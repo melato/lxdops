@@ -49,7 +49,7 @@ func (t *NetworkManager) GetProjectAddresses(server lxd.ContainerServer, project
 }
 
 func (t *NetworkManager) GetAddresses() ([]*HostAddress, error) {
-	server, err := t.Client.Server()
+	server, err := t.Client.RootServer()
 	if err != nil {
 		return nil, err
 	}

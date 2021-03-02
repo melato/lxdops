@@ -1,0 +1,7 @@
+os:
+  name: alpine
+scripts:
+- name: cron
+  body: |
+    rc-update del crond
+    rc-service crond stop

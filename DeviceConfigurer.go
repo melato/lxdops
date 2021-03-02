@@ -33,7 +33,7 @@ func (t *DeviceConfigurer) NewScript() *script.Script {
 }
 
 func (t *DeviceConfigurer) NewProperties(name string) *util.PatternProperties {
-	return t.Client.NewProperties(name, t.Config.Properties)
+	return t.Client.NewProperties(name, t.Config)
 }
 
 func (t *DeviceConfigurer) CreateFilesystem(fs *Filesystem, name string) error {
@@ -173,7 +173,7 @@ func (t *DeviceConfigurer) initSourceFilesystems() error {
 	var config *Config
 	var err error
 	if t.Config.SourceConfig != "" {
-		config, err = ReadConfigs(string(t.Config.SourceConfig))
+		config, err = t.Config.GetSourceConfig()
 		if err != nil {
 			return err
 		}
@@ -267,7 +267,7 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 		devices[device.Name] = map[string]string{"type": "disk", "path": device.Path, "source": dir}
 	}
 	profileName := t.Config.ProfileName(name)
-	server, _, err := t.Client.ContainerServer(name)
+	server, err := t.Client.ProjectServer(t.Config.Project)
 	if err != nil {
 		return err
 	}

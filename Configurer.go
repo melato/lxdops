@@ -37,20 +37,21 @@ func (t *Configurer) NewScript() *script.Script {
 	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 }
 
-func (t *Configurer) NewExec(name string) *execRunner {
-	ex := t.Client.NewExec(name)
+func (t *Configurer) NewExec(project string, name string) *execRunner {
+	server, err := t.Client.ProjectServer(project)
+	ex := &execRunner{Server: server, Container: name, Error: err}
 	ex.Trace = t.Trace
 	ex.DryRun = t.DryRun
 	return ex
 }
 
-func (t *Configurer) runScriptLines(name string, lines []string) error {
+func (t *Configurer) runScriptLines(project string, name string, lines []string) error {
 	content := strings.Join(lines, "\n")
-	return t.runScript(name, content)
+	return t.runScript(project, name, content)
 }
 
-func (t *Configurer) runScript(name string, content string) error {
-	return t.NewExec(name).Run(content, "sh")
+func (t *Configurer) runScript(project string, name string, content string) error {
+	return t.NewExec(project, name).Run(content, "sh")
 }
 
 func (t *Configurer) installPackages(config *Config, name string) error {
@@ -62,25 +63,10 @@ func (t *Configurer) installPackages(config *Config, name string) error {
 	for _, pkg := range config.Packages {
 		lines = append(lines, config.OS.Type().InstallPackageCommand(pkg))
 	}
-	return t.runScriptLines(name, lines)
+	return t.runScriptLines(config.Project, name, lines)
 }
 
-func (t *Configurer) createSnapshot(name, snapshot string) error {
-	server, container, err := t.Client.ContainerServer(name)
-	if err != nil {
-		return err
-	}
-	op, err := server.CreateContainerSnapshot(container, api.ContainerSnapshotsPost{Name: snapshot})
-	if err != nil {
-		return AnnotateLXDError(container, err)
-	}
-	if err := op.Wait(); err != nil {
-		return AnnotateLXDError(container, err)
-	}
-	return nil
-}
-
-func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
+func (t *Configurer) pushAuthorizedKeys(config *Config, container string) error {
 	hostHome, homeExists := os.LookupEnv("HOME")
 	if !homeExists {
 		return errors.New("host $HOME doesn't exist")
@@ -90,7 +76,7 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 	if err != nil {
 		return err
 	}
-	server, container, err := t.Client.InstanceServer(name)
+	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
 	}
@@ -110,7 +96,7 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, name string) error {
 			if err != nil {
 				return AnnotateLXDError(guestFile, err)
 			}
-			err = t.NewExec(name).Run("", "chown", user.Name+":"+user.Name, guestFile)
+			err = t.NewExec(config.Project, container).Run("", "chown", user.Name+":"+user.Name, guestFile)
 			if err != nil {
 				return err
 			}
@@ -195,7 +181,7 @@ func (t *Configurer) createUsers(config *Config, name string) error {
 		}
 	}
 	content := strings.Join(lines, "\n")
-	err = t.runScript(name, content)
+	err = t.runScript(config.Project, name, content)
 	if err != nil {
 		return err
 	}
@@ -225,7 +211,7 @@ func (t *Configurer) changePasswords(config *Config, name string, users []string
 		lines = append(lines, user+":"+pass)
 	}
 	content := strings.Join(lines, "\n")
-	return t.NewExec(name).Run(content, "chpasswd")
+	return t.NewExec(config.Project, name).Run(content, "chpasswd")
 }
 
 func (t *Configurer) changeUserPasswords(config *Config, name string) error {
@@ -240,12 +226,12 @@ func (t *Configurer) changeUserPasswords(config *Config, name string) error {
 	return t.changePasswords(config, name, users)
 }
 
-func (t *Configurer) runScripts(name string, scripts []*Script) error {
-	server, container, err := t.Client.ContainerServer(name)
+func (t *Configurer) runScripts(project, container string, scripts []*Script) error {
+	server, err := t.Client.ProjectServer(project)
 	if err != nil {
 		return err
 	}
-	ex := t.NewExec(name)
+	ex := t.NewExec(project, container)
 	for _, script := range scripts {
 		ex.Dir(script.Dir)
 		ex.Uid(script.Uid)
@@ -294,10 +280,10 @@ func (t *Configurer) runScripts(name string, scripts []*Script) error {
 	return nil
 }
 
-func (t *Configurer) copyFiles(config *Config, name string) error {
+func (t *Configurer) copyFiles(config *Config, container string) error {
 	// copy any files
-	ids := Ids{Exec: t.NewExec(name)}
-	server, container, err := t.Client.InstanceServer(name)
+	ids := Ids{Exec: t.NewExec(config.Project, container)}
+	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
 	}
@@ -368,15 +354,18 @@ func (t *Configurer) includes(flag bool) bool {
 
 /** run things inside the container:  install packages, create users, run scripts */
 func (t *Configurer) ConfigureContainer(config *Config, name string) error {
-	var err error
+	server, err := t.Client.ProjectServer(config.Project)
+	if err != nil {
+		return err
+	}
 	if !t.DryRun {
-		err := t.Client.WaitForNetwork(name)
+		err := WaitForNetwork(server, name)
 		if err != nil {
 			return err
 		}
 	}
 	if t.includes(t.Scripts) {
-		err = t.runScripts(name, config.PreScripts)
+		err = t.runScripts(config.Project, name, config.PreScripts)
 		if err != nil {
 			return err
 		}
@@ -406,7 +395,7 @@ func (t *Configurer) ConfigureContainer(config *Config, name string) error {
 		}
 	}
 	if t.includes(t.Scripts) {
-		err = t.runScripts(name, config.Scripts)
+		err = t.runScripts(config.Project, name, config.Scripts)
 		if err != nil {
 			return err
 		}

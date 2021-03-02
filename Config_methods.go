@@ -7,6 +7,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"melato.org/lxdops/util"
 )
@@ -132,6 +133,16 @@ func ReadRawConfig(file string) (*Config, error) {
 	return ReadConfigYaml(file)
 }
 
+func (t *Config) mergeDescriptions(desc ...string) string {
+	var parts []string
+	for _, desc := range desc {
+		if desc != "" {
+			parts = append(parts, desc)
+		}
+	}
+	return strings.Join(parts, "\n")
+}
+
 func (t *Config) Merge(c *Config) error {
 	//fmt.Printf("Merge %p %v %p %v\n", t, t.OS, c, c.OS)
 	if t.OS == nil {
@@ -149,12 +160,13 @@ func (t *Config) Merge(c *Config) error {
 			return errors.New("cannot merge incompatible os versions: " + t.OS.Version + ", " + c.OS.Version)
 		}
 	}
+	if t.Project == "" {
+		t.Project = c.Project
+	}
 	if t.Profile == "" {
 		t.Profile = c.Profile
 	}
-	if t.Description == "" {
-		t.Description = c.Description
-	}
+	t.Description = t.mergeDescriptions(t.Description, c.Description)
 	if t.Origin == "" {
 		t.Origin = c.Origin
 	}
@@ -164,6 +176,16 @@ func (t *Config) Merge(c *Config) error {
 	if t.DeviceOrigin == "" {
 		t.DeviceOrigin = c.DeviceOrigin
 	}
+	if t.Properties == nil {
+		t.Properties = make(map[string]string)
+	}
+	for key, value := range c.Properties {
+		_, exists := t.Properties[key]
+		if !exists {
+			t.Properties[key] = value
+		}
+	}
+	t.SourceFilesystems = make(map[string]Pattern)
 	if t.SourceFilesystems == nil {
 		t.SourceFilesystems = make(map[string]Pattern)
 	}
@@ -324,4 +346,18 @@ func (t *Config) FilesystemForId(id string) (*Filesystem, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (t *Config) GetSourceConfig() (*Config, error) {
+	if t.SourceConfig == "" {
+		return nil, nil
+	}
+	if t.sourceConfig == nil {
+		config, err := ReadConfigs(string(t.SourceConfig))
+		if err != nil {
+			return nil, err
+		}
+		t.sourceConfig = config
+	}
+	return t.sourceConfig, nil
 }

@@ -1,0 +1,12 @@
+os:
+  name: alpine
+packages:
+  - sudo
+  - doas
+profiles:
+- default
+include:
+- version.yaml
+- ssh.yaml
+- motd.yaml
+- cron-off.yaml

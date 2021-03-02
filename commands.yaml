@@ -27,6 +27,7 @@ long: |
 commands:
   addresses:
     short: export container addresses
+    use:
   configure:
     short: configure an existing container
     use: <container> <config-file> ...
@@ -37,17 +38,22 @@ commands:
     commands:
       network:
         short: print network addresses for the container
+        use: <container>
       profiles:
         short: print the container profiles
+        use: <container>
       state:
         short: dump the container state, in yaml
+        use: <container>
       wait: 
-        short: wait until the container has an ip address
+        short: wait until all the requested containers have an ipv4 address
+        use: <container>...
   create-devices:
     short: create devices
     use: <container-name> <configfile>...
   delete:
     short: delete a stopped container and its profile
+    use: <configfile>...
   description:
     short: print the description of a config file
     use: <config-file>
@@ -55,20 +61,23 @@ commands:
     - test.yaml
   devices:
     short: list devices
+    use: <config-file>
   filesystems:
     short: list filesystems
+    use: <config-file>
   launch:
     short: launch a container
-    use: <container> <config-file> ...
+    use: <config-file> ...
     examples:
-    - launch php php.yaml
+    - launch php.yaml
   parse:
     short: parse a config file
     use: <config-file>
     examples:
     - parse test.yaml
   properties:
-    show: print instance properties
+    short: print instance properties
+    use: <config-file>
   profile:
     short: profile utilities
     commands:
@@ -76,49 +85,57 @@ commands:
         short: add a disk device to a profile
         use: <profile> <source> <path>
       apply:
-        short: apply the config profiles to a container
+        short: apply the config profiles containers
+        use: <config-file> ...
       diff:
         short: compare container profiles with config
+        use: <config-file> ...
       exists:
         short: check if a profile exists
         use: <profile>
       list:
         short: list config profiles
+        use: <config-file>
       reorder:
         short: reorder container profiles to match config order
+        use: <config-file> ...
   project:
     short: project utilities
     commands:
       copy-profiles:
         short: copy profiles from one project to another
         long: profile
+        use: --source-profile <project1> --target-profile <project2> <profile>...
       create:
-        short: create a project with a default profile
+        short: create one or more projects with a default profile
+        use: <project>...
         long: Creates a new project, if it doesn't exist, and copies the default profile
           from the default project to the new project
   rebuild:
     short: stop, delete, launch
+    use: <config-file> ...
     long: Rebuild stops, deletes, and relaunches the container.
   rename:
     short: rename an instance
+    use: <configFile> <newname>
     long: Renames the container, its filesystems, and its devices profile
   snapshot:
     short: snapshot filesystems
     use: '@<snapshot> <config-file>...'
-  test:
-    short: ""
-    commands:
-      file:
-        short: ""
-      project:
-        short: ""
-      push:
-        short: ""
   verify:
     short: verify config files
     use: <config-file> ...
     examples:
     - verify *.yaml
   zfsroot:
-    short: print zfs parent of lxd dataset
+    short: print default zfsroot property
+    long: | 
+      zfsroot detects the ZFS filesystem for the default LXD storage,
+      and prints the root of that filesystem.
+      This is the value for the (zfsroot) property, unless
+      it is overriden in the config (recommended).
+      The (zfsroot) property is a quick way to get started, because it
+      finds a ZFS dataset to use as the root dataset for lxdops filesystems.
+      It does not work if the LXD ZFS dataset is a root ZFS filesystem.
+    use:
 

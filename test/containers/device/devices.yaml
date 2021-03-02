@@ -1,0 +1,12 @@
+profile-pattern: (instance).lxdops
+devices:
+  - path: /etc/opt
+    name: etc
+    filesystem: main
+  - path: /home
+    name: home
+    filesystem: main
+  - path: /var/log
+    name: log
+    filesystem: log
+    dir: "."

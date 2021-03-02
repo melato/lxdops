@@ -87,7 +87,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	if osType == nil {
 		return errors.New("unsupported OS type: " + config.OS.Name)
 	}
-	server, container, err := t.Client.ContainerServer(name)
+	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
 	}
@@ -112,15 +112,13 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		}
 		profiles = append(profiles, profileName)
 	}
-	containerTemplate := config.Origin
 	script := t.NewScript()
-	project, container := SplitContainerName(name)
-	if project == "" {
-		project = t.Client.Project
-	}
-	projectArgs := ProjectArgs(project)
-	if containerTemplate == "" {
-		lxcArgs := append(projectArgs, "launch")
+	if config.Origin == "" {
+		var lxcArgs []string
+		if config.Project != "" {
+			lxcArgs = append(lxcArgs, "--project", config.Project)
+		}
+		lxcArgs = append(lxcArgs, "launch")
 
 		osVersion := config.OS.Version
 		if osVersion == "" {
@@ -136,54 +134,67 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		for _, option := range t.Options {
 			lxcArgs = append(lxcArgs, option)
 		}
-		lxcArgs = append(lxcArgs, container)
+		lxcArgs = append(lxcArgs, name)
 		script.Run("lxc", lxcArgs...)
 		if script.HasError() {
 			return script.Error()
 		}
 	} else {
-		sn := SplitSnapshotName(containerTemplate)
-		if sn.Project == "" {
-			sn.Project = project
+		sourceConfig, err := config.GetSourceConfig()
+		if err != nil {
+			return err
 		}
-		copyArgs := append(ProjectArgs(sn.Project), "copy")
-		if project != "" {
-			copyArgs = append(copyArgs, "--target-project", project)
+		var copyArgs []string
+		var sourceProject string
+		if sourceConfig != nil {
+			sourceProject = sourceConfig.Project
 		}
+		if sourceProject == "" {
+			sourceProject = config.Project
+		}
+		if sourceProject != "" {
+			copyArgs = append(copyArgs, "--project", sourceProject)
+		}
+		copyArgs = append(copyArgs, "copy")
+
+		if config.Project != "" {
+			copyArgs = append(copyArgs, "--target-project", config.Project)
+		}
+		sn := SplitSnapshotName(config.Origin)
 		if sn.Snapshot == "" {
 			copyArgs = append(copyArgs, "--container-only", sn.Container)
 		} else {
 			copyArgs = append(copyArgs, sn.Container+"/"+sn.Snapshot)
 		}
-		copyArgs = append(copyArgs, container)
+		copyArgs = append(copyArgs, name)
 		script.Run("lxc", copyArgs...)
 		if script.HasError() {
 			return script.Error()
 		}
 
-		c, _, err := server.GetContainer(container)
+		c, _, err := server.GetContainer(name)
 		if err != nil {
-			return AnnotateLXDError(container, err)
+			return AnnotateLXDError(name, err)
 		}
 		c.Profiles = profiles
-		op, err := server.UpdateContainer(container, c.ContainerPut, "")
+		op, err := server.UpdateContainer(name, c.ContainerPut, "")
 		if err != nil {
 			return err
 		}
 		if err := op.Wait(); err != nil {
-			return AnnotateLXDError(container, err)
+			return AnnotateLXDError(name, err)
 		}
 
-		op, err = server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
+		op, err = server.UpdateContainerState(name, api.ContainerStatePut{Action: "start"}, "")
 		if err != nil {
-			return AnnotateLXDError(container, err)
+			return AnnotateLXDError(name, err)
 		}
 
 		if script.HasError() {
 			return script.Error()
 		}
 		if !t.DryRun {
-			err := t.Client.WaitForNetwork(name)
+			err := WaitForNetwork(server, name)
 			if err != nil {
 				return err
 			}
@@ -191,26 +202,26 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	}
 	t.NewConfigurer().ConfigureContainer(config, name)
 	if config.Snapshot != "" {
-		fmt.Printf("snapshot %s %s\n", container, config.Snapshot)
+		fmt.Printf("snapshot %s %s\n", name, config.Snapshot)
 		if !t.DryRun {
-			op, err := server.CreateContainerSnapshot(container, api.ContainerSnapshotsPost{Name: config.Snapshot})
+			op, err := server.CreateContainerSnapshot(name, api.ContainerSnapshotsPost{Name: config.Snapshot})
 			if err != nil {
-				return AnnotateLXDError(container, err)
+				return AnnotateLXDError(name, err)
 			}
 			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(container, err)
+				return AnnotateLXDError(name, err)
 			}
 		}
 	}
 	if config.Stop {
-		fmt.Printf("stop %s\n", container)
+		fmt.Printf("stop %s\n", name)
 		if !t.DryRun {
-			op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "stop"}, "")
+			op, err := server.UpdateContainerState(name, api.ContainerStatePut{Action: "stop"}, "")
 			if err != nil {
-				return AnnotateLXDError(container, err)
+				return AnnotateLXDError(name, err)
 			}
 			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(container, err)
+				return AnnotateLXDError(name, err)
 			}
 		}
 	}
@@ -218,23 +229,23 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 }
 
 func (t *Launcher) DeleteContainer(config *Config, name string) error {
-	server, container, err := t.Client.ContainerServer(name)
+	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
 	}
 	if !t.DryRun {
-		op, err := server.DeleteContainer(container)
+		op, err := server.DeleteContainer(name)
 		if err == nil {
 			if t.Trace {
-				fmt.Printf("deleted container %s\n", container)
+				fmt.Printf("deleted container %s in project %s\n", name, config.Project)
 			}
 			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(container, err)
+				return AnnotateLXDError(name, err)
 			}
 		} else {
-			state, _, err := server.GetContainerState(container)
+			state, _, err := server.GetContainerState(name)
 			if err == nil {
-				return errors.New(fmt.Sprintf("container %s is %s", container, state.Status))
+				return errors.New(fmt.Sprintf("container %s is %s", name, state.Status))
 			}
 		}
 	}
@@ -292,7 +303,7 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 	}
 	oldprofile := config.ProfileName(oldname)
 	newprofile := config.ProfileName(newname)
-	server, err := t.Client.Server()
+	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
 	}

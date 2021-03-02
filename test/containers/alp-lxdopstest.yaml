@@ -1,0 +1,10 @@
+os:
+  name: alpine
+project: test
+description: A template container created from scratch.
+include:
+  - device/standard.yaml
+  - device/alpine-3.13.yaml
+  - include/alpine/alp.yaml
+snapshot: copy  
+stop: true  

@@ -24,8 +24,14 @@ type Pattern string
 // - Passwords
 type Config struct {
 	OS *OS
-	// Description is
+	// Description is provided for documentation
 	Description string `yaml:"description,omitempty"`
+
+	// Project is the LXD project where the container is
+	Project string `yaml:"project,omitempty"`
+
+	// Source specifies where to copy or clone the instance from
+	Source `yaml:",inline"`
 
 	// Include is a list of other configs that are to be included.
 	// Include paths are either absolute or relative to the path of the including config.
@@ -33,12 +39,6 @@ type Config struct {
 
 	// These are files or directories that must exist on the host.
 	RequiredFiles []HostPath `yaml:"require,omitempty"`
-
-	// Origin is the name of a container and a snapshot to clone from.
-	// It should have the form {container}/{snapshot}
-	Origin string `yaml:"origin,omitempty"`
-
-	DeviceSource `yaml:",inline"`
 
 	// Filesystems are zfs filesystems or plain directories that are created
 	// when an instance is created.  Devices are created inside filesystems.
@@ -77,7 +77,7 @@ type Config struct {
 	Properties map[string]string `yaml:"properties"`
 }
 
-// DeviceSource specifies how to copy or clone device directories.
+// Source specifies how to copy or clone the instance container, filesystem, and device directories.
 // When DeviceTemplate is specified, the filesystems are copied with rsync.
 // When DeviceOrigin is specified, the filesystems are cloned with zfs-clone
 // The filesystems that are copied are determined by applying the source instance name to the filesystems of this config,
@@ -99,7 +99,11 @@ type Config struct {
 //    lxc profile create test-a.lxdops
 //    lxc profile device add test-a.lxdops home disk path=/home source=/z/test/test-a/home
 //    lxc profile add test-a test-a.lxdops
-type DeviceSource struct {
+type Source struct {
+	// Origin is the name of a container and a snapshot to clone from.
+	// It should have the form {container}/{snapshot}
+	Origin string `yaml:"origin,omitempty"`
+
 	// device-template is the name of an instance, whose devices are copied (using rsync)
 	// to a new instance with launch.
 	DeviceTemplate string `yaml:"device-template,omitempty"`
@@ -113,6 +117,8 @@ type DeviceSource struct {
 	// source-config specifies a config file whose filesystems are used as source-filesystems
 	// if it is empty, use the same config as this instance
 	SourceConfig HostPath `yaml:"source-config,omitempty"`
+
+	sourceConfig *Config
 
 	// source-filesystems override the Filesystems defined in source-config
 	SourceFilesystems map[string]Pattern `yaml:"source-filesystems,omitempty"`

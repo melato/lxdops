@@ -33,12 +33,12 @@ func (t *ConfigOps) CreateDevices(name string, config *Config) error {
 
 // Print the description of a config file.
 func (t *ConfigOps) Description(name string, config *Config) error {
-	fmt.Println(name, config.Description)
+	fmt.Println(config.Description)
 	return nil
 }
 
 func (t *ConfigOps) Properties(name string, config *Config) error {
-	properties := t.Client.NewProperties(name, config.Properties)
+	properties := t.Client.NewProperties(name, config)
 	properties.ShowHelp(os.Stdout)
 	return nil
 }

@@ -1,0 +1,11 @@
+os:
+  name: alpine
+  version: 3.13
+filesystems:
+- id: apk
+  pattern: (zfsroot)/lxdops/alpine-3.13
+devices:
+- path: /etc/apk/cache
+  name: apk
+  dir: .
+  filesystem: apk
