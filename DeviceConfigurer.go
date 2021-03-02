@@ -144,34 +144,24 @@ func (t *DeviceConfigurer) DeviceFilesystem(device *Device) (*Filesystem, error)
 
 func (t *DeviceConfigurer) DeviceDir(properties *util.PatternProperties, filesystems map[string]FSPath, device *Device) (string, error) {
 	var fsPath FSPath
-	var dir string
-	var substituteDir bool
-	var err error
-	if strings.HasPrefix(device.Dir, "/") {
-		dir = device.Dir
-		substituteDir = true
-	} else {
-		fs, err := t.DeviceFilesystem(device)
-		if err != nil {
-			return "", err
-		}
-		fsPath = filesystems[fs.Id]
-		if device.Dir == "" {
-			dir = device.Name
-		} else if device.Dir == "." {
-			dir = ""
-		} else {
-			dir = device.Dir
-			substituteDir = true
-		}
+	dir, err := device.Dir.Substitute(properties)
+	if err != nil {
+		return "", err
+	}
+	if strings.HasPrefix(dir, "/") {
+		return dir, nil
+	}
+	if dir == "" {
+		dir = device.Name
+	} else if device.Dir == "." {
+		dir = ""
 	}
 
-	if substituteDir {
-		dir, err = properties.Substitute(device.Dir)
-		if err != nil {
-			return "", err
-		}
+	fs, err := t.DeviceFilesystem(device)
+	if err != nil {
+		return "", err
 	}
+	fsPath = filesystems[fs.Id]
 	if dir != "" {
 		return filepath.Join(fsPath.Dir(), dir), nil
 	} else {

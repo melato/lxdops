@@ -158,7 +158,7 @@ type Device struct {
 	// Rarely used:
 	// Dir goes through pattern substitution, using parenthesized tokens, for example (container)
 	// Dir may be absolute, but this is no longer necessary now that filesystems are specified, since one can define the "/" filesystem.
-	Dir string `yaml:",omitempty"`
+	Dir Pattern `yaml:",omitempty"`
 }
 
 // File specifies a file that is copied from the host to the container

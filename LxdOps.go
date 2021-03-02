@@ -47,12 +47,14 @@ func (t *LxdOps) ProfileExists(profile string) error {
 	return nil
 }
 
-func (t *LxdOps) Pattern(name string, pattern string) error {
-	p := t.Client.NewProperties(name)
-	result, err := p.Substitute(pattern)
-	if err != nil {
-		return err
+func (t *LxdOps) Pattern(name string, pattern ...Pattern) error {
+	properties := t.Client.NewProperties(name)
+	for _, pattern := range pattern {
+		result, err := pattern.Substitute(properties)
+		if err != nil {
+			return err
+		}
+		fmt.Println(result)
 	}
-	fmt.Println(result)
 	return nil
 }
