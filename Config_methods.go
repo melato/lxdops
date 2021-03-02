@@ -149,8 +149,8 @@ func (t *Config) Merge(c *Config) error {
 			return errors.New("cannot merge incompatible os versions: " + t.OS.Version + ", " + c.OS.Version)
 		}
 	}
-	if t.ProfilePattern == "" {
-		t.ProfilePattern = c.ProfilePattern
+	if t.Profile == "" {
+		t.Profile = c.Profile
 	}
 	if t.Description == "" {
 		t.Description = c.Description
@@ -165,7 +165,7 @@ func (t *Config) Merge(c *Config) error {
 		t.DeviceOrigin = c.DeviceOrigin
 	}
 	if t.SourceFilesystems == nil {
-		t.SourceFilesystems = make(map[string]string)
+		t.SourceFilesystems = make(map[string]Pattern)
 	}
 	for key, value := range c.SourceFilesystems {
 		t.SourceFilesystems[key] = value
@@ -302,14 +302,14 @@ func (t *Config) merge(file string, included map[string]bool) error {
 }
 
 func (t *Config) ProfileName(name string) string {
-	if t.ProfilePattern != "" {
-		pattern := util.Pattern{}
-		pattern.SetConstant("instance", name)
-		profile, err := pattern.Substitute(t.ProfilePattern)
+	if t.Profile != "" {
+		properties := &util.PatternProperties{}
+		properties.SetConstant("instance", name)
+		profile, err := t.Profile.Substitute(properties)
 		if err == nil {
 			return profile
 		}
-		fmt.Printf("invalid profile pattern: %s.  Using default.", t.ProfilePattern)
+		fmt.Printf("invalid profile pattern: %s.  Using default.", t.Profile)
 	}
 	return name + "." + DefaultProfileSuffix
 }

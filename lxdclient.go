@@ -175,10 +175,10 @@ func FileExists(server lxd.InstanceServer, container string, file string) bool {
 	return true
 }
 
-func (t *LxdClient) NewPattern(name string) *util.Pattern {
-	pattern := &util.Pattern{}
-	pattern.SetConstant("instance", name)
-	pattern.SetConstant("", name)
+func (t *LxdClient) NewProperties(name string) *util.PatternProperties {
+	properties := &util.PatternProperties{}
+	properties.SetConstant("instance", name)
+	properties.SetConstant("", name)
 	project := t.Project
 	var slashProject, project_instance string
 	if project == "" || project == "default" {
@@ -189,10 +189,10 @@ func (t *LxdClient) NewPattern(name string) *util.Pattern {
 		slashProject = "/" + project
 		project_instance = project + "_" + name
 	}
-	pattern.SetConstant("project", project)
-	pattern.SetConstant("/project", slashProject)
-	pattern.SetConstant("project_instance", project_instance)
-	pattern.SetFunction("lxdparent", func() (string, error) {
+	properties.SetConstant("project", project)
+	properties.SetConstant("/project", slashProject)
+	properties.SetConstant("project_instance", project_instance)
+	properties.SetFunction("lxdparent", func() (string, error) {
 		dataset, err := t.GetDefaultDataset()
 		if err != nil {
 			return "", err
@@ -203,7 +203,7 @@ func (t *LxdClient) NewPattern(name string) *util.Pattern {
 		}
 		return root, nil
 	})
-	pattern.SetFunction("zfsroot", func() (string, error) {
+	properties.SetFunction("zfsroot", func() (string, error) {
 		dataset, err := t.GetDefaultDataset()
 		if err != nil {
 			return "", err
@@ -215,5 +215,9 @@ func (t *LxdClient) NewPattern(name string) *util.Pattern {
 		return "", errors.New("the LXD dataset uses root ZFS dataset: " + dataset)
 		return dataset, nil
 	})
-	return pattern
+	return properties
+}
+
+func (pattern Pattern) Substitute(properties *util.PatternProperties) (string, error) {
+	return properties.Substitute(string(pattern))
 }

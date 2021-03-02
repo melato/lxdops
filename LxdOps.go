@@ -48,7 +48,7 @@ func (t *LxdOps) ProfileExists(profile string) error {
 }
 
 func (t *LxdOps) Pattern(name string, pattern string) error {
-	p := t.Client.NewPattern(name)
+	p := t.Client.NewProperties(name)
 	result, err := p.Substitute(pattern)
 	if err != nil {
 		return err

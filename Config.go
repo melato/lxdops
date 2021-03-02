@@ -4,6 +4,13 @@ package lxdops
 // When a config file includes another config file, the base directory is the directory of the including file
 type HostPath string
 
+// Pattern is a string that is converted via property substitution, before it is used
+// Properties are denoted in the pattern via (<key>), where <key> is the property key
+// Built-in properties are:  instance, zfsroot, project, /project, project_instance
+// Custom properties are defined in Config.Properties
+// Custom properties can override built-in properties
+type Pattern string
+
 // Config - Instance configuration
 // An instance is a name that is used to launch a container or create LXD disk devices, typically both.
 // The instance name, is the same as the base name of the config file, without the extension.
@@ -63,7 +70,7 @@ type Config struct {
 
 	// ProfilePattern specifies how the instance profile should be named.
 	// It defaults to "(container).lxdops", where (container) is the name of the instance
-	ProfilePattern string `yaml:"profile-pattern"`
+	Profile Pattern `yaml:"profile-pattern"`
 }
 
 // DeviceSource specifies how to copy or clone device directories.
@@ -104,7 +111,7 @@ type DeviceSource struct {
 	SourceConfig HostPath `yaml:"source-config,omitempty"`
 
 	// source-filesystems override the Filesystems defined in source-config
-	SourceFilesystems map[string]string `yaml:"source-filesystems,omitempty"`
+	SourceFilesystems map[string]Pattern `yaml:"source-filesystems,omitempty"`
 }
 
 // OS specifies the container OS
@@ -130,7 +137,7 @@ type Filesystem struct {
 	// Pattern is a pattern that is used to produce the directory or zfs filesystem
 	// If the pattern begins with '/', it is a directory
 	// If it does not begin with '/', it is a zfs filesystem name
-	Pattern string `xml:"name,attr"`
+	Pattern Pattern `xml:"name,attr"`
 	// Zfsproperties is a list of properties that are set when a zfs filesystem is created or cloned
 	Zfsproperties map[string]string `yaml:",omitempty"`
 }

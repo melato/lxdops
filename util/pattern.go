@@ -15,14 +15,14 @@ Replaces parenthesized expressions as follows:
 (.key) -> Properties[key]
 (name) -> Functions[name]()
 */
-type Pattern struct {
+type PatternProperties struct {
 	Constants map[string]string
 	Functions map[string]func() (string, error)
 	didHelp   bool
 }
 
 /** Specify a function that is called to get the replacement value. */
-func (t *Pattern) SetFunction(key string, f func() (string, error)) {
+func (t *PatternProperties) SetFunction(key string, f func() (string, error)) {
 	if t.Functions == nil {
 		t.Functions = make(map[string]func() (string, error))
 	}
@@ -30,14 +30,14 @@ func (t *Pattern) SetFunction(key string, f func() (string, error)) {
 }
 
 /** Specify the replacement value for (key) */
-func (t *Pattern) SetConstant(key string, value string) {
+func (t *PatternProperties) SetConstant(key string, value string) {
 	if t.Constants == nil {
 		t.Constants = make(map[string]string)
 	}
 	t.Constants[key] = value
 }
 
-func (t *Pattern) ShowHelp(w io.Writer) {
+func (t *PatternProperties) ShowHelp(w io.Writer) {
 	fmt.Fprintf(w, "available pattern keys:\n")
 	keys := make([]string, 0, len(t.Constants)+len(t.Functions))
 	for key, _ := range t.Functions {
@@ -55,7 +55,7 @@ func (t *Pattern) ShowHelp(w io.Writer) {
 	}
 }
 
-func (t *Pattern) Get(key string) (string, error) {
+func (t *PatternProperties) Get(key string) (string, error) {
 	f, found := t.Functions[key]
 	if found {
 		value, err := f()
@@ -75,7 +75,7 @@ func (t *Pattern) Get(key string) (string, error) {
 	return "", errors.New("no such key: " + key)
 }
 
-func (t *Pattern) Substitute(pattern string) (string, error) {
+func (t *PatternProperties) Substitute(pattern string) (string, error) {
 	tpl, err := template.Paren.NewTemplate(pattern)
 	if err != nil {
 		return "", err

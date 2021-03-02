@@ -21,7 +21,7 @@ type DeviceConfigurer struct {
 	DryRun  bool
 	FuncMap map[string]func() (string, error)
 
-	sourceFilesystems map[string]string
+	sourceFilesystems map[string]Pattern
 }
 
 func NewDeviceConfigurer(client *LxdClient, config *Config) *DeviceConfigurer {
@@ -32,13 +32,13 @@ func (t *DeviceConfigurer) NewScript() *script.Script {
 	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 }
 
-func (t *DeviceConfigurer) NewPattern(name string) *util.Pattern {
-	return t.Client.NewPattern(name)
+func (t *DeviceConfigurer) NewProperties(name string) *util.PatternProperties {
+	return t.Client.NewProperties(name)
 }
 
 func (t *DeviceConfigurer) CreateFilesystem(fs *Filesystem, name string) error {
-	pattern := t.NewPattern(name)
-	path, err := pattern.Substitute(fs.Pattern)
+	pattern := t.NewProperties(name)
+	path, err := fs.Pattern.Substitute(pattern)
 	if err != nil {
 		return err
 	}
@@ -52,11 +52,11 @@ func (t *DeviceConfigurer) CreateFilesystem(fs *Filesystem, name string) error {
 			return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
 		}
 		sourceInstance, sourceSnapshot := parts[0], parts[1]
-		sourcePattern := t.NewPattern(sourceInstance)
+		sourceProperties := t.NewProperties(sourceInstance)
 		fsPattern, exists := t.sourceFilesystems[fs.Id]
 		if exists {
 			// clone
-			sourceDataset, err := sourcePattern.Substitute(fsPattern)
+			sourceDataset, err := fsPattern.Substitute(sourceProperties)
 			if err != nil {
 				return err
 			}
@@ -103,15 +103,15 @@ func (path FSPath) Dir() string {
 	}
 }
 
-func (t *DeviceConfigurer) FilesystemMap(name string, overrides map[string]string) (map[string]FSPath, error) {
-	pattern := t.NewPattern(name)
+func (t *DeviceConfigurer) FilesystemMap(name string, overrides map[string]Pattern) (map[string]FSPath, error) {
+	properties := t.NewProperties(name)
 	filesystems := make(map[string]FSPath)
 	for _, fs := range t.Config.Filesystems {
 		fsPattern, overriden := overrides[fs.Id]
 		if !overriden {
 			fsPattern = fs.Pattern
 		}
-		path, err := pattern.Substitute(fsPattern)
+		path, err := fsPattern.Substitute(properties)
 		if err != nil {
 			return nil, err
 		}
@@ -122,9 +122,9 @@ func (t *DeviceConfigurer) FilesystemMap(name string, overrides map[string]strin
 
 func (t *DeviceConfigurer) FilesystemPaths(name string) ([]string, error) {
 	var result []string
-	pattern := t.NewPattern(name)
+	properties := t.NewProperties(name)
 	for _, fs := range t.Config.Filesystems {
-		path, err := pattern.Substitute(fs.Pattern)
+		path, err := fs.Pattern.Substitute(properties)
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +142,7 @@ func (t *DeviceConfigurer) DeviceFilesystem(device *Device) (*Filesystem, error)
 	return nil, errors.New("no such filesystem: " + device.Filesystem)
 }
 
-func (t *DeviceConfigurer) DeviceDir(pattern *util.Pattern, filesystems map[string]FSPath, device *Device) (string, error) {
+func (t *DeviceConfigurer) DeviceDir(properties *util.PatternProperties, filesystems map[string]FSPath, device *Device) (string, error) {
 	var fsPath FSPath
 	var dir string
 	var substituteDir bool
@@ -167,7 +167,7 @@ func (t *DeviceConfigurer) DeviceDir(pattern *util.Pattern, filesystems map[stri
 	}
 
 	if substituteDir {
-		dir, err = pattern.Substitute(device.Dir)
+		dir, err = properties.Substitute(device.Dir)
 		if err != nil {
 			return "", err
 		}
@@ -190,7 +190,7 @@ func (t *DeviceConfigurer) initSourceFilesystems() error {
 	} else {
 		config = t.Config
 	}
-	t.sourceFilesystems = make(map[string]string)
+	t.sourceFilesystems = make(map[string]Pattern)
 	for _, fs := range config.Filesystems {
 		t.sourceFilesystems[fs.Id] = fs.Pattern
 	}
@@ -222,16 +222,16 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 		}
 	}
 	var templateFilesystems map[string]FSPath
-	var templatePattern *util.Pattern
+	var templateProperties *util.PatternProperties
 	if t.Config.DeviceTemplate != "" {
 		templateFilesystems, err = t.FilesystemMap(t.Config.DeviceTemplate, t.sourceFilesystems)
 		if err != nil {
 			return err
 		}
-		templatePattern = t.NewPattern(t.Config.DeviceTemplate)
+		templateProperties = t.NewProperties(t.Config.DeviceTemplate)
 	}
 	script := t.NewScript()
-	pattern := t.NewPattern(name)
+	pattern := t.NewProperties(name)
 	for _, device := range t.Config.Devices {
 		dir, err := t.DeviceDir(pattern, filesystems, device)
 		if err != nil {
@@ -244,7 +244,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 			}
 		}
 		if t.Config.DeviceTemplate != "" {
-			templateDir, err := t.DeviceDir(templatePattern, templateFilesystems, device)
+			templateDir, err := t.DeviceDir(templateProperties, templateFilesystems, device)
 			if err != nil {
 				return err
 			}
@@ -266,7 +266,7 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 	if err != nil {
 		return err
 	}
-	pattern := t.NewPattern(name)
+	pattern := t.NewProperties(name)
 	devices := make(map[string]map[string]string)
 
 	for _, device := range t.Config.Devices {
@@ -293,15 +293,15 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 }
 
 func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
-	oldpattern := t.NewPattern(oldname)
-	newpattern := t.NewPattern(newname)
+	oldproperties := t.NewProperties(oldname)
+	newproperties := t.NewProperties(newname)
 	s := t.NewScript()
 	for _, fs := range RootFilesystems(t.Config.Filesystems) {
-		oldpath, err := oldpattern.Substitute(fs.Pattern)
+		oldpath, err := fs.Pattern.Substitute(oldproperties)
 		if err != nil {
 			return err
 		}
-		newpath, err := newpattern.Substitute(fs.Pattern)
+		newpath, err := fs.Pattern.Substitute(newproperties)
 		if err != nil {
 			return err
 		}
@@ -333,13 +333,13 @@ func (t *DeviceConfigurer) ListFilesystems(name string) ([]FSPath, error) {
 }
 
 func (t *DeviceConfigurer) PrintFilesystems(name string) error {
-	pattern := t.NewPattern(name)
+	pattern := t.NewProperties(name)
 	writer := &table.FixedWriter{Writer: os.Stdout}
 	var fs *Filesystem
 	writer.Columns(
 		table.NewColumn("FILESYSTEM", func() interface{} { return fs.Id }),
 		table.NewColumn("PATH", func() interface{} {
-			path, err := pattern.Substitute(fs.Pattern)
+			path, err := fs.Pattern.Substitute(pattern)
 			if err != nil {
 				return err
 			}
@@ -355,7 +355,7 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 }
 
 func (t *DeviceConfigurer) PrintDevices(name string) error {
-	pattern := t.NewPattern(name)
+	pattern := t.NewProperties(name)
 	filesystems, err := t.FilesystemMap(name, nil)
 	if err != nil {
 		return err

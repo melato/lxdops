@@ -20,12 +20,15 @@ func (filesystems FilesystemList) Sorted() FilesystemList {
 
 }
 
+// RootFilesystems returns the filesystems that are not children of other filesystems, within this set.
+// The filesystems are compared without pattern substitution.  A contrived pattern substitution could make
+// the resulting filesystems not be roots after the substitution.
 func RootFilesystems(filesystems []*Filesystem) []*Filesystem {
 	paths := make([]string, len(filesystems))
 	fsMap := make(map[string]*Filesystem)
 	for i, fs := range filesystems {
-		paths[i] = fs.Pattern
-		fsMap[fs.Pattern] = fs
+		paths[i] = string(fs.Pattern)
+		fsMap[string(fs.Pattern)] = fs
 	}
 	rootPaths := RootPaths(paths)
 	roots := make([]*Filesystem, len(rootPaths))
