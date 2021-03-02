@@ -2,6 +2,7 @@ package lxdops
 
 import (
 	"fmt"
+	"os"
 )
 
 type ConfigOps struct {
@@ -46,4 +47,14 @@ func (t *ConfigOps) printDescription(name string, config *Config) error {
 /** Print the description of a config file. */
 func (t *ConfigOps) Description(args []string) error {
 	return t.ConfigOptions.Run(args, t.printDescription)
+}
+
+func (t *ConfigOps) Properties(name string, config *Config) error {
+	properties := t.Client.NewProperties(name, config.Properties)
+	properties.ShowHelp(os.Stdout)
+	return nil
+}
+
+func (t *ConfigOps) Func(f func(string, *Config) error) func(config string) error {
+	return func(config string) error { return t.ConfigOptions.Run([]string{config}, f) }
 }

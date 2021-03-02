@@ -175,34 +175,22 @@ func FileExists(server lxd.InstanceServer, container string, file string) bool {
 	return true
 }
 
-func (t *LxdClient) NewProperties(name string) *util.PatternProperties {
-	properties := &util.PatternProperties{}
+func (t *LxdClient) NewProperties(name string, customProperties map[string]string) *util.PatternProperties {
+	properties := &util.PatternProperties{Properties: customProperties}
 	properties.SetConstant("instance", name)
-	properties.SetConstant("", name)
 	project := t.Project
-	var slashProject, project_instance string
+	var projectSlash, project_instance string
 	if project == "" || project == "default" {
 		project = "default"
-		slashProject = ""
+		projectSlash = ""
 		project_instance = name
 	} else {
-		slashProject = "/" + project
+		projectSlash = project + "/"
 		project_instance = project + "_" + name
 	}
 	properties.SetConstant("project", project)
-	properties.SetConstant("/project", slashProject)
+	properties.SetConstant("project/", projectSlash)
 	properties.SetConstant("project_instance", project_instance)
-	properties.SetFunction("lxdparent", func() (string, error) {
-		dataset, err := t.GetDefaultDataset()
-		if err != nil {
-			return "", err
-		}
-		root := filepath.Dir(dataset)
-		if root == "" {
-			return "", errors.New("cannot determine parent of LXD dataset: " + dataset)
-		}
-		return root, nil
-	})
 	properties.SetFunction("zfsroot", func() (string, error) {
 		dataset, err := t.GetDefaultDataset()
 		if err != nil {

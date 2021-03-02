@@ -71,6 +71,10 @@ type Config struct {
 	// ProfilePattern specifies how the instance profile should be named.
 	// It defaults to "(container).lxdops", where (container) is the name of the instance
 	Profile Pattern `yaml:"profile-pattern"`
+
+	// Properties provide key-value pairs used for pattern substitution.
+	// They override built-in properties
+	Properties map[string]string `yaml:"properties"`
 }
 
 // DeviceSource specifies how to copy or clone device directories.

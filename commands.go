@@ -38,6 +38,7 @@ func RootCommand() *command.SimpleCommand {
 	configOps := &ConfigOps{Client: client}
 	cmd.Command("verify").Flags(configOps).RunFunc(configOps.Verify)
 	cmd.Command("create-devices").Flags(configOps).RunFunc(configOps.CreateDevices)
+	cmd.Command("properties").Flags(configOps).RunFunc(configOps.Func(configOps.Properties))
 	/* add devices:
 	lxdops device add -p a.host -d /z/host/a -s 1 {configfile}...
 	- create subdirectories
@@ -55,7 +56,6 @@ func RootCommand() *command.SimpleCommand {
 	profile.Command("exists").RunFunc(lxdOps.ProfileExists)
 	profile.Command("add-disk").RunFunc(lxdOps.AddDiskDevice)
 	cmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot)
-	cmd.Command("pattern").RunFunc(lxdOps.Pattern)
 
 	parse := &ParseOp{}
 	cmd.Command("parse").Flags(parse).RunFunc(parse.Run)

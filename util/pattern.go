@@ -16,12 +16,13 @@ Replaces parenthesized expressions as follows:
 (name) -> Functions[name]()
 */
 type PatternProperties struct {
-	Constants map[string]string
+	Properties map[string]string
+	// Functions are used only for keys that are not in Properties
 	Functions map[string]func() (string, error)
 	didHelp   bool
 }
 
-/** Specify a function that is called to get the replacement value. */
+// SetFunction specifies a function that is called to get the replacement value.  It can be overriden by a constant.
 func (t *PatternProperties) SetFunction(key string, f func() (string, error)) {
 	if t.Functions == nil {
 		t.Functions = make(map[string]func() (string, error))
@@ -29,22 +30,19 @@ func (t *PatternProperties) SetFunction(key string, f func() (string, error)) {
 	t.Functions[key] = f
 }
 
-/** Specify the replacement value for (key) */
+// SetConstantFunction specifies a function that evaluates to a constant.  It can be overriden by Constants
 func (t *PatternProperties) SetConstant(key string, value string) {
-	if t.Constants == nil {
-		t.Constants = make(map[string]string)
-	}
-	t.Constants[key] = value
+	t.SetFunction(key, func() (string, error) { return value, nil })
 }
 
 func (t *PatternProperties) ShowHelp(w io.Writer) {
-	fmt.Fprintf(w, "available pattern keys:\n")
-	keys := make([]string, 0, len(t.Constants)+len(t.Functions))
-	for key, _ := range t.Functions {
+	fmt.Fprintf(w, "properties:\n")
+	keys := make([]string, 0, len(t.Properties)+len(t.Functions))
+	for key, _ := range t.Properties {
 		keys = append(keys, key)
 	}
-	for key, _ := range t.Constants {
-		if _, exists := t.Functions[key]; !exists {
+	for key, _ := range t.Functions {
+		if _, exists := t.Properties[key]; !exists {
 			keys = append(keys, key)
 		}
 	}
@@ -56,16 +54,16 @@ func (t *PatternProperties) ShowHelp(w io.Writer) {
 }
 
 func (t *PatternProperties) Get(key string) (string, error) {
+	value, found := t.Properties[key]
+	if found {
+		return value, nil
+	}
 	f, found := t.Functions[key]
 	if found {
 		value, err := f()
 		if err != nil {
 			return "", err
 		}
-		return value, nil
-	}
-	value, found := t.Constants[key]
-	if found {
 		return value, nil
 	}
 	if !t.didHelp {

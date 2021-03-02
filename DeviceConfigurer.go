@@ -33,7 +33,7 @@ func (t *DeviceConfigurer) NewScript() *script.Script {
 }
 
 func (t *DeviceConfigurer) NewProperties(name string) *util.PatternProperties {
-	return t.Client.NewProperties(name)
+	return t.Client.NewProperties(name, t.Config.Properties)
 }
 
 func (t *DeviceConfigurer) CreateFilesystem(fs *Filesystem, name string) error {
