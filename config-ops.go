@@ -19,24 +19,16 @@ func (t *ConfigOps) Configured() error {
 	return nil
 }
 
-func (t *ConfigOps) verify(name string, config *Config) error {
+func (t *ConfigOps) Verify(name string, config *Config) error {
 	fmt.Println(name)
 	return nil
 }
 
-func (t *ConfigOps) Verify(args []string) error {
-	return t.ConfigOptions.Run(args, t.verify)
-}
-
-func (t *ConfigOps) createDevices(name string, config *Config) error {
+func (t *ConfigOps) CreateDevices(name string, config *Config) error {
 	dev := NewDeviceConfigurer(t.Client, config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	return dev.ConfigureDevices(name)
-}
-
-func (t *ConfigOps) CreateDevices(args []string) error {
-	return t.ConfigOptions.Run(args, t.createDevices)
 }
 
 // Print the description of a config file.
@@ -49,8 +41,4 @@ func (t *ConfigOps) Properties(name string, config *Config) error {
 	properties := t.Client.NewProperties(name, config.Properties)
 	properties.ShowHelp(os.Stdout)
 	return nil
-}
-
-func (t *ConfigOps) Func(f func(string, *Config) error) func(config string) error {
-	return func(config string) error { return t.ConfigOptions.Run([]string{config}, f) }
 }

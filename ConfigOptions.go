@@ -54,11 +54,18 @@ func BaseName(file string) string {
 	return name[0 : len(name)-len(ext)]
 }
 
-func (t *ConfigOptions) runMultiple(args []string, f func(name string, config *Config) error) error {
+func (t *ConfigOptions) Run(f func(name string, config *Config) error, args ...string) error {
+	if t.Name != "" && len(args) != 1 {
+		return errors.New("--name can be used with only one config file")
+	}
 	for _, arg := range args {
 		var name, file string
 		file = arg
-		name = BaseName(arg)
+		if t.Name != "" && len(args) == 1 {
+			name = t.Name
+		} else {
+			name = BaseName(arg)
+		}
 		config, err := t.ReadConfig(file)
 		if err != nil {
 			return err
@@ -71,16 +78,10 @@ func (t *ConfigOptions) runMultiple(args []string, f func(name string, config *C
 	return nil
 }
 
-func (t *ConfigOptions) Run(args []string, f func(name string, config *Config) error) error {
-	if t.Name == "" {
-		return t.runMultiple(args, f)
-	}
-	if len(args) != 1 {
-		return errors.New("Usage: -name {config-file}")
-	}
-	config, err := t.ReadConfig(args...)
-	if err != nil {
-		return err
-	}
-	return f(t.Name, config)
+func (t *ConfigOptions) Func(f func(string, *Config) error) func(config string) error {
+	return func(config string) error { return t.Run(f, config) }
+}
+
+func (t *ConfigOptions) FuncMultiple(f func(string, *Config) error) func(configs []string) error {
+	return func(configs []string) error { return t.Run(f, configs...) }
 }

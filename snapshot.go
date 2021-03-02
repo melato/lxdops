@@ -31,7 +31,7 @@ func (t *Snapshot) Snapshot(qsnapshot string, arg ...string) error {
 		return errors.New("snapshot should begin with '@': " + qsnapshot)
 	}
 	snapshot := qsnapshot[1:]
-	return t.ConfigOptions.Run(arg, func(name string, config *Config) error {
+	return t.ConfigOptions.Run(func(name string, config *Config) error {
 		dev := NewDeviceConfigurer(t.Client, config)
 		paths, err := dev.FilesystemPaths(name)
 		if err != nil {
@@ -55,5 +55,5 @@ func (t *Snapshot) Snapshot(qsnapshot string, arg ...string) error {
 			}
 		}
 		return s.Error()
-	})
+	}, arg...)
 }

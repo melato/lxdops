@@ -39,8 +39,8 @@ func RootCommand() *command.SimpleCommand {
 	configOps := &ConfigOps{Client: client}
 	cmd.Command("verify").Flags(configOps).RunFunc(configOps.Verify)
 	cmd.Command("create-devices").Flags(configOps).RunFunc(configOps.CreateDevices)
-	cmd.Command("description").RunFunc(configOps.Func(configOps.Description))
-	cmd.Command("properties").Flags(configOps).RunFunc(configOps.Func(configOps.Properties))
+	cmd.Command("description").RunFunc(configOps.ConfigOptions.Func(configOps.Description))
+	cmd.Command("properties").Flags(configOps).RunFunc(configOps.ConfigOptions.Func(configOps.Properties))
 	/* add devices:
 	lxdops device add -p a.host -d /z/host/a -s 1 {configfile}...
 	- create subdirectories
@@ -82,7 +82,7 @@ func RootCommand() *command.SimpleCommand {
 	testCmd.Command("push").RunFunc(containerOps.Push)
 	testCmd.Command("project").RunFunc(projectOps.Use)
 
-	_ = usage.ApplyEnv(&cmd, "USAGE_FILE") || usage.ApplyYaml(&cmd, usageData)
+	usage.Apply(&cmd, "USAGE_FILE", usageData)
 
 	return &cmd
 }

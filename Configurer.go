@@ -426,5 +426,5 @@ func (t *Configurer) runConfigure(name string, config *Config) error {
 
 func (t *Configurer) Run(args []string) error {
 	t.Trace = true
-	return t.ConfigOptions.Run(args, t.runConfigure)
+	return t.ConfigOptions.Run(t.runConfigure, args...)
 }

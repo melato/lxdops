@@ -67,8 +67,8 @@ commands:
     use: <config-file>
     examples:
     - parse test.yaml
-  pattern:
-    short: run pattern substitution
+  properties:
+    show: print instance properties
   profile:
     short: profile utilities
     commands:

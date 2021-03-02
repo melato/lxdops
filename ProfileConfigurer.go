@@ -120,17 +120,17 @@ func (t *ProfileConfigurer) listProfiles(name string, config *Config) error {
 }
 
 func (t *ProfileConfigurer) Apply(args []string) error {
-	return t.ConfigOptions.Run(args, t.applyProfiles)
+	return t.ConfigOptions.Run(t.applyProfiles, args...)
 }
 
 func (t *ProfileConfigurer) List(args []string) error {
-	return t.ConfigOptions.Run(args, t.listProfiles)
+	return t.ConfigOptions.Run(t.listProfiles, args...)
 }
 
 func (t *ProfileConfigurer) Diff(args []string) error {
-	return t.ConfigOptions.Run(args, t.diffProfiles)
+	return t.ConfigOptions.Run(t.diffProfiles, args...)
 }
 
 func (t *ProfileConfigurer) Reorder(args []string) error {
-	return t.ConfigOptions.Run(args, t.reorderProfiles)
+	return t.ConfigOptions.Run(t.reorderProfiles, args...)
 }

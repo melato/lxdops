@@ -66,12 +66,12 @@ func (t *Launcher) rebuildContainer(name string, config *Config) error {
 
 func (t *Launcher) Launch(args []string) error {
 	t.Trace = true
-	return t.ConfigOptions.Run(args, t.launchContainer)
+	return t.ConfigOptions.Run(t.launchContainer, args...)
 }
 
 func (t *Launcher) Rebuild(args []string) error {
 	t.Trace = true
-	return t.ConfigOptions.Run(args, t.rebuildContainer)
+	return t.ConfigOptions.Run(t.rebuildContainer, args...)
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
@@ -272,7 +272,7 @@ func (t *Launcher) deleteContainer(name string, config *Config) error {
 
 func (t *Launcher) Delete(args []string) error {
 	t.Trace = true
-	return t.ConfigOptions.Run(args, t.deleteContainer)
+	return t.ConfigOptions.Run(t.deleteContainer, args...)
 }
 
 func (t *Launcher) Rename(configFile string, newname string) error {
@@ -370,7 +370,7 @@ func (t *Launcher) printFilesystems(name string, config *Config) error {
 }
 
 func (t *Launcher) PrintFilesystems(arg string) error {
-	return t.ConfigOptions.Run([]string{arg}, t.printFilesystems)
+	return t.ConfigOptions.Run(t.printFilesystems, arg)
 }
 
 func (t *Launcher) printDevices(name string, config *Config) error {
@@ -382,5 +382,5 @@ func (t *Launcher) printDevices(name string, config *Config) error {
 }
 
 func (t *Launcher) PrintDevices(arg string) error {
-	return t.ConfigOptions.Run([]string{arg}, t.printDevices)
+	return t.ConfigOptions.Run(t.printDevices, arg)
 }
