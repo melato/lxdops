@@ -3,71 +3,19 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	lxd "github.com/lxc/lxd/client"
-	"github.com/lxc/lxd/lxc/config"
 	"melato.org/lxdops/util"
 )
 
 type LxdClient struct {
 	Socket string
 	//Project        string `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
-	rootServer     lxd.InstanceServer
-	projectServer  lxd.InstanceServer
-	currentProject string
-}
-
-func (t *LxdClient) configDir() (string, error) {
-	configDir := os.Getenv("LXD_CONF")
-	if configDir != "" {
-		return configDir, nil
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	configDir = filepath.Join(home, "snap", "lxd", "current", ".config", "lxc")
-	if _, err = os.Stat(configDir); err == nil {
-		return configDir, nil
-	}
-	configDir = filepath.Join(home, ".config", "lxc")
-	if _, err = os.Stat(configDir); err == nil {
-		return configDir, nil
-	}
-	return "", err
-}
-
-func (t *LxdClient) getCurrentProject() (string, error) {
-	configDir, err := t.configDir()
-	if err != nil {
-		return "", err
-	}
-
-	var cfg config.Config
-	err = util.ReadYaml(filepath.Join(configDir, "config.yml"), &cfg)
-	if err != nil {
-		return "", err
-	}
-	local, found := cfg.Remotes["local"]
-	if found {
-		return local.Project, nil
-	}
-	return "", nil
-}
-
-func (t *LxdClient) CurrentProject() string {
-	if t.currentProject == "" {
-		project, err := t.getCurrentProject()
-		if err != nil || project == "" {
-			project = "default"
-		}
-		t.currentProject = project
-	}
-	return t.currentProject
+	rootServer    lxd.InstanceServer
+	projectServer lxd.InstanceServer
+	lxc_config
 }
 
 func (t *LxdClient) Init() error {

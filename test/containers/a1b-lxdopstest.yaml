@@ -1,6 +1,5 @@
 os:
   name: alpine
-project: test
 origin: alp-lxdopstest/copy
 device-origin: a1-lxdopstest@x1
 source-config: a1-lxdopstest.yaml

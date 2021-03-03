@@ -1,7 +1,6 @@
 os:
   name: alpine
 description: A working container cloned from a template container.
-project: test
 origin: alp-lxdopstest/copy
 device-template: alp
 profiles:

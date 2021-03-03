@@ -15,6 +15,7 @@ type ConfigOptions struct {
 	ProfileSuffix  string  `name:"profile-suffix" usage:"suffix for device profiles, overrides config"`
 	Project        string  `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
 	Name           string  `name:"name" usage:"The name of the container to launch or configure.  If missing, use a separate container for each config, using the name of the config."`
+	lxc_config
 }
 
 func (t *ConfigOptions) Init() error {
@@ -24,6 +25,9 @@ func (t *ConfigOptions) Init() error {
 func (t *ConfigOptions) UpdateConfig(config *Config) {
 	if t.Project != "" {
 		config.Project = t.Project
+	}
+	if config.Project == "" {
+		config.Project = t.CurrentProject()
 	}
 	pattern := t.ProfilePattern
 	if pattern == "" && t.ProfileSuffix != "" {

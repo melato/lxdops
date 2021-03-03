@@ -1,6 +1,5 @@
 os:
   name: alpine
-project: test
 description: A template container created from scratch.
 include:
   - device/standard.yaml
