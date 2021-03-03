@@ -58,7 +58,7 @@ func (t *lxc_config) CurrentProject() string {
 			project = "default"
 		}
 		t.currentProject = project
-		fmt.Printf("using lxc current project: %s\n", project)
+		fmt.Fprintf(os.Stderr, "using lxc current project: %s\n", project)
 	}
 	return t.currentProject
 }

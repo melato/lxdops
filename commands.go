@@ -67,6 +67,7 @@ func RootCommand() *command.SimpleCommand {
 
 	containerOps := &ContainerOps{Client: client}
 	containerCmd := cmd.Command("container")
+	containerCmd.Flags(containerOps)
 	containerCmd.Command("profiles").RunFunc(containerOps.Profiles)
 	containerCmd.Command("network").RunFunc(containerOps.Network)
 	containerCmd.Command("wait").RunFunc(containerOps.Wait)
