@@ -227,12 +227,18 @@ func (t *Configurer) changeUserPasswords(config *Config, name string) error {
 }
 
 func (t *Configurer) runScripts(project, container string, scripts []*Script) error {
+	if t.Trace {
+		fmt.Printf("running %d scripts\n", len(scripts))
+	}
 	server, err := t.Client.ProjectServer(project)
 	if err != nil {
 		return err
 	}
 	ex := t.NewExec(project, container)
 	for _, script := range scripts {
+		if t.Trace {
+			fmt.Printf("running script: %s\n", script.Name)
+		}
 		ex.Dir(script.Dir)
 		ex.Uid(script.Uid)
 		ex.Gid(script.Gid)
@@ -252,28 +258,28 @@ func (t *Configurer) runScripts(project, container string, scripts []*Script) er
 			if err != nil {
 				return err
 			}
-			body := strings.TrimSpace(script.Body)
-			if body != "" {
-				err := ex.Run(body, "sh")
-				if err != nil {
-					return err
-				}
+		}
+		body := strings.TrimSpace(script.Body)
+		if body != "" {
+			err := ex.Run(body, "sh")
+			if err != nil {
+				return err
 			}
-			if script.Reboot {
-				op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "stop"}, "")
-				if err != nil {
-					return AnnotateLXDError(container, err)
-				}
-				if err := op.Wait(); err != nil {
-					return AnnotateLXDError(container, err)
-				}
-				op, err = server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
-				if err != nil {
-					return AnnotateLXDError(container, err)
-				}
-				if err := op.Wait(); err != nil {
-					return AnnotateLXDError(container, err)
-				}
+		}
+		if script.Reboot {
+			op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "stop"}, "")
+			if err != nil {
+				return AnnotateLXDError(container, err)
+			}
+			if err := op.Wait(); err != nil {
+				return AnnotateLXDError(container, err)
+			}
+			op, err = server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
+			if err != nil {
+				return AnnotateLXDError(container, err)
+			}
+			if err := op.Wait(); err != nil {
+				return AnnotateLXDError(container, err)
 			}
 		}
 	}
