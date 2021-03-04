@@ -23,7 +23,7 @@ func (t *ConfigOptions) Init() error {
 }
 
 func (t *ConfigOptions) initProperties() error {
-	if t.properties == nil {
+	if t.properties != nil {
 		return nil
 	}
 	t.properties = make(map[string]string)
