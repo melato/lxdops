@@ -192,3 +192,22 @@ func (t *Config) GetSourceConfig() (*Config, error) {
 	}
 	return t.sourceConfig, nil
 }
+
+func (config *Config) NewProperties(name string) *util.PatternProperties {
+	properties := &util.PatternProperties{Properties: config.Properties}
+	properties.SetConstant("instance", name)
+	project := config.Project
+	var projectSlash, project_instance string
+	if project == "" || project == "default" {
+		project = "default"
+		projectSlash = ""
+		project_instance = name
+	} else {
+		projectSlash = project + "/"
+		project_instance = project + "_" + name
+	}
+	properties.SetConstant("project", project)
+	properties.SetConstant("project/", projectSlash)
+	properties.SetConstant("project_instance", project_instance)
+	return properties
+}

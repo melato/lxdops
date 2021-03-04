@@ -38,7 +38,7 @@ func (t *ConfigOps) Description(name string, config *Config) error {
 }
 
 func (t *ConfigOps) Properties(name string, config *Config) error {
-	properties := t.Client.NewProperties(name, config)
+	properties := config.NewProperties(name)
 	properties.ShowHelp(os.Stdout)
 	return nil
 }

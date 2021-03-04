@@ -40,6 +40,8 @@ type ConfigTop struct {
 	Stop bool `yaml:"stop,omitempty"`
 	// Snapshot specifies that that the container should be snapshoted with this name at the end of the configuration process.
 	Snapshot string `yaml:"snapshot,omitempty"`
+
+	LxcOptions []string `yaml:"lxc-options,omitempty,flow"`
 }
 
 type ConfigInherit struct {

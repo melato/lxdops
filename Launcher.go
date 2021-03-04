@@ -14,12 +14,6 @@ type Launcher struct {
 	ConfigOptions ConfigOptions
 	Trace         bool `name:""` //`name:"trace,t" usage:"print exec arguments"`
 	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-
-	Origin         string   `name:"origin" usage:"container to copy, overrides config"`
-	DeviceTemplate string   `name:"device-template" usage:"device dir or dataset to copy, overrides config"`
-	DeviceOrigin   string   `name:"device-origin" usage:"zfs snapshot to clone into target device, overrides config"`
-	Profiles       []string `name:"profile,p" usage:"profiles to add to lxc launch"`
-	Options        []string `name:"X" usage:"additional options to pass to lxc"`
 }
 
 func (t *Launcher) Init() error {
@@ -38,16 +32,6 @@ func (t *Launcher) NewScript() *script.Script {
 }
 
 func (t *Launcher) updateConfig(config *Config) {
-	if t.Origin != "" {
-		config.Origin = t.Origin
-	}
-	if t.DeviceTemplate != "" {
-		config.DeviceTemplate = t.DeviceTemplate
-	}
-	if t.DeviceOrigin != "" {
-		config.DeviceOrigin = t.DeviceOrigin
-	}
-	t.ConfigOptions.UpdateConfig(config)
 }
 
 func (t *Launcher) launchContainer(name string, config *Config) error {
@@ -128,10 +112,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		for _, profile := range profiles {
 			lxcArgs = append(lxcArgs, "-p", profile)
 		}
-		for _, profile := range t.Profiles {
-			lxcArgs = append(lxcArgs, "-p", profile)
-		}
-		for _, option := range t.Options {
+		for _, option := range config.LxcOptions {
 			lxcArgs = append(lxcArgs, option)
 		}
 		lxcArgs = append(lxcArgs, name)

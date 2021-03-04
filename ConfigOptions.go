@@ -2,8 +2,8 @@ package lxdops
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -11,14 +11,29 @@ const (
 )
 
 type ConfigOptions struct {
-	ProfilePattern Pattern `name:"profile-pattern" usage:"pattern for device profiles, overrides config"`
-	ProfileSuffix  string  `name:"profile-suffix" usage:"suffix for device profiles, overrides config"`
-	Project        string  `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
-	Name           string  `name:"name" usage:"The name of the container to launch or configure.  If missing, use a separate container for each config, using the name of the config."`
+	Project    string   `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
+	Name       string   `name:"name" usage:"The name of the container to launch or configure.  If missing, use a separate container for each config, using the name of the config."`
+	Properties []string `name:"D" usage:"Define a config property in the form <key>=<value>"`
+	properties map[string]string
 	lxc_config
 }
 
 func (t *ConfigOptions) Init() error {
+	return nil
+}
+
+func (t *ConfigOptions) initProperties() error {
+	if t.properties == nil {
+		return nil
+	}
+	t.properties = make(map[string]string)
+	for _, property := range t.Properties {
+		i := strings.Index(property, "=")
+		if i < 0 {
+			return errors.New("missing value from property: " + property)
+		}
+		t.properties[property[0:i]] = property[i+1:]
+	}
 	return nil
 }
 
@@ -29,20 +44,19 @@ func (t *ConfigOptions) UpdateConfig(config *Config) {
 	if config.Project == "" {
 		config.Project = t.CurrentProject()
 	}
-	pattern := t.ProfilePattern
-	if pattern == "" && t.ProfileSuffix != "" {
-		pattern = Pattern("(container)." + t.ProfileSuffix)
-	}
-	if pattern != "" {
-		if t.ProfileSuffix != "" && t.ProfilePattern != "" {
-			fmt.Println("profile-pattern overrides profile-suffix")
+	for key, value := range t.properties {
+		if config.Properties == nil {
+			config.Properties = make(map[string]string)
 		}
-		config.Profile = pattern
+		config.Properties[key] = value
 	}
 }
 
 func (t *ConfigOptions) ReadConfig(file string) (*Config, error) {
-	var err error
+	err := t.initProperties()
+	if err != nil {
+		return nil, err
+	}
 	var config *Config
 	config, err = ReadConfig(file)
 	if err != nil {

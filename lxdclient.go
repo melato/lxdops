@@ -3,7 +3,6 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	lxd "github.com/lxc/lxd/client"
@@ -103,37 +102,6 @@ func FileExists(server lxd.InstanceServer, container string, file string) bool {
 	}
 	reader.Close()
 	return true
-}
-
-func (t *LxdClient) NewProperties(name string, config *Config) *util.PatternProperties {
-	properties := &util.PatternProperties{Properties: config.Properties}
-	properties.SetConstant("instance", name)
-	project := config.Project
-	var projectSlash, project_instance string
-	if project == "" || project == "default" {
-		project = "default"
-		projectSlash = ""
-		project_instance = name
-	} else {
-		projectSlash = project + "/"
-		project_instance = project + "_" + name
-	}
-	properties.SetConstant("project", project)
-	properties.SetConstant("project/", projectSlash)
-	properties.SetConstant("project_instance", project_instance)
-	properties.SetFunction("zfsroot", func() (string, error) {
-		dataset, err := t.GetDefaultDataset()
-		if err != nil {
-			return "", err
-		}
-		i := strings.Index(dataset, "/")
-		if i >= 0 {
-			return dataset[0:i], nil
-		}
-		return "", errors.New("the LXD dataset uses root ZFS dataset: " + dataset)
-		return dataset, nil
-	})
-	return properties
 }
 
 func (pattern Pattern) Substitute(properties *util.PatternProperties) (string, error) {
