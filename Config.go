@@ -27,11 +27,21 @@ type Config struct {
 	// Description is provided for documentation
 	Description string `yaml:"description,omitempty"`
 
-	// Project is the LXD project where the container is
-	Project string `yaml:"project,omitempty"`
-
 	// Source specifies where to copy or clone the instance from
 	Source `yaml:",inline"`
+
+	// Inheritted fields are merged from all included files
+	Inheritted `yaml:",inline"`
+
+	// Stop specifies that the container should be stopped at the end of the configuration
+	Stop bool `yaml:"stop,omitempty"`
+	// Snapshot specifies that that the container should be snapshoted with this name at the end of the configuration process.
+	Snapshot string `yaml:"snapshot,omitempty"`
+}
+
+type Inheritted struct {
+	// Project is the LXD project where the container is
+	Project string `yaml:"project,omitempty"`
 
 	// Include is a list of other configs that are to be included.
 	// Include paths are either absolute or relative to the path of the including config.
@@ -63,10 +73,6 @@ type Config struct {
 	Scripts []*Script `yaml:"scripts,omitempty"`
 	// Passwords are a list of OS accounts, whose password is set to a random password
 	Passwords []string `yaml:"passwords,omitempty"`
-	// Stop specifies that the container should be stopped at the end of the configuration
-	Stop bool `yaml:"stop,omitempty"`
-	// Snapshot specifies that that the container should be snapshoted with this name at the end of the configuration process.
-	Snapshot string `yaml:"snapshot,omitempty"`
 
 	// ProfilePattern specifies how the instance profile should be named.
 	// It defaults to "(container).lxdops", where (container) is the name of the instance
