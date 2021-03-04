@@ -91,7 +91,8 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, container string) error 
 			if t.Trace {
 				fmt.Printf("creating %s\n", guestFile)
 			}
-			file := lxd.ContainerFileArgs{Content: bytes.NewReader(authorizedKeys)}
+			file := lxd.ContainerFileArgs{Content: bytes.NewReader(authorizedKeys), Mode: 0600}
+			fmt.Println("file", file)
 			err := server.CreateContainerFile(container, guestFile, file)
 			if err != nil {
 				return AnnotateLXDError(guestFile, err)

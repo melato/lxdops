@@ -184,7 +184,7 @@ func (t *Config) GetSourceConfig() (*Config, error) {
 		return nil, nil
 	}
 	if t.sourceConfig == nil {
-		config, err := ReadConfigs(string(t.SourceConfig))
+		config, err := ReadConfig(string(t.SourceConfig))
 		if err != nil {
 			return nil, err
 		}

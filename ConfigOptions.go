@@ -41,10 +41,10 @@ func (t *ConfigOptions) UpdateConfig(config *Config) {
 	}
 }
 
-func (t *ConfigOptions) ReadConfig(args ...string) (*Config, error) {
+func (t *ConfigOptions) ReadConfig(file string) (*Config, error) {
 	var err error
 	var config *Config
-	config, err = ReadConfigs(args...)
+	config, err = ReadConfig(file)
 	if err != nil {
 		return nil, err
 	}

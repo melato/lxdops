@@ -23,15 +23,18 @@ type Pattern string
 // - Scripts
 // - Passwords
 type Config struct {
-	OS *OS
+	// ConfigTop fields are not merged with included files
+	ConfigTop `yaml:",inline"`
+	// ConfigInherit fields are merged with all included files, depth first
+	ConfigInherit `yaml:",inline"`
+}
+
+type ConfigTop struct {
 	// Description is provided for documentation
 	Description string `yaml:"description,omitempty"`
 
 	// Source specifies where to copy or clone the instance from
 	Source `yaml:",inline"`
-
-	// Inheritted fields are merged from all included files
-	Inheritted `yaml:",inline"`
 
 	// Stop specifies that the container should be stopped at the end of the configuration
 	Stop bool `yaml:"stop,omitempty"`
@@ -39,7 +42,8 @@ type Config struct {
 	Snapshot string `yaml:"snapshot,omitempty"`
 }
 
-type Inheritted struct {
+type ConfigInherit struct {
+	OS *OS
 	// Project is the LXD project where the container is
 	Project string `yaml:"project,omitempty"`
 

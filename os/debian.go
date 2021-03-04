@@ -7,6 +7,9 @@ import (
 type Debian struct {
 }
 
+// NeedPasswords returns false for Debian, because we can disable
+// the account (therefore disabling password login), and still  use it
+// for passwordless ssh login.
 func (t *Debian) NeedPasswords() bool { return false }
 
 func (t *Debian) InstallPackageCommand(pkg string) string {

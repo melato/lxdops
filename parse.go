@@ -1,7 +1,6 @@
 package lxdops
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -10,16 +9,13 @@ type ParseOp struct {
 	Script string `usage:"print the body of the script with the specified name"`
 }
 
-func (t *ParseOp) Run(args []string) error {
+func (t *ParseOp) Run(file string) error {
 	var err error
 	var config *Config
 	if t.Raw {
-		if len(args) != 1 {
-			return errors.New("for raw config, please specify a single argument")
-		}
-		config, err = ReadRawConfig(args[0])
+		config, err = ReadRawConfig(file)
 	} else {
-		config, err = ReadConfigs(args...)
+		config, err = ReadConfig(file)
 	}
 	if err != nil {
 		return err

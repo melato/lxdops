@@ -7,6 +7,11 @@ import (
 type Alpine struct {
 }
 
+// NeedPasswords returns true for alpine.
+// In order to use passwordless authentication with alpinelinux,
+// the account must be enabled (unlike other distributions, which allow disabled
+// accounts to be used with ssh, but not login with password).
+// Since we keep the account enabled, we require it to have a password.
 func (t *Alpine) NeedPasswords() bool { return true }
 
 func (t *Alpine) InstallPackageCommand(pkg string) string {
