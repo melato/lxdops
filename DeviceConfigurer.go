@@ -170,25 +170,17 @@ func (t *DeviceConfigurer) DeviceDir(properties *util.PatternProperties, filesys
 }
 
 func (t *DeviceConfigurer) initSourceFilesystems() error {
-	var config *Config
-	var err error
-	if t.Config.SourceConfig != "" {
-		config, err = t.Config.GetSourceConfig()
-		if err != nil {
-			return err
-		}
-	} else {
+	config, err := t.Config.GetSourceConfig()
+	if err != nil {
+		return err
+	}
+	if config == nil {
 		config = t.Config
 	}
 	t.sourceFilesystems = make(map[string]Pattern)
 	for _, fs := range config.Filesystems {
 		t.sourceFilesystems[fs.Id] = fs.Pattern
 	}
-	// use t.Config.SourceFilesystem, but don't use SourceConfig SourceFilesystems
-	for id, pattern := range t.Config.SourceFilesystems {
-		t.sourceFilesystems[id] = pattern
-	}
-
 	return nil
 }
 
