@@ -14,10 +14,10 @@ type Instance struct {
 	fspaths    map[string]InstanceFS
 }
 
-func (config *Config) NewInstance(name string) (*Instance, error) {
+func (config *Config) NewInstance(name string) *Instance {
 	instance := &Instance{Config: config, Name: name}
 	instance.Properties = config.NewProperties(name)
-	return instance, nil
+	return instance
 }
 
 func (t *Instance) Filesystems() (map[string]InstanceFS, error) {

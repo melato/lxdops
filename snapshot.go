@@ -32,10 +32,7 @@ func (t *Snapshot) Snapshot(qsnapshot string, arg ...string) error {
 	}
 	snapshot := qsnapshot[1:]
 	return t.ConfigOptions.Run(func(name string, config *Config) error {
-		instance, err := config.NewInstance(name)
-		if err != nil {
-			return err
-		}
+		instance := config.NewInstance(name)
 		filesystems, err := instance.FilesystemList()
 		if err != nil {
 			return err

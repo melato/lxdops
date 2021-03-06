@@ -373,3 +373,10 @@ func (t *Launcher) printDevices(name string, config *Config) error {
 func (t *Launcher) PrintDevices(arg string) error {
 	return t.ConfigOptions.Run(t.printDevices, arg)
 }
+
+func (t *Launcher) CreateDevices(name string, config *Config) error {
+	dev := NewDeviceConfigurer(t.Client, config)
+	dev.Trace = t.Trace
+	dev.DryRun = t.DryRun
+	return dev.ConfigureDevices(name)
+}

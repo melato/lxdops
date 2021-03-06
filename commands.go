@@ -36,9 +36,9 @@ func RootCommand() *command.SimpleCommand {
 	configurer := &Configurer{Client: client}
 	cmd.Command("configure").Flags(configurer).RunFunc(configurer.Run)
 
-	configOps := &ConfigOps{Client: client}
+	configOps := &ConfigOps{}
 	cmd.Command("verify").Flags(configOps).RunFunc(configOps.Verify)
-	cmd.Command("create-devices").Flags(configOps).RunFunc(configOps.CreateDevices)
+	cmd.Command("create-devices").Flags(launcher).RunFunc(launcher.CreateDevices)
 	cmd.Command("description").RunFunc(configOps.ConfigOptions.Func(configOps.Description))
 	cmd.Command("properties").Flags(configOps).RunFunc(configOps.ConfigOptions.Func(configOps.Properties))
 	/* add devices:

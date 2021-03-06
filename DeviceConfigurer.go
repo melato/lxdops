@@ -46,27 +46,6 @@ func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 	return nil
 }
 
-func (t *DeviceConfigurer) FilesystemPaths(name string) ([]string, error) {
-	var result []string
-	properties := t.Config.NewProperties(name)
-	for _, fs := range t.Config.Filesystems {
-		path, err := fs.Pattern.Substitute(properties)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, path)
-	}
-	return result, nil
-}
-
-func (t *DeviceConfigurer) DeviceFilesystem(device *Device) (*Filesystem, error) {
-	fs := t.Config.Filesystem(device.Filesystem)
-	if fs != nil {
-		return fs, nil
-	}
-	return nil, errors.New("no such filesystem: " + device.Filesystem)
-}
-
 func (t *DeviceConfigurer) CreateFilesystem(fs InstanceFS, originDataset string) error {
 	if fs.IsDir() {
 		return t.CreateDir(fs.Dir(), true)
@@ -131,10 +110,7 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 }
 
 func (t *DeviceConfigurer) ConfigureDevices(name string) error {
-	instance, err := t.Config.NewInstance(name)
-	if err != nil {
-		return err
-	}
+	instance := t.Config.NewInstance(name)
 	var originInstance *Instance
 	var templateInstance *Instance
 	var originSnapshot string
@@ -148,17 +124,11 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 			if len(parts) != 2 {
 				return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
 			}
-			originInstance, err = sourceConfig.NewInstance(parts[0])
-			if err != nil {
-				return err
-			}
+			originInstance = sourceConfig.NewInstance(parts[0])
 			originSnapshot = parts[1]
 		}
 		if t.Config.DeviceTemplate != "" {
-			templateInstance, err = sourceConfig.NewInstance(t.Config.DeviceTemplate)
-			if err != nil {
-				return err
-			}
+			templateInstance = sourceConfig.NewInstance(t.Config.DeviceTemplate)
 		}
 	}
 
@@ -199,10 +169,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 }
 
 func (t *DeviceConfigurer) CreateProfile(name string) error {
-	instance, err := t.Config.NewInstance(name)
-	if err != nil {
-		return err
-	}
+	instance := t.Config.NewInstance(name)
 	devices := make(map[string]map[string]string)
 
 	for deviceName, device := range t.Config.Devices {
@@ -229,14 +196,8 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 }
 
 func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
-	oldInstance, err := t.Config.NewInstance(oldname)
-	if err != nil {
-		return err
-	}
-	newInstance, err := t.Config.NewInstance(newname)
-	if err != nil {
-		return err
-	}
+	oldInstance := t.Config.NewInstance(oldname)
+	newInstance := t.Config.NewInstance(newname)
 	oldPaths, err := oldInstance.FilesystemList()
 	if err != nil {
 		return err
@@ -262,30 +223,24 @@ func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
 }
 
 func (t *DeviceConfigurer) ListFilesystems(name string) ([]InstanceFS, error) {
-	instance, err := t.Config.NewInstance(name)
-	if err != nil {
-		return nil, err
-	}
+	instance := t.Config.NewInstance(name)
 	return instance.FilesystemList()
 }
 
 func (t *DeviceConfigurer) PrintFilesystems(name string) error {
-	pattern := t.Config.NewProperties(name)
+	instance := t.Config.NewInstance(name)
+	filesystems, err := instance.Filesystems()
+	if err != nil {
+		return err
+	}
 	writer := &table.FixedWriter{Writer: os.Stdout}
-	var id string
-	var fs *Filesystem
+	var fs InstanceFS
 	writer.Columns(
-		table.NewColumn("FILESYSTEM", func() interface{} { return id }),
-		table.NewColumn("PATH", func() interface{} {
-			path, err := fs.Pattern.Substitute(pattern)
-			if err != nil {
-				return err
-			}
-			return path
-		}),
-		table.NewColumn("PATTERN", func() interface{} { return fs.Pattern }),
+		table.NewColumn("FILESYSTEM", func() interface{} { return fs.Id }),
+		table.NewColumn("PATH", func() interface{} { return fs.Path }),
+		table.NewColumn("PATTERN", func() interface{} { return fs.Filesystem.Pattern }),
 	)
-	for id, fs = range t.Config.Filesystems {
+	for _, fs = range filesystems {
 		writer.WriteRow()
 	}
 	writer.End()
@@ -293,10 +248,7 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 }
 
 func (t *DeviceConfigurer) PrintDevices(name string) error {
-	instance, err := t.Config.NewInstance(name)
-	if err != nil {
-		return err
-	}
+	instance := t.Config.NewInstance(name)
 	writer := &table.FixedWriter{Writer: os.Stdout}
 	var deviceName string
 	var d *Device
