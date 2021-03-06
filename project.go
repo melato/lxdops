@@ -4,34 +4,27 @@ import (
 	"errors"
 	"fmt"
 
-	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/util"
 )
 
-type ProjectOps struct {
+type ProjectCopyProfiles struct {
 	Client        *LxdClient `name:"-"`
 	SourceProject string     `name:"source-project" usage:"project to copy profiles from"`
 	TargetProject string     `name:"target-project" usage:"project to copy profiles to "`
 }
 
-func (t *ProjectOps) projectServer(server lxd.InstanceServer, project string) (lxd.InstanceServer, error) {
-	if project == "" || project == "default" {
-		return server, nil
-	}
-	return server.UseProject(project), nil
+type ProjectCreate struct {
+	Client   *LxdClient `name:"-"`
+	Profiles bool       `name:"profiles" usage:"create a project with its own profiles"`
 }
 
-func (t *ProjectOps) CopyProfiles(profiles []string) error {
-	server, err := t.Client.RootServer()
+func (t *ProjectCopyProfiles) CopyProfiles(profiles []string) error {
+	sourceServer, err := t.Client.ProjectServer(t.SourceProject)
 	if err != nil {
 		return err
 	}
-	sourceServer, err := t.projectServer(server, t.SourceProject)
-	if err != nil {
-		return err
-	}
-	targetServer, err := t.projectServer(server, t.TargetProject)
+	targetServer, err := t.Client.ProjectServer(t.TargetProject)
 	if err != nil {
 		return err
 	}
@@ -58,7 +51,7 @@ func (t *ProjectOps) CopyProfiles(profiles []string) error {
 	return nil
 }
 
-func (t *ProjectOps) Create(projects ...string) error {
+func (t *ProjectCreate) Create(projects ...string) error {
 	server, err := t.Client.RootServer()
 	if err != nil {
 		return err
@@ -71,6 +64,9 @@ func (t *ProjectOps) Create(projects ...string) error {
 	projectPut := api.ProjectPut{Config: map[string]string{
 		"features.images": "false",
 	}}
+	if !t.Profiles {
+		projectPut.Config["features.profiles"] = "false"
+	}
 	profile, _, err := server.GetProfile("default")
 	if err != nil {
 		return errors.New("cannot get default profile")

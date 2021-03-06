@@ -73,10 +73,11 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd.Command("wait").RunFunc(containerOps.Wait)
 	containerCmd.Command("state").RunFunc(containerOps.State)
 
-	projectOps := &ProjectOps{Client: client}
 	projectCmd := cmd.Command("project")
-	projectCmd.Command("create").Flags(projectOps).RunFunc(projectOps.Create)
-	projectCmd.Command("copy-profiles").Flags(projectOps).RunFunc(projectOps.CopyProfiles)
+	createProject := &ProjectCreate{Client: client}
+	projectCmd.Command("create").Flags(createProject).RunFunc(createProject.Create)
+	copyProfiles := &ProjectCopyProfiles{Client: client}
+	projectCmd.Command("copy-profiles").Flags(copyProfiles).RunFunc(copyProfiles.CopyProfiles)
 
 	usage.ApplyEnv(&cmd, "LXDOPS_USAGE", usageData)
 
