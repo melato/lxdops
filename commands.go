@@ -23,9 +23,9 @@ func RootCommand() *command.SimpleCommand {
 	var cmd command.SimpleCommand
 	cmd.Flags(client)
 	launcher := &Launcher{Client: client}
-	cmd.Command("launch").Flags(launcher).RunFunc(launcher.Launch)
-	cmd.Command("delete").Flags(launcher).RunFunc(launcher.Delete)
-	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.Rebuild)
+	cmd.Command("launch").Flags(launcher).RunFunc(launcher.InstanceFunc(launcher.LaunchContainer, true))
+	cmd.Command("delete").Flags(launcher).RunFunc(launcher.InstanceFunc(launcher.DeleteContainer, true))
+	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.InstanceFunc(launcher.Rebuild, true))
 	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename)
 	cmd.Command("create-devices").Flags(launcher).RunFunc(launcher.CreateDevices)
 
@@ -33,7 +33,7 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.Snapshot)
 
 	configurer := &Configurer{Client: client}
-	cmd.Command("configure").Flags(configurer).RunFunc(configurer.Run)
+	cmd.Command("configure").Flags(configurer).RunFunc(configurer.InstanceFunc(configurer.ConfigureContainer, true))
 
 	configOps := &ConfigOps{}
 	cmd.Command("verify").Flags(configOps).RunFunc(configOps.InstanceFunc(configOps.Verify, true))
@@ -44,10 +44,10 @@ func RootCommand() *command.SimpleCommand {
 
 	profile := cmd.Command("profile")
 	profileConfigurer := &ProfileConfigurer{Client: client}
-	profile.Command("list").Flags(profileConfigurer).RunFunc(profileConfigurer.List)
-	profile.Command("diff").Flags(profileConfigurer).RunFunc(profileConfigurer.Diff)
-	profile.Command("apply").Flags(profileConfigurer).RunFunc(profileConfigurer.Apply)
-	profile.Command("reorder").Flags(profileConfigurer).RunFunc(profileConfigurer.Reorder)
+	profile.Command("list").Flags(profileConfigurer).RunFunc(profileConfigurer.InstanceFunc(profileConfigurer.List, true))
+	profile.Command("diff").Flags(profileConfigurer).RunFunc(profileConfigurer.InstanceFunc(profileConfigurer.Diff, true))
+	profile.Command("apply").Flags(profileConfigurer).RunFunc(profileConfigurer.InstanceFunc(profileConfigurer.Apply, true))
+	profile.Command("reorder").Flags(profileConfigurer).RunFunc(profileConfigurer.InstanceFunc(profileConfigurer.Reorder, true))
 
 	lxdOps := &LxdOps{Client: client}
 	profile.Command("exists").RunFunc(lxdOps.ProfileExists)

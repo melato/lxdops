@@ -76,38 +76,35 @@ func BaseName(file string) string {
 	return name[0 : len(name)-len(ext)]
 }
 
-func (t *ConfigOptions) RunInstances(f func(*Instance) error, args ...string) error {
-	return t.Run(func(name string, config *Config) error {
-		return f(config.NewInstance(name))
-	}, args...)
+func (t *ConfigOptions) Instance(file string) (*Instance, error) {
+	var name string
+	if t.Name != "" {
+		name = t.Name
+	} else {
+		name = BaseName(file)
+	}
+	config, err := t.ReadConfig(file)
+	if err != nil {
+		return nil, err
+	}
+	return config.NewInstance(name), nil
 }
 
-func (t *ConfigOptions) Run(f func(name string, config *Config) error, args ...string) error {
+func (t *ConfigOptions) RunInstances(f func(*Instance) error, args ...string) error {
 	if t.Name != "" && len(args) != 1 {
 		return errors.New("--name can be used with only one config file")
 	}
 	for _, arg := range args {
-		var name, file string
-		file = arg
-		if t.Name != "" && len(args) == 1 {
-			name = t.Name
-		} else {
-			name = BaseName(arg)
-		}
-		config, err := t.ReadConfig(file)
+		instance, err := t.Instance(arg)
 		if err != nil {
 			return err
 		}
-		err = f(name, config)
+		err = f(instance)
 		if err != nil {
-			return errors.New(file + ": " + err.Error())
+			return errors.New(arg + ": " + err.Error())
 		}
 	}
 	return nil
-}
-
-func (t *ConfigOptions) Func(f func(string, *Config) error) func(config string) error {
-	return func(config string) error { return t.Run(f, config) }
 }
 
 func (t *ConfigOptions) InstanceFunc(f func(*Instance) error, multiple bool) func(configs []string) error {

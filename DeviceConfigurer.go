@@ -107,8 +107,7 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 	return nil
 }
 
-func (t *DeviceConfigurer) ConfigureDevices(name string) error {
-	instance := t.Config.NewInstance(name)
+func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 	var originInstance *Instance
 	var templateInstance *Instance
 	var originSnapshot string
@@ -166,8 +165,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 	return nil
 }
 
-func (t *DeviceConfigurer) CreateProfile(name string) error {
-	instance := t.Config.NewInstance(name)
+func (t *DeviceConfigurer) CreateProfile(instance *Instance) error {
 	devices := make(map[string]map[string]string)
 
 	for deviceName, device := range t.Config.Devices {
@@ -177,7 +175,10 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 		}
 		devices[deviceName] = map[string]string{"type": "disk", "path": device.Path, "source": dir}
 	}
-	profileName := t.Config.ProfileName(name)
+	profileName, err := instance.ProfileName()
+	if err != nil {
+		return err
+	}
 	server, err := t.Client.ProjectServer(t.Config.Project)
 	if err != nil {
 		return err
@@ -193,9 +194,7 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 	return nil
 }
 
-func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
-	oldInstance := t.Config.NewInstance(oldname)
-	newInstance := t.Config.NewInstance(newname)
+func (t *DeviceConfigurer) RenameFilesystems(oldInstance, newInstance *Instance) error {
 	oldPaths, err := oldInstance.FilesystemList()
 	if err != nil {
 		return err
@@ -218,9 +217,4 @@ func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
 		}
 	}
 	return s.Error()
-}
-
-func (t *DeviceConfigurer) ListFilesystems(name string) ([]InstanceFS, error) {
-	instance := t.Config.NewInstance(name)
-	return instance.FilesystemList()
 }

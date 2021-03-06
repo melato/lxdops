@@ -31,8 +31,7 @@ func (t *Snapshot) Snapshot(qsnapshot string, arg ...string) error {
 		return errors.New("snapshot should begin with '@': " + qsnapshot)
 	}
 	snapshot := qsnapshot[1:]
-	return t.ConfigOptions.Run(func(name string, config *Config) error {
-		instance := config.NewInstance(name)
+	return t.ConfigOptions.RunInstances(func(instance *Instance) error {
 		filesystems, err := instance.FilesystemList()
 		if err != nil {
 			return err

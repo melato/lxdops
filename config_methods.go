@@ -139,17 +139,8 @@ func (t *Config) ResolvePaths(dir string) {
 	t.SourceConfig = t.SourceConfig.Resolve(dir)
 }
 
-func (t *Config) ProfileName(name string) string {
-	if t.Profile != "" {
-		properties := &util.PatternProperties{}
-		properties.SetConstant("instance", name)
-		profile, err := t.Profile.Substitute(properties)
-		if err == nil {
-			return profile
-		}
-		fmt.Printf("invalid profile pattern: %s.  Using default.", t.Profile)
-	}
-	return name + "." + DefaultProfileSuffix
+func (t *Config) ProfileNamex(name string) (string, error) {
+	return t.NewInstance(name).ProfileName()
 }
 
 // Return the filesystem for the given id, or nil if it doesn't exist.

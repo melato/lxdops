@@ -10,10 +10,10 @@ import (
 )
 
 type Launcher struct {
-	Client        *LxdClient `name:"-"`
-	ConfigOptions ConfigOptions
-	Trace         bool `name:""` //`name:"trace,t" usage:"print exec arguments"`
-	DryRun        bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	Client *LxdClient `name:"-"`
+	ConfigOptions
+	Trace  bool `name:""` //`name:"trace,t" usage:"print exec arguments"`
+	DryRun bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 }
 
 func (t *Launcher) Init() error {
@@ -34,28 +34,13 @@ func (t *Launcher) NewScript() *script.Script {
 func (t *Launcher) updateConfig(config *Config) {
 }
 
-func (t *Launcher) launchContainer(name string, config *Config) error {
-	t.updateConfig(config)
-	return t.LaunchContainer(config, name)
-}
-
-func (t *Launcher) rebuildContainer(name string, config *Config) error {
-	t.updateConfig(config)
-	err := t.DeleteContainer(config, name)
+func (t *Launcher) Rebuild(instance *Instance) error {
+	t.Trace = true
+	err := t.DeleteContainer(instance)
 	if err != nil {
 		return err
 	}
-	return t.LaunchContainer(config, name)
-}
-
-func (t *Launcher) Launch(args []string) error {
-	t.Trace = true
-	return t.ConfigOptions.Run(t.launchContainer, args...)
-}
-
-func (t *Launcher) Rebuild(args []string) error {
-	t.Trace = true
-	return t.ConfigOptions.Run(t.rebuildContainer, args...)
+	return t.LaunchContainer(instance)
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
@@ -63,10 +48,8 @@ func (t *Launcher) NewConfigurer() *Configurer {
 	return c
 }
 
-func (t *Launcher) LaunchContainer(config *Config, name string) error {
-	if !config.Verify() {
-		return errors.New("prerequisites not met")
-	}
+func (t *Launcher) LaunchContainer(instance *Instance) error {
+	config := instance.Config
 	osType := config.OS.Type()
 	if osType == nil {
 		return errors.New("unsupported OS type: " + config.OS.Name)
@@ -78,16 +61,19 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 	dev := NewDeviceConfigurer(t.Client, config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
-	err = dev.ConfigureDevices(name)
+	err = dev.ConfigureDevices(instance)
 	if err != nil {
 		return err
 	}
-	err = dev.CreateProfile(name)
+	err = dev.CreateProfile(instance)
 	if err != nil {
 		return err
 	}
 
-	profileName := config.ProfileName(name)
+	profileName, err := instance.ProfileName()
+	if err != nil {
+		return err
+	}
 	var profiles []string
 	profiles = append(profiles, config.Profiles...)
 	if config.Devices != nil {
@@ -97,6 +83,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		profiles = append(profiles, profileName)
 	}
 	script := t.NewScript()
+	container := instance.Container()
 	if config.Origin == "" {
 		var lxcArgs []string
 		if config.Project != "" {
@@ -115,7 +102,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		for _, option := range config.LxcOptions {
 			lxcArgs = append(lxcArgs, option)
 		}
-		lxcArgs = append(lxcArgs, name)
+		lxcArgs = append(lxcArgs, container)
 		script.Run("lxc", lxcArgs...)
 		if script.HasError() {
 			return script.Error()
@@ -144,90 +131,96 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 		} else {
 			copyArgs = append(copyArgs, sn.Container+"/"+sn.Snapshot)
 		}
-		copyArgs = append(copyArgs, name)
+		copyArgs = append(copyArgs, container)
 		script.Run("lxc", copyArgs...)
 		if script.HasError() {
 			return script.Error()
 		}
 
-		c, _, err := server.GetContainer(name)
+		c, _, err := server.GetContainer(container)
 		if err != nil {
-			return AnnotateLXDError(name, err)
+			return AnnotateLXDError(container, err)
 		}
 		c.Profiles = profiles
-		op, err := server.UpdateContainer(name, c.ContainerPut, "")
+		op, err := server.UpdateContainer(container, c.ContainerPut, "")
 		if err != nil {
 			return err
 		}
 		if err := op.Wait(); err != nil {
-			return AnnotateLXDError(name, err)
+			return AnnotateLXDError(container, err)
 		}
 
-		op, err = server.UpdateContainerState(name, api.ContainerStatePut{Action: "start"}, "")
+		op, err = server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
 		if err != nil {
-			return AnnotateLXDError(name, err)
+			return AnnotateLXDError(container, err)
 		}
 
 		if script.HasError() {
 			return script.Error()
 		}
 		if !t.DryRun {
-			err := WaitForNetwork(server, name)
+			err := WaitForNetwork(server, container)
 			if err != nil {
 				return err
 			}
 		}
 	}
-	t.NewConfigurer().ConfigureContainer(config, name)
+	t.NewConfigurer().ConfigureContainer(instance)
 	if config.Snapshot != "" {
-		fmt.Printf("snapshot %s %s\n", name, config.Snapshot)
+		fmt.Printf("snapshot %s %s\n", container, config.Snapshot)
 		if !t.DryRun {
-			op, err := server.CreateContainerSnapshot(name, api.ContainerSnapshotsPost{Name: config.Snapshot})
+			op, err := server.CreateContainerSnapshot(container, api.ContainerSnapshotsPost{Name: config.Snapshot})
 			if err != nil {
-				return AnnotateLXDError(name, err)
+				return AnnotateLXDError(container, err)
 			}
 			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(name, err)
+				return AnnotateLXDError(container, err)
 			}
 		}
 	}
 	if config.Stop {
-		fmt.Printf("stop %s\n", name)
+		fmt.Printf("stop %s\n", container)
 		if !t.DryRun {
-			op, err := server.UpdateContainerState(name, api.ContainerStatePut{Action: "stop"}, "")
+			op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "stop"}, "")
 			if err != nil {
-				return AnnotateLXDError(name, err)
+				return AnnotateLXDError(container, err)
 			}
 			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(name, err)
+				return AnnotateLXDError(container, err)
 			}
 		}
 	}
 	return script.Error()
 }
 
-func (t *Launcher) DeleteContainer(config *Config, name string) error {
+func (t *Launcher) deleteContainer(instance *Instance) error {
+	config := instance.Config
+	container := instance.Container()
 	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
 	}
 	if !t.DryRun {
-		op, err := server.DeleteContainer(name)
+		op, err := server.DeleteContainer(container)
 		if err == nil {
 			if t.Trace {
-				fmt.Printf("deleted container %s in project %s\n", name, config.Project)
+				fmt.Printf("deleted container %s in project %s\n", container, config.Project)
 			}
 			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(name, err)
+				return AnnotateLXDError(container, err)
 			}
 		} else {
-			state, _, err := server.GetContainerState(name)
+			state, _, err := server.GetContainerState(container)
 			if err == nil {
-				return errors.New(fmt.Sprintf("container %s is %s", name, state.Status))
+				return errors.New(fmt.Sprintf("container %s is %s", container, state.Status))
 			}
 		}
 	}
-	profileName := config.ProfileName(name)
+	profileName, err := instance.ProfileName()
+	if err != nil {
+		return err
+	}
+
 	if !t.DryRun {
 		err := server.DeleteProfile(profileName)
 		if err == nil && t.Trace {
@@ -237,16 +230,12 @@ func (t *Launcher) DeleteContainer(config *Config, name string) error {
 	return nil
 }
 
-func (t *Launcher) deleteContainer(name string, config *Config) error {
-	t.updateConfig(config)
-	err := t.DeleteContainer(config, name)
+func (t *Launcher) DeleteContainer(instance *Instance) error {
+	err := t.DeleteContainer(instance)
 	if err != nil {
 		return err
 	}
-	dev := NewDeviceConfigurer(t.Client, config)
-	dev.Trace = t.Trace
-	dev.DryRun = t.DryRun
-	filesystems, err := dev.ListFilesystems(name)
+	filesystems, err := instance.FilesystemList()
 	if err != nil {
 		return err
 	}
@@ -259,49 +248,50 @@ func (t *Launcher) deleteContainer(name string, config *Config) error {
 	return nil
 }
 
-func (t *Launcher) Delete(args []string) error {
-	t.Trace = true
-	return t.ConfigOptions.Run(t.deleteContainer, args...)
-}
-
 func (t *Launcher) Rename(configFile string, newname string) error {
-	oldname := t.ConfigOptions.Name
-	if oldname == "" {
-		oldname = BaseName(configFile)
+	instance, err := t.ConfigOptions.Instance(configFile)
+	if err != nil {
+		return err
 	}
+
 	if t.Trace {
-		fmt.Printf("rename container %s -> %s\n", oldname, newname)
+		fmt.Printf("rename container %s -> %s\n", instance.Name, newname)
 	}
-	if oldname == newname {
+	if instance.Name == newname {
 		return errors.New("cannot rename to the same name")
 	}
-	config, err := t.ConfigOptions.ReadConfig(configFile)
+	oldprofile, err := instance.ProfileName()
 	if err != nil {
 		return err
 	}
-	oldprofile := config.ProfileName(oldname)
-	newprofile := config.ProfileName(newname)
-	server, err := t.Client.ProjectServer(config.Project)
+	newInstance := instance.Config.NewInstance(newname)
+	newprofile, err := newInstance.ProfileName()
 	if err != nil {
 		return err
 	}
-	dev := NewDeviceConfigurer(t.Client, config)
+	server, err := t.Client.ProjectServer(instance.Config.Project)
+	if err != nil {
+		return err
+	}
+	dev := NewDeviceConfigurer(t.Client, instance.Config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 
+	containerName := instance.Container()
+	newContainerName := instance.Container()
 	var container *api.Container
-	if len(config.Devices) > 0 {
+	if len(instance.Config.Devices) > 0 {
 		_, _, err := server.GetProfile(newprofile)
 		if err == nil {
 			return errors.New(fmt.Sprintf("profile %s already exists", newprofile))
 		}
-		container, _, err = server.GetContainer(oldname)
+		container, _, err = server.GetContainer(containerName)
 		if err != nil {
-			return AnnotateLXDError(oldname, err)
+			return AnnotateLXDError(containerName, err)
 		}
 	}
 	if !t.DryRun {
-		op, err := server.RenameContainer(oldname, api.ContainerPost{Name: newname})
+		op, err := server.RenameContainer(containerName, api.ContainerPost{Name: newInstance.Container()})
 		if err != nil {
 			return err
 		}
@@ -309,12 +299,12 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 			return err
 		}
 	}
-	if len(config.Devices) > 0 {
-		err = dev.RenameFilesystems(oldname, newname)
+	if len(instance.Config.Devices) > 0 {
+		err = dev.RenameFilesystems(instance, newInstance)
 		if err != nil {
 			return err
 		}
-		err = dev.CreateProfile(newname)
+		err = dev.CreateProfile(newInstance)
 		if err != nil {
 			return err
 		}
@@ -334,12 +324,12 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 			fmt.Printf("delete profile %s\n", oldprofile)
 		}
 		if !t.DryRun {
-			op, err := server.UpdateContainer(newname, container.ContainerPut, "")
+			op, err := server.UpdateContainer(newContainerName, container.ContainerPut, "")
 			if err != nil {
 				return err
 			}
 			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(newname, err)
+				return AnnotateLXDError(newContainerName, err)
 			}
 			err = server.DeleteProfile(oldprofile)
 			if err != nil {
@@ -354,5 +344,5 @@ func (t *Launcher) CreateDevices(name string, config *Config) error {
 	dev := NewDeviceConfigurer(t.Client, config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
-	return dev.ConfigureDevices(name)
+	return dev.ConfigureDevices(config.NewInstance(name))
 }

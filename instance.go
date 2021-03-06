@@ -20,6 +20,17 @@ func (config *Config) NewInstance(name string) *Instance {
 	return instance
 }
 
+func (t *Instance) ProfileName() (string, error) {
+	if t.Config.Profile != "" {
+		return t.Config.Profile.Substitute(t.Properties)
+	}
+	return t.Name + "." + DefaultProfileSuffix, nil
+}
+
+func (t *Instance) Container() string {
+	return t.Name
+}
+
 func (t *Instance) Filesystems() (map[string]InstanceFS, error) {
 	if t.fspaths == nil {
 		fspaths := make(map[string]InstanceFS)

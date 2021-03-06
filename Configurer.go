@@ -17,16 +17,16 @@ import (
 )
 
 type Configurer struct {
-	Client        *LxdClient `name:"-"`
-	ConfigOptions ConfigOptions
-	Trace         bool     `name:"trace,t" usage:"print exec arguments"`
-	DryRun        bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	Components    []string `name:"components" usage:"which components to configure: packages, scripts, users"`
-	All           bool     `name:"all" usage:"If true, configure all parts, except those that are mentioned explicitly, otherwise configure only parts that are mentioned"`
-	Packages      bool     `name:"packages" usage:"whether to install packages"`
-	Scripts       bool     `name:"scripts" usage:"whether to run scripts"`
-	Files         bool     `name:"files" usage:"whether to copy files"`
-	Users         bool     `name:"users" usage:"whether to create users and change passwords"`
+	Client *LxdClient `name:"-"`
+	ConfigOptions
+	Trace      bool     `name:"trace,t" usage:"print exec arguments"`
+	DryRun     bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	Components []string `name:"components" usage:"which components to configure: packages, scripts, users"`
+	All        bool     `name:"all" usage:"If true, configure all parts, except those that are mentioned explicitly, otherwise configure only parts that are mentioned"`
+	Packages   bool     `name:"packages" usage:"whether to install packages"`
+	Scripts    bool     `name:"scripts" usage:"whether to run scripts"`
+	Files      bool     `name:"files" usage:"whether to copy files"`
+	Users      bool     `name:"users" usage:"whether to create users and change passwords"`
 }
 
 func (t *Configurer) Init() error {
@@ -360,67 +360,60 @@ func (t *Configurer) includes(flag bool) bool {
 }
 
 /** run things inside the container:  install packages, create users, run scripts */
-func (t *Configurer) ConfigureContainer(config *Config, name string) error {
+func (t *Configurer) ConfigureContainer(instance *Instance) error {
+	config := instance.Config
+	container := instance.Container()
 	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
 	}
 	if !t.DryRun {
-		err := WaitForNetwork(server, name)
+		err := WaitForNetwork(server, container)
 		if err != nil {
 			return err
 		}
 	}
 	if t.includes(t.Scripts) {
-		err = t.runScripts(config.Project, name, config.PreScripts)
+		err = t.runScripts(config.Project, container, config.PreScripts)
 		if err != nil {
 			return err
 		}
 	}
 
 	if t.includes(t.Packages) {
-		err = t.installPackages(config, name)
+		err = t.installPackages(config, container)
 		if err != nil {
 			return err
 		}
 	}
 
 	if t.includes(t.Users) {
-		err = t.createUsers(config, name)
+		err = t.createUsers(config, container)
 		if err != nil {
 			return err
 		}
-		err = t.changeUserPasswords(config, name)
+		err = t.changeUserPasswords(config, container)
 		if err != nil {
 			return err
 		}
 	}
 	if t.includes(t.Files) {
-		err = t.copyFiles(config, name)
+		err = t.copyFiles(config, container)
 		if err != nil {
 			return err
 		}
 	}
 	if t.includes(t.Scripts) {
-		err = t.runScripts(config.Project, name, config.Scripts)
+		err = t.runScripts(config.Project, container, config.Scripts)
 		if err != nil {
 			return err
 		}
 	}
 	if t.includes(t.Users) {
-		err = t.changePasswords(config, name, config.Passwords)
+		err = t.changePasswords(config, container, config.Passwords)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func (t *Configurer) runConfigure(name string, config *Config) error {
-	return t.ConfigureContainer(config, name)
-}
-
-func (t *Configurer) Run(args []string) error {
-	t.Trace = true
-	return t.ConfigOptions.Run(t.runConfigure, args...)
 }
