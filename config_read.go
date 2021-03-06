@@ -53,8 +53,18 @@ func (t *ConfigInherit) Merge(c *ConfigInherit) error {
 		t.Properties[key] = value
 	}
 	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
-	t.Filesystems = append(t.Filesystems, c.Filesystems...)
-	t.Devices = append(t.Devices, c.Devices...)
+	if t.Filesystems == nil {
+		t.Filesystems = make(map[string]*Filesystem)
+	}
+	for id, fs := range c.Filesystems {
+		t.Filesystems[id] = fs
+	}
+	if t.Devices == nil {
+		t.Devices = make(map[string]*Device)
+	}
+	for id, d := range c.Devices {
+		t.Devices[id] = d
+	}
 	t.PreScripts = append(t.PreScripts, c.PreScripts...)
 	t.Packages = append(t.Packages, c.Packages...)
 	t.Profiles = append(t.Profiles, c.Profiles...)

@@ -252,8 +252,8 @@ func (t *Launcher) deleteContainer(name string, config *Config) error {
 	}
 	if len(filesystems) > 0 {
 		fmt.Fprintln(os.Stderr, "not deleted filesystems:")
-		for _, dir := range filesystems {
-			fmt.Println(dir)
+		for _, fs := range filesystems {
+			fmt.Println(fs.Path)
 		}
 	}
 	return nil

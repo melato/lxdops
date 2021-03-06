@@ -166,8 +166,8 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 	t.CreateFilesystems(instance, originInstance, originSnapshot)
 
 	script := t.NewScript()
-	for _, device := range t.Config.Devices {
-		dir, err := instance.DeviceDir(device.Name, device)
+	for deviceName, device := range t.Config.Devices {
+		dir, err := instance.DeviceDir(deviceName, device)
 		if err != nil {
 			return err
 		}
@@ -178,7 +178,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 			}
 		}
 		if t.Config.DeviceTemplate != "" {
-			templateDir, err := templateInstance.DeviceDir(device.Name, device)
+			templateDir, err := templateInstance.DeviceDir(deviceName, device)
 			if err != nil {
 				return err
 			}
@@ -189,7 +189,7 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 					fmt.Println("skipping missing Device Template: " + templateDir)
 				}
 			} else {
-				fmt.Println("skipping missing template Device: " + device.Name)
+				fmt.Println("skipping missing template Device: " + deviceName)
 			}
 		}
 		if script.Error() != nil {
@@ -206,12 +206,12 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 	}
 	devices := make(map[string]map[string]string)
 
-	for _, device := range t.Config.Devices {
-		dir, err := instance.DeviceDir(device.Name, device)
+	for deviceName, device := range t.Config.Devices {
+		dir, err := instance.DeviceDir(deviceName, device)
 		if err != nil {
 			return err
 		}
-		devices[device.Name] = map[string]string{"type": "disk", "path": device.Path, "source": dir}
+		devices[deviceName] = map[string]string{"type": "disk", "path": device.Path, "source": dir}
 	}
 	profileName := t.Config.ProfileName(name)
 	server, err := t.Client.ProjectServer(t.Config.Project)
@@ -273,9 +273,10 @@ func (t *DeviceConfigurer) ListFilesystems(name string) ([]FSPath, error) {
 func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 	pattern := t.Config.NewProperties(name)
 	writer := &table.FixedWriter{Writer: os.Stdout}
+	var id string
 	var fs *Filesystem
 	writer.Columns(
-		table.NewColumn("FILESYSTEM", func() interface{} { return fs.Id }),
+		table.NewColumn("FILESYSTEM", func() interface{} { return id }),
 		table.NewColumn("PATH", func() interface{} {
 			path, err := fs.Pattern.Substitute(pattern)
 			if err != nil {
@@ -285,7 +286,7 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 		}),
 		table.NewColumn("PATTERN", func() interface{} { return fs.Pattern }),
 	)
-	for _, fs = range t.Config.Filesystems {
+	for id, fs = range t.Config.Filesystems {
 		writer.WriteRow()
 	}
 	writer.End()
@@ -298,21 +299,22 @@ func (t *DeviceConfigurer) PrintDevices(name string) error {
 		return err
 	}
 	writer := &table.FixedWriter{Writer: os.Stdout}
+	var deviceName string
 	var d *Device
 	writer.Columns(
 		table.NewColumn("PATH", func() interface{} { return d.Path }),
 		table.NewColumn("SOURCE", func() interface{} {
-			dir, err := instance.DeviceDir(d.Name, d)
+			dir, err := instance.DeviceDir(name, d)
 			if err != nil {
 				return err
 			}
 			return dir
 		}),
-		table.NewColumn("NAME", func() interface{} { return d.Name }),
+		table.NewColumn("NAME", func() interface{} { return deviceName }),
 		table.NewColumn("FILESYSTEM", func() interface{} { return d.Filesystem }),
 		table.NewColumn("DIR", func() interface{} { return d.Dir }),
 	)
-	for _, d = range t.Config.Devices {
+	for deviceName, d = range t.Config.Devices {
 		writer.WriteRow()
 	}
 	writer.End()

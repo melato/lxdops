@@ -23,12 +23,12 @@ func (config *Config) NewInstance(name string) (*Instance, error) {
 func (t *Instance) FilesystemPaths() (map[string]FSPath, error) {
 	if t.fspaths == nil {
 		fspaths := make(map[string]FSPath)
-		for _, fs := range t.Config.Filesystems {
+		for id, fs := range t.Config.Filesystems {
 			path, err := fs.Pattern.Substitute(t.Properties)
 			if err != nil {
 				return nil, err
 			}
-			fspaths[fs.Id] = FSPath{Id: fs.Id, Path: path}
+			fspaths[id] = FSPath{Id: id, Path: path}
 		}
 		t.fspaths = fspaths
 	}

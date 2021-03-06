@@ -60,32 +60,17 @@ func (user *User) HomeDir() string {
 
 func (config *Config) verifyDevices() bool {
 	valid := true
-	filesystems := make(map[string]bool)
-	for _, fs := range config.Filesystems {
-		if filesystems[fs.Id] {
-			valid = false
-			fmt.Fprintf(os.Stderr, "duplicate filesystem: %s\n", fs.Id)
-		}
-		filesystems[fs.Id] = true
-	}
-
-	deviceNames := make(map[string]bool)
 	devicePaths := make(map[string]bool)
 	for _, d := range config.Devices {
-		if !filesystems[d.Filesystem] {
+		if config.Filesystems[d.Filesystem] == nil {
 			valid = false
 			fmt.Fprintf(os.Stderr, "unknown filesystem id: %s\n", d.Filesystem)
 		}
-		if deviceNames[d.Name] {
-			valid = false
-			fmt.Fprintf(os.Stderr, "duplicate device name: %s\n", d.Name)
-		}
-		deviceNames[d.Name] = true
 		if devicePaths[d.Path] {
 			valid = false
 			fmt.Fprintf(os.Stderr, "duplicate device path: %s\n", d.Path)
 		}
-		deviceNames[d.Path] = true
+		devicePaths[d.Path] = true
 	}
 	return valid
 }
@@ -167,16 +152,9 @@ func (t *Config) ProfileName(name string) string {
 	return name + "." + DefaultProfileSuffix
 }
 
-/** Return the filesystem for the given id
-In the second argument, return whether the filesystem with the specified id was defined
-*/
+// Return the filesystem for the given id, or nil if it doesn't exist.
 func (t *Config) Filesystem(id string) *Filesystem {
-	for _, fs := range t.Filesystems {
-		if fs.Id == id {
-			return fs
-		}
-	}
-	return nil
+	return t.Filesystems[id]
 }
 
 func (t *Config) GetSourceConfig() (*Config, error) {

@@ -58,10 +58,10 @@ type ConfigInherit struct {
 
 	// Filesystems are zfs filesystems or plain directories that are created
 	// when an instance is created.  Devices are created inside filesystems.
-	Filesystems []*Filesystem `yaml:"filesystems"`
+	Filesystems map[string]*Filesystem `yaml:"filesystems"`
 	// Devices are disk devices that are directories within the instance filesystems
 	// They are created and attached to the container via the instance profile
-	Devices []*Device `yaml:"devices,omitempty"`
+	Devices map[string]*Device `yaml:"devices,omitempty"`
 	// Profiles are attached to the container.  The instance profile should not be listed here.
 	Profiles []string `yaml:"profiles,omitempty"`
 
@@ -155,9 +155,6 @@ type OS struct {
 // Filesystem is a ZFS filesystem or a plain directory that is created when an instance is created
 // The disk devices of an instance are created as subdirectories of a Filesystem
 type Filesystem struct {
-	// Id is the identifier used to reference the filesystm by devices.
-	// An empty Id is a valid identifier, which can typically be used to denote a default filesystem
-	Id string `xml:"name,attr"`
 	// Pattern is a pattern that is used to produce the directory or zfs filesystem
 	// If the pattern begins with '/', it is a directory
 	// If it does not begin with '/', it is a zfs filesystem name
@@ -170,8 +167,6 @@ type Filesystem struct {
 type Device struct {
 	// Path is the device "path" in the LXD disk device
 	Path string `xml:"path,attr"`
-	// Name is the name of the LXD disk device
-	Name string `xml:"name,attr"`
 
 	// Filesystem is the Filesystem Id that this device belongs to
 	Filesystem string `yaml:",omitempty"`
