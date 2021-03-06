@@ -36,7 +36,7 @@ func (t *Launcher) updateConfig(config *Config) {
 
 func (t *Launcher) Rebuild(instance *Instance) error {
 	t.Trace = true
-	err := t.DeleteContainer(instance)
+	err := t.deleteContainer(instance)
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ func (t *Launcher) deleteContainer(instance *Instance) error {
 }
 
 func (t *Launcher) DeleteContainer(instance *Instance) error {
-	err := t.DeleteContainer(instance)
+	err := t.deleteContainer(instance)
 	if err != nil {
 		return err
 	}
