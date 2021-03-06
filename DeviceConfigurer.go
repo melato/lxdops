@@ -3,12 +3,10 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"strings"
 
 	"github.com/lxc/lxd/shared/api"
-	"melato.org/export/table3"
 	"melato.org/lxdops/util"
 	"melato.org/script/v2"
 )
@@ -225,49 +223,4 @@ func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
 func (t *DeviceConfigurer) ListFilesystems(name string) ([]InstanceFS, error) {
 	instance := t.Config.NewInstance(name)
 	return instance.FilesystemList()
-}
-
-func (t *DeviceConfigurer) PrintFilesystems(name string) error {
-	instance := t.Config.NewInstance(name)
-	filesystems, err := instance.Filesystems()
-	if err != nil {
-		return err
-	}
-	writer := &table.FixedWriter{Writer: os.Stdout}
-	var fs InstanceFS
-	writer.Columns(
-		table.NewColumn("FILESYSTEM", func() interface{} { return fs.Id }),
-		table.NewColumn("PATH", func() interface{} { return fs.Path }),
-		table.NewColumn("PATTERN", func() interface{} { return fs.Filesystem.Pattern }),
-	)
-	for _, fs = range filesystems {
-		writer.WriteRow()
-	}
-	writer.End()
-	return nil
-}
-
-func (t *DeviceConfigurer) PrintDevices(name string) error {
-	instance := t.Config.NewInstance(name)
-	writer := &table.FixedWriter{Writer: os.Stdout}
-	var deviceName string
-	var d *Device
-	writer.Columns(
-		table.NewColumn("PATH", func() interface{} { return d.Path }),
-		table.NewColumn("SOURCE", func() interface{} {
-			dir, err := instance.DeviceDir(name, d)
-			if err != nil {
-				return err
-			}
-			return dir
-		}),
-		table.NewColumn("NAME", func() interface{} { return deviceName }),
-		table.NewColumn("FILESYSTEM", func() interface{} { return d.Filesystem }),
-		table.NewColumn("DIR", func() interface{} { return d.Dir }),
-	)
-	for deviceName, d = range t.Config.Devices {
-		writer.WriteRow()
-	}
-	writer.End()
-	return nil
 }

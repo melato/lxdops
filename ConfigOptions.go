@@ -76,6 +76,12 @@ func BaseName(file string) string {
 	return name[0 : len(name)-len(ext)]
 }
 
+func (t *ConfigOptions) RunInstances(f func(*Instance) error, args ...string) error {
+	return t.Run(func(name string, config *Config) error {
+		return f(config.NewInstance(name))
+	}, args...)
+}
+
 func (t *ConfigOptions) Run(f func(name string, config *Config) error, args ...string) error {
 	if t.Name != "" && len(args) != 1 {
 		return errors.New("--name can be used with only one config file")
@@ -104,6 +110,8 @@ func (t *ConfigOptions) Func(f func(string, *Config) error) func(config string) 
 	return func(config string) error { return t.Run(f, config) }
 }
 
-func (t *ConfigOptions) FuncMultiple(f func(string, *Config) error) func(configs []string) error {
-	return func(configs []string) error { return t.Run(f, configs...) }
+func (t *ConfigOptions) InstanceFunc(f func(*Instance) error, multiple bool) func(configs []string) error {
+	return func(configs []string) error {
+		return t.RunInstances(f, configs...)
+	}
 }

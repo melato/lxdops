@@ -27,8 +27,7 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("delete").Flags(launcher).RunFunc(launcher.Delete)
 	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.Rebuild)
 	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename)
-	cmd.Command("filesystems").Flags(launcher).RunFunc(launcher.PrintFilesystems)
-	cmd.Command("devices").Flags(launcher).RunFunc(launcher.PrintDevices)
+	cmd.Command("create-devices").Flags(launcher).RunFunc(launcher.CreateDevices)
 
 	snapshot := &Snapshot{Client: client}
 	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.Snapshot)
@@ -37,16 +36,12 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("configure").Flags(configurer).RunFunc(configurer.Run)
 
 	configOps := &ConfigOps{}
-	cmd.Command("verify").Flags(configOps).RunFunc(configOps.Verify)
-	cmd.Command("create-devices").Flags(launcher).RunFunc(launcher.CreateDevices)
-	cmd.Command("description").RunFunc(configOps.ConfigOptions.Func(configOps.Description))
-	cmd.Command("properties").Flags(configOps).RunFunc(configOps.ConfigOptions.Func(configOps.Properties))
-	/* add devices:
-	lxdops device add -p a.host -d /z/host/a -s 1 {configfile}...
-	- create subdirectories
-	- change ownership
-	- add devices to profile, with optional suffix
-	*/
+	cmd.Command("verify").Flags(configOps).RunFunc(configOps.InstanceFunc(configOps.Verify, true))
+	cmd.Command("description").RunFunc(configOps.InstanceFunc(configOps.Description, false))
+	cmd.Command("properties").Flags(configOps).RunFunc(configOps.InstanceFunc(configOps.Properties, false))
+	cmd.Command("filesystems").Flags(configOps).RunFunc(configOps.InstanceFunc(configOps.PrintFilesystems, false))
+	cmd.Command("devices").Flags(configOps).RunFunc(configOps.InstanceFunc(configOps.PrintDevices, false))
+
 	profile := cmd.Command("profile")
 	profileConfigurer := &ProfileConfigurer{Client: client}
 	profile.Command("list").Flags(profileConfigurer).RunFunc(profileConfigurer.List)

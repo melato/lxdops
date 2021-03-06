@@ -350,30 +350,6 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 	return nil
 }
 
-func (t *Launcher) printFilesystems(name string, config *Config) error {
-	t.updateConfig(config)
-	dev := NewDeviceConfigurer(t.Client, config)
-	dev.Trace = t.Trace
-	dev.DryRun = t.DryRun
-	return dev.PrintFilesystems(name)
-}
-
-func (t *Launcher) PrintFilesystems(arg string) error {
-	return t.ConfigOptions.Run(t.printFilesystems, arg)
-}
-
-func (t *Launcher) printDevices(name string, config *Config) error {
-	t.updateConfig(config)
-	dev := NewDeviceConfigurer(t.Client, config)
-	dev.Trace = t.Trace
-	dev.DryRun = t.DryRun
-	return dev.PrintDevices(name)
-}
-
-func (t *Launcher) PrintDevices(arg string) error {
-	return t.ConfigOptions.Run(t.printDevices, arg)
-}
-
 func (t *Launcher) CreateDevices(name string, config *Config) error {
 	dev := NewDeviceConfigurer(t.Client, config)
 	dev.Trace = t.Trace
