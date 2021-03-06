@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/lxc/lxd/shared/api"
-	"melato.org/script/v2"
+	"melato.org/script"
 )
 
 type Launcher struct {
@@ -29,9 +29,6 @@ func (t *Launcher) Configured() error {
 
 func (t *Launcher) NewScript() *script.Script {
 	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
-}
-
-func (t *Launcher) updateConfig(config *Config) {
 }
 
 func (t *Launcher) Rebuild(instance *Instance) error {
@@ -82,7 +79,7 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 		}
 		profiles = append(profiles, profileName)
 	}
-	script := t.NewScript()
+	s := t.NewScript()
 	container := instance.Container()
 	if config.Origin == "" {
 		var lxcArgs []string
@@ -103,9 +100,9 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 			lxcArgs = append(lxcArgs, option)
 		}
 		lxcArgs = append(lxcArgs, container)
-		script.Run("lxc", lxcArgs...)
-		if script.HasError() {
-			return script.Error()
+		s.Run("lxc", lxcArgs...)
+		if s.HasError() {
+			return s.Error()
 		}
 	} else {
 		sourceConfig, err := config.GetSourceConfig()
@@ -132,34 +129,31 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 			copyArgs = append(copyArgs, sn.Container+"/"+sn.Snapshot)
 		}
 		copyArgs = append(copyArgs, container)
-		script.Run("lxc", copyArgs...)
-		if script.HasError() {
-			return script.Error()
+		s.Run("lxc", copyArgs...)
+		if s.HasError() {
+			return s.Error()
 		}
 
-		c, _, err := server.GetContainer(container)
-		if err != nil {
-			return AnnotateLXDError(container, err)
-		}
-		c.Profiles = profiles
-		op, err := server.UpdateContainer(container, c.ContainerPut, "")
-		if err != nil {
-			return err
-		}
-		if err := op.Wait(); err != nil {
-			return AnnotateLXDError(container, err)
-		}
-
-		op, err = server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
-		if err != nil {
-			return AnnotateLXDError(container, err)
-		}
-
-		if script.HasError() {
-			return script.Error()
-		}
 		if !t.DryRun {
-			err := WaitForNetwork(server, container)
+			c, _, err := server.GetContainer(container)
+			if err != nil {
+				return AnnotateLXDError(container, err)
+			}
+			c.Profiles = profiles
+			op, err := server.UpdateContainer(container, c.ContainerPut, "")
+			if err != nil {
+				return err
+			}
+			if err := op.Wait(); err != nil {
+				return AnnotateLXDError(container, err)
+			}
+
+			op, err = server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
+			if err != nil {
+				return AnnotateLXDError(container, err)
+			}
+
+			err = WaitForNetwork(server, container)
 			if err != nil {
 				return err
 			}
@@ -190,7 +184,7 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 			}
 		}
 	}
-	return script.Error()
+	return s.Error()
 }
 
 func (t *Launcher) deleteContainer(instance *Instance) error {
