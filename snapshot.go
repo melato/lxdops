@@ -32,26 +32,31 @@ func (t *Snapshot) Snapshot(qsnapshot string, arg ...string) error {
 	}
 	snapshot := qsnapshot[1:]
 	return t.ConfigOptions.Run(func(name string, config *Config) error {
-		dev := NewDeviceConfigurer(t.Client, config)
-		paths, err := dev.FilesystemPaths(name)
+		instance, err := config.NewInstance(name)
 		if err != nil {
 			return err
 		}
+		filesystems, err := instance.FilesystemList()
+		if err != nil {
+			return err
+		}
+		fslist := InstanceFSList(filesystems)
+		fslist.Sort()
 		s := &script.Script{Trace: true, DryRun: t.DryRun}
 		if t.Destroy {
 			if t.Recursive {
-				roots := RootPaths(paths)
-				for _, path := range roots {
-					s.Run("sudo", "zfs", "destroy", "-R", path+"@"+snapshot)
+				roots := fslist.Roots()
+				for _, fs := range roots {
+					s.Run("sudo", "zfs", "destroy", "-R", fs.Path+"@"+snapshot)
 				}
 			} else {
-				for _, path := range paths {
-					s.Run("sudo", "zfs", "destroy", path+"@"+snapshot)
+				for _, fs := range fslist {
+					s.Run("sudo", "zfs", "destroy", fs.Path+"@"+snapshot)
 				}
 			}
 		} else {
-			for _, path := range paths {
-				s.Run("sudo", "zfs", "snapshot", string(path)+"@"+snapshot)
+			for _, fs := range fslist {
+				s.Run("sudo", "zfs", "snapshot", fs.Path+"@"+snapshot)
 			}
 		}
 		return s.Error()

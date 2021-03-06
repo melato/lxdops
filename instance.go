@@ -11,7 +11,7 @@ type Instance struct {
 	Config     *Config
 	Name       string
 	Properties *util.PatternProperties
-	fspaths    map[string]FSPath
+	fspaths    map[string]InstanceFS
 }
 
 func (config *Config) NewInstance(name string) (*Instance, error) {
@@ -20,31 +20,31 @@ func (config *Config) NewInstance(name string) (*Instance, error) {
 	return instance, nil
 }
 
-func (t *Instance) FilesystemPaths() (map[string]FSPath, error) {
+func (t *Instance) Filesystems() (map[string]InstanceFS, error) {
 	if t.fspaths == nil {
-		fspaths := make(map[string]FSPath)
+		fspaths := make(map[string]InstanceFS)
 		for id, fs := range t.Config.Filesystems {
 			path, err := fs.Pattern.Substitute(t.Properties)
 			if err != nil {
 				return nil, err
 			}
-			fspaths[id] = FSPath{Id: id, Path: path}
+			fspaths[id] = InstanceFS{Id: id, Path: path, Filesystem: fs}
 		}
 		t.fspaths = fspaths
 	}
 	return t.fspaths, nil
 }
 
-func (t *Instance) FilesystemPathList() ([]FSPath, error) {
-	paths, err := t.FilesystemPaths()
+func (t *Instance) FilesystemList() ([]InstanceFS, error) {
+	paths, err := t.Filesystems()
 	if err != nil {
 		return nil, err
 	}
-	var list []FSPath
+	var list []InstanceFS
 	for _, path := range paths {
 		list = append(list, path)
 	}
-	return FSPathList(list), nil
+	return InstanceFSList(list), nil
 }
 
 func (t *Instance) DeviceDir(deviceId string, device *Device) (string, error) {
@@ -61,7 +61,7 @@ func (t *Instance) DeviceDir(deviceId string, device *Device) (string, error) {
 		dir = ""
 	}
 
-	fspaths, err := t.FilesystemPaths()
+	fspaths, err := t.Filesystems()
 	if err != nil {
 		return "", err
 	}

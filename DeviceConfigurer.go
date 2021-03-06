@@ -67,37 +67,36 @@ func (t *DeviceConfigurer) DeviceFilesystem(device *Device) (*Filesystem, error)
 	return nil, errors.New("no such filesystem: " + device.Filesystem)
 }
 
-func (t *DeviceConfigurer) CreateFilesystem(path FSPath, originDataset string) error {
-	if path.IsDir() {
-		return t.CreateDir(path.Dir(), true)
+func (t *DeviceConfigurer) CreateFilesystem(fs InstanceFS, originDataset string) error {
+	if fs.IsDir() {
+		return t.CreateDir(fs.Dir(), true)
 	}
 
 	script := t.NewScript()
 	if originDataset != "" {
-		script.Run("sudo", "zfs", "clone", "-p", originDataset, path.Path)
+		script.Run("sudo", "zfs", "clone", "-p", originDataset, fs.Path)
 		return script.Error()
 	}
 
 	// create
 	args := []string{"zfs", "create", "-p"}
-	fs := t.Config.Filesystem(path.Id)
-	for key, value := range fs.Zfsproperties {
+	for key, value := range fs.Filesystem.Zfsproperties {
 		args = append(args, "-o", key+"="+value)
 	}
-	args = append(args, path.Path)
+	args = append(args, fs.Path)
 	script.Run("sudo", args...)
-	t.chownDir(script, path.Dir())
+	t.chownDir(script, fs.Dir())
 	return script.Error()
 }
 
 func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapshot string) error {
-	paths, err := instance.FilesystemPaths()
+	paths, err := instance.Filesystems()
 	if err != nil {
 		return err
 	}
-	var originPaths map[string]FSPath
+	var originPaths map[string]InstanceFS
 	if origin != nil {
-		originPaths, err = origin.FilesystemPaths()
+		originPaths, err = origin.Filesystems()
 		if err != nil {
 			return err
 		}
@@ -107,13 +106,13 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 			}
 		}
 	}
-	var pathList []FSPath
+	var pathList []InstanceFS
 	for _, path := range paths {
 		if origin != nil || !util.DirExists(path.Dir()) {
 			pathList = append(pathList, path)
 		}
 	}
-	FSPathList(pathList).Sort()
+	InstanceFSList(pathList).Sort()
 
 	for _, path := range pathList {
 		var originDataset string
@@ -238,16 +237,16 @@ func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
 	if err != nil {
 		return err
 	}
-	oldPaths, err := oldInstance.FilesystemPathList()
+	oldPaths, err := oldInstance.FilesystemList()
 	if err != nil {
 		return err
 	}
-	newPaths, err := newInstance.FilesystemPaths()
+	newPaths, err := newInstance.Filesystems()
 	if err != nil {
 		return err
 	}
 	s := t.NewScript()
-	for _, oldpath := range FSPathList(oldPaths).Roots() {
+	for _, oldpath := range InstanceFSList(oldPaths).Roots() {
 		newpath := newPaths[oldpath.Id]
 		if oldpath.IsDir() {
 			newdir := newpath.Dir()
@@ -262,12 +261,12 @@ func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
 	return s.Error()
 }
 
-func (t *DeviceConfigurer) ListFilesystems(name string) ([]FSPath, error) {
+func (t *DeviceConfigurer) ListFilesystems(name string) ([]InstanceFS, error) {
 	instance, err := t.Config.NewInstance(name)
 	if err != nil {
 		return nil, err
 	}
-	return instance.FilesystemPathList()
+	return instance.FilesystemList()
 }
 
 func (t *DeviceConfigurer) PrintFilesystems(name string) error {
