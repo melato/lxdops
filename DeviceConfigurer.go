@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"strings"
 
@@ -30,50 +29,6 @@ func (t *DeviceConfigurer) NewScript() *script.Script {
 	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 }
 
-func (t *DeviceConfigurer) CreateFilesystem(fs *Filesystem, name string) error {
-	properties := t.Config.NewProperties(name)
-	path, err := fs.Pattern.Substitute(properties)
-	if err != nil {
-		return err
-	}
-	if strings.HasPrefix(path, "/") {
-		return t.CreateDir(path, true)
-	}
-	script := t.NewScript()
-	if t.Config.DeviceOrigin != "" {
-		sourceConfig, err := t.Config.GetSourceConfig()
-		if err != nil {
-			return err
-		}
-		parts := strings.Split(t.Config.DeviceOrigin, "@")
-		if len(parts) != 2 {
-			return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
-		}
-		sourceInstance, sourceSnapshot := parts[0], parts[1]
-		sourceFS := sourceConfig.Filesystem(fs.Id)
-		if sourceFS != nil {
-			// clone
-			sourceProperties := sourceConfig.NewProperties(sourceInstance)
-			sourceDataset, err := sourceFS.Pattern.Substitute(sourceProperties)
-			if err != nil {
-				return err
-			}
-			script.Run("sudo", "zfs", "clone", "-p", sourceDataset+"@"+sourceSnapshot, path)
-			return script.Error()
-		}
-	}
-
-	// create
-	args := []string{"zfs", "create", "-p"}
-	for key, value := range fs.Zfsproperties {
-		args = append(args, "-o", key+"="+value)
-	}
-	args = append(args, path)
-	script.Run("sudo", args...)
-	t.chownDir(script, filepath.Join("/", path))
-	return script.Error()
-}
-
 func (t *DeviceConfigurer) chownDir(scr *script.Script, dir string) {
 	scr.Run("sudo", "chown", "1000000:1000000", dir)
 }
@@ -89,16 +44,6 @@ func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 		return script.Error()
 	}
 	return nil
-}
-
-type FSPath string
-
-func (path FSPath) Dir() string {
-	if strings.HasPrefix(string(path), "/") {
-		return string(path)
-	} else {
-		return "/" + string(path)
-	}
 }
 
 func (t *DeviceConfigurer) FilesystemPaths(name string) ([]string, error) {
@@ -122,64 +67,107 @@ func (t *DeviceConfigurer) DeviceFilesystem(device *Device) (*Filesystem, error)
 	return nil, errors.New("no such filesystem: " + device.Filesystem)
 }
 
-func (t *DeviceConfigurer) DeviceDir(properties *util.PatternProperties, filesystems map[string]FSPath, device *Device) (string, error) {
-	var fsPath FSPath
-	dir, err := device.Dir.Substitute(properties)
-	if err != nil {
-		return "", err
-	}
-	if strings.HasPrefix(dir, "/") {
-		return dir, nil
-	}
-	if dir == "" {
-		dir = device.Name
-	} else if device.Dir == "." {
-		dir = ""
+func (t *DeviceConfigurer) CreateFilesystem(path FSPath, originDataset string) error {
+	if path.IsDir() {
+		return t.CreateDir(path.Dir(), true)
 	}
 
-	fs, err := t.DeviceFilesystem(device)
-	if err != nil {
-		return "", err
+	script := t.NewScript()
+	if originDataset != "" {
+		script.Run("sudo", "zfs", "clone", "-p", originDataset, path.Path)
+		return script.Error()
 	}
-	fsPath = filesystems[fs.Id]
-	if dir != "" {
-		return filepath.Join(fsPath.Dir(), dir), nil
-	} else {
-		return fsPath.Dir(), nil
+
+	// create
+	args := []string{"zfs", "create", "-p"}
+	fs := t.Config.Filesystem(path.Id)
+	for key, value := range fs.Zfsproperties {
+		args = append(args, "-o", key+"="+value)
 	}
+	args = append(args, path.Path)
+	script.Run("sudo", args...)
+	t.chownDir(script, path.Dir())
+	return script.Error()
 }
 
-func (t *DeviceConfigurer) ConfigureDevices(name string) error {
-	filesystems, err := t.Config.FilesystemMap(name)
+func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapshot string) error {
+	paths, err := instance.FilesystemPaths()
 	if err != nil {
 		return err
 	}
-	for _, fs := range FilesystemList(t.Config.Filesystems).Sorted() {
-		fsPath, _ := filesystems[fs.Id]
-		if t.Config.DeviceOrigin != "" || !util.DirExists(fsPath.Dir()) {
-			err := t.CreateFilesystem(fs, name)
+	var originPaths map[string]FSPath
+	if origin != nil {
+		originPaths, err = origin.FilesystemPaths()
+		if err != nil {
+			return err
+		}
+		for id, path := range paths {
+			if !path.IsZfs() {
+				return errors.New("cannot use origin with non-zfs filesystem: " + id)
+			}
+		}
+	}
+	var pathList []FSPath
+	for _, path := range paths {
+		if origin != nil || !util.DirExists(path.Dir()) {
+			pathList = append(pathList, path)
+		}
+	}
+	FSPathList(pathList).Sort()
+
+	for _, path := range pathList {
+		var originDataset string
+		if path.IsZfs() {
+			originPath, exists := originPaths[path.Id]
+			if exists {
+				originDataset = originPath.Path + "@" + snapshot
+			}
+		}
+		err := t.CreateFilesystem(path, originDataset)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *DeviceConfigurer) ConfigureDevices(name string) error {
+	instance, err := t.Config.NewInstance(name)
+	if err != nil {
+		return err
+	}
+	var originInstance *Instance
+	var templateInstance *Instance
+	var originSnapshot string
+	if t.Config.DeviceOrigin != "" || t.Config.DeviceTemplate != "" {
+		sourceConfig, err := t.Config.GetSourceConfig()
+		if err != nil {
+			return err
+		}
+		if t.Config.DeviceOrigin != "" {
+			parts := strings.Split(t.Config.DeviceOrigin, "@")
+			if len(parts) != 2 {
+				return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
+			}
+			originInstance, err = sourceConfig.NewInstance(parts[0])
+			if err != nil {
+				return err
+			}
+			originSnapshot = parts[1]
+		}
+		if t.Config.DeviceTemplate != "" {
+			templateInstance, err = sourceConfig.NewInstance(t.Config.DeviceTemplate)
 			if err != nil {
 				return err
 			}
 		}
 	}
-	var templateFilesystems map[string]FSPath
-	var templateProperties *util.PatternProperties
-	if t.Config.DeviceTemplate != "" {
-		sourceConfig, err := t.Config.GetSourceConfig()
-		if err != nil {
-			return err
-		}
-		templateProperties = sourceConfig.NewProperties(t.Config.DeviceTemplate)
-		templateFilesystems, err = sourceConfig.FilesystemMap(t.Config.DeviceTemplate)
-		if err != nil {
-			return err
-		}
-	}
+
+	t.CreateFilesystems(instance, originInstance, originSnapshot)
+
 	script := t.NewScript()
-	properties := t.Config.NewProperties(name)
 	for _, device := range t.Config.Devices {
-		dir, err := t.DeviceDir(properties, filesystems, device)
+		dir, err := instance.DeviceDir(device.Name, device)
 		if err != nil {
 			return err
 		}
@@ -190,14 +178,18 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 			}
 		}
 		if t.Config.DeviceTemplate != "" {
-			templateDir, err := t.DeviceDir(templateProperties, templateFilesystems, device)
+			templateDir, err := templateInstance.DeviceDir(device.Name, device)
 			if err != nil {
 				return err
 			}
-			if util.DirExists(templateDir) {
-				script.Run("sudo", "rsync", "-a", templateDir+"/", dir+"/")
+			if templateDir != "" {
+				if util.DirExists(templateDir) {
+					script.Run("sudo", "rsync", "-a", templateDir+"/", dir+"/")
+				} else {
+					fmt.Println("skipping missing Device Template: " + templateDir)
+				}
 			} else {
-				fmt.Println("skipping missing Device Template: " + templateDir)
+				fmt.Println("skipping missing template Device: " + device.Name)
 			}
 		}
 		if script.Error() != nil {
@@ -208,15 +200,14 @@ func (t *DeviceConfigurer) ConfigureDevices(name string) error {
 }
 
 func (t *DeviceConfigurer) CreateProfile(name string) error {
-	filesystems, err := t.Config.FilesystemMap(name)
+	instance, err := t.Config.NewInstance(name)
 	if err != nil {
 		return err
 	}
-	properties := t.Config.NewProperties(name)
 	devices := make(map[string]map[string]string)
 
 	for _, device := range t.Config.Devices {
-		dir, err := t.DeviceDir(properties, filesystems, device)
+		dir, err := instance.DeviceDir(device.Name, device)
 		if err != nil {
 			return err
 		}
@@ -239,43 +230,44 @@ func (t *DeviceConfigurer) CreateProfile(name string) error {
 }
 
 func (t *DeviceConfigurer) RenameFilesystems(oldname, newname string) error {
-	oldproperties := t.Config.NewProperties(oldname)
-	newproperties := t.Config.NewProperties(newname)
+	oldInstance, err := t.Config.NewInstance(oldname)
+	if err != nil {
+		return err
+	}
+	newInstance, err := t.Config.NewInstance(newname)
+	if err != nil {
+		return err
+	}
+	oldPaths, err := oldInstance.FilesystemPathList()
+	if err != nil {
+		return err
+	}
+	newPaths, err := newInstance.FilesystemPaths()
+	if err != nil {
+		return err
+	}
 	s := t.NewScript()
-	for _, fs := range RootFilesystems(t.Config.Filesystems) {
-		oldpath, err := fs.Pattern.Substitute(oldproperties)
-		if err != nil {
-			return err
-		}
-		newpath, err := fs.Pattern.Substitute(newproperties)
-		if err != nil {
-			return err
-		}
-		if strings.HasPrefix(oldpath, "/") {
-			if util.DirExists(newpath) {
-				return errors.New(newpath + ": already exists")
+	for _, oldpath := range FSPathList(oldPaths).Roots() {
+		newpath := newPaths[oldpath.Id]
+		if oldpath.IsDir() {
+			newdir := newpath.Dir()
+			if util.DirExists(newdir) {
+				return errors.New(newdir + ": already exists")
 			}
-			s.Run("mv", oldpath, newpath)
+			s.Run("mv", oldpath.Dir(), newdir)
 		} else {
-			s.Run("sudo", "zfs", "rename", oldpath, newpath)
+			s.Run("sudo", "zfs", "rename", oldpath.Dir(), newpath.Dir())
 		}
 	}
 	return s.Error()
 }
 
 func (t *DeviceConfigurer) ListFilesystems(name string) ([]FSPath, error) {
-	filesystems, err := t.Config.FilesystemMap(name)
+	instance, err := t.Config.NewInstance(name)
 	if err != nil {
 		return nil, err
 	}
-	var result []FSPath
-	for _, fs := range t.Config.Filesystems {
-		fsPath, _ := filesystems[fs.Id]
-		if util.DirExists(fsPath.Dir()) {
-			result = append(result, fsPath)
-		}
-	}
-	return result, nil
+	return instance.FilesystemPathList()
 }
 
 func (t *DeviceConfigurer) PrintFilesystems(name string) error {
@@ -301,8 +293,7 @@ func (t *DeviceConfigurer) PrintFilesystems(name string) error {
 }
 
 func (t *DeviceConfigurer) PrintDevices(name string) error {
-	pattern := t.Config.NewProperties(name)
-	filesystems, err := t.Config.FilesystemMap(name)
+	instance, err := t.Config.NewInstance(name)
 	if err != nil {
 		return err
 	}
@@ -311,7 +302,7 @@ func (t *DeviceConfigurer) PrintDevices(name string) error {
 	writer.Columns(
 		table.NewColumn("PATH", func() interface{} { return d.Path }),
 		table.NewColumn("SOURCE", func() interface{} {
-			dir, err := t.DeviceDir(pattern, filesystems, d)
+			dir, err := instance.DeviceDir(d.Name, d)
 			if err != nil {
 				return err
 			}

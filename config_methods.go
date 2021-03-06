@@ -211,16 +211,3 @@ func (config *Config) NewProperties(name string) *util.PatternProperties {
 	properties.SetConstant("project_instance", project_instance)
 	return properties
 }
-
-func (t *Config) FilesystemMap(name string) (map[string]FSPath, error) {
-	properties := t.NewProperties(name)
-	filesystems := make(map[string]FSPath)
-	for _, fs := range t.Filesystems {
-		path, err := fs.Pattern.Substitute(properties)
-		if err != nil {
-			return nil, err
-		}
-		filesystems[fs.Id] = FSPath(path)
-	}
-	return filesystems, nil
-}
