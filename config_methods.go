@@ -170,18 +170,18 @@ func (t *Config) ProfileName(name string) string {
 /** Return the filesystem for the given id
 In the second argument, return whether the filesystem with the specified id was defined
 */
-func (t *Config) FilesystemForId(id string) (*Filesystem, bool) {
+func (t *Config) Filesystem(id string) *Filesystem {
 	for _, fs := range t.Filesystems {
 		if fs.Id == id {
-			return fs, true
+			return fs
 		}
 	}
-	return nil, false
+	return nil
 }
 
 func (t *Config) GetSourceConfig() (*Config, error) {
 	if t.SourceConfig == "" {
-		return nil, nil
+		return t, nil
 	}
 	if t.sourceConfig == nil {
 		config, err := ReadConfig(string(t.SourceConfig))
@@ -210,4 +210,17 @@ func (config *Config) NewProperties(name string) *util.PatternProperties {
 	properties.SetConstant("project/", projectSlash)
 	properties.SetConstant("project_instance", project_instance)
 	return properties
+}
+
+func (t *Config) FilesystemMap(name string) (map[string]FSPath, error) {
+	properties := t.NewProperties(name)
+	filesystems := make(map[string]FSPath)
+	for _, fs := range t.Filesystems {
+		path, err := fs.Pattern.Substitute(properties)
+		if err != nil {
+			return nil, err
+		}
+		filesystems[fs.Id] = FSPath(path)
+	}
+	return filesystems, nil
 }

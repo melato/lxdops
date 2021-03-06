@@ -126,10 +126,7 @@ func (t *Launcher) LaunchContainer(config *Config, name string) error {
 			return err
 		}
 		var copyArgs []string
-		var sourceProject string
-		if sourceConfig != nil {
-			sourceProject = sourceConfig.Project
-		}
+		sourceProject := sourceConfig.Project
 		if sourceProject == "" {
 			sourceProject = config.Project
 		}
