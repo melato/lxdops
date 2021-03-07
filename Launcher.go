@@ -45,6 +45,33 @@ func (t *Launcher) NewConfigurer() *Configurer {
 	return c
 }
 
+func (t *Launcher) lxcLaunch(instance *Instance, profiles []string) error {
+	s := t.NewScript()
+	container := instance.Container()
+	config := instance.Config
+	var lxcArgs []string
+	if config.Project != "" {
+		lxcArgs = append(lxcArgs, "--project", config.Project)
+	}
+	lxcArgs = append(lxcArgs, "launch")
+
+	osVersion := config.OS.Version
+	if osVersion == "" {
+		return errors.New("Missing version")
+	}
+	osType := config.OS.Type()
+	lxcArgs = append(lxcArgs, osType.ImageName(osVersion))
+	for _, profile := range profiles {
+		lxcArgs = append(lxcArgs, "-p", profile)
+	}
+	for _, option := range config.LxcOptions {
+		lxcArgs = append(lxcArgs, option)
+	}
+	lxcArgs = append(lxcArgs, container)
+	s.Run("lxc", lxcArgs...)
+	return s.Error()
+}
+
 func (t *Launcher) LaunchContainer(instance *Instance) error {
 	config := instance.Config
 	osType := config.OS.Type()
@@ -82,27 +109,9 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 	s := t.NewScript()
 	container := instance.Container()
 	if config.Origin == "" {
-		var lxcArgs []string
-		if config.Project != "" {
-			lxcArgs = append(lxcArgs, "--project", config.Project)
-		}
-		lxcArgs = append(lxcArgs, "launch")
-
-		osVersion := config.OS.Version
-		if osVersion == "" {
-			return errors.New("Missing version")
-		}
-		lxcArgs = append(lxcArgs, osType.ImageName(osVersion))
-		for _, profile := range profiles {
-			lxcArgs = append(lxcArgs, "-p", profile)
-		}
-		for _, option := range config.LxcOptions {
-			lxcArgs = append(lxcArgs, option)
-		}
-		lxcArgs = append(lxcArgs, container)
-		s.Run("lxc", lxcArgs...)
-		if s.HasError() {
-			return s.Error()
+		err := t.lxcLaunch(instance, profiles)
+		if err != nil {
+			return err
 		}
 	} else {
 		sourceConfig, err := config.GetSourceConfig()
