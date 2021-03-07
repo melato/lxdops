@@ -106,6 +106,14 @@ func (config *Config) Verify() bool {
 	if !config.verifyDevices() {
 		valid = false
 	}
+	profiles := make(map[string]bool)
+	for _, profile := range config.Profiles {
+		if profiles[profile] {
+			valid = false
+			fmt.Fprintf(os.Stderr, "duplicate profile: %s\n", profile)
+		}
+		profiles[profile] = true
+	}
 	return valid
 }
 
