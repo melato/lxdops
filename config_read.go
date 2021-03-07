@@ -52,6 +52,21 @@ func mergeMaps(a, b map[string]string) map[string]string {
 	return a
 }
 
+func (t *Source) Merge(c *Source) {
+	if t.Origin == "" {
+		t.Origin = c.Origin
+	}
+	if t.DeviceTemplate == "" {
+		t.DeviceTemplate = c.DeviceTemplate
+	}
+	if t.DeviceOrigin == "" {
+		t.DeviceOrigin = c.DeviceOrigin
+	}
+	if t.SourceConfig == "" {
+		t.SourceConfig = c.SourceConfig
+	}
+}
+
 func (t *ConfigInherit) Merge(c *ConfigInherit) error {
 	if t.Project == "" {
 		t.Project = c.Project
@@ -61,6 +76,13 @@ func (t *ConfigInherit) Merge(c *ConfigInherit) error {
 	}
 	t.Properties = mergeMaps(t.Properties, c.Properties)
 	t.ProfileConfig = mergeMaps(t.ProfileConfig, c.ProfileConfig)
+
+	t.Source.Merge(&c.Source)
+
+	if len(t.LxcOptions) == 0 {
+		t.LxcOptions = c.LxcOptions
+	}
+
 	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
 	if t.Filesystems == nil {
 		t.Filesystems = make(map[string]*Filesystem)

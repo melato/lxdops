@@ -32,21 +32,37 @@ type ConfigTop struct {
 	// Description is provided for documentation
 	Description string `yaml:"description,omitempty"`
 
-	// Source specifies where to copy or clone the instance from
-	Source `yaml:",inline"`
-
 	// Stop specifies that the container should be stopped at the end of the configuration
 	Stop bool `yaml:"stop,omitempty"`
+
 	// Snapshot specifies that that the container should be snapshoted with this name at the end of the configuration process.
 	Snapshot string `yaml:"snapshot,omitempty"`
 
-	LxcOptions []string `yaml:"lxc-options,omitempty,flow"`
+	sourceConfig *Config
 }
 
 type ConfigInherit struct {
 	OS *OS
 	// Project is the LXD project where the container is
 	Project string `yaml:"project,omitempty"`
+
+	// ProfilePattern specifies how the instance profile should be named.
+	// It defaults to "(container).lxdops", where (container) is the name of the instance
+	Profile Pattern `yaml:"profile-pattern"`
+
+	// ProfileConfig specifies Config entries to be added to the instance profile.
+	// This was meant for creating templates with boot.autostart: "false",
+	// without needing to use profiles external to lxdops.
+	ProfileConfig map[string]string `yaml:"profile-config,omitempty"`
+
+	// Properties provide key-value pairs used for pattern substitution.
+	// They override built-in properties
+	Properties map[string]string `yaml:"properties"`
+
+	// Source specifies where to copy or clone the instance from
+	Source `yaml:",inline"`
+
+	LxcOptions []string `yaml:"lxc-options,omitempty,flow"`
 
 	// Include is a list of other configs that are to be included.
 	// Include paths are either absolute or relative to the path of the including config.
@@ -78,19 +94,6 @@ type ConfigInherit struct {
 	Scripts []*Script `yaml:"scripts,omitempty"`
 	// Passwords are a list of OS accounts, whose password is set to a random password
 	Passwords []string `yaml:"passwords,omitempty"`
-
-	// ProfilePattern specifies how the instance profile should be named.
-	// It defaults to "(container).lxdops", where (container) is the name of the instance
-	Profile Pattern `yaml:"profile-pattern"`
-
-	// ProfileConfig specifies Config entries to be added to the instance profile.
-	// This was meant for creating templates with boot.autostart: "false",
-	// without needing to use profiles external to lxdops.
-	ProfileConfig map[string]string `yaml:"profile-config,omitempty"`
-
-	// Properties provide key-value pairs used for pattern substitution.
-	// They override built-in properties
-	Properties map[string]string `yaml:"properties"`
 }
 
 // Source specifies how to copy or clone the instance container, filesystem, and device directories.
@@ -138,8 +141,6 @@ type Source struct {
 	// if it is empty, use the same config as this instance.
 	// It is also used to specify the source project of the Origin container.
 	SourceConfig HostPath `yaml:"source-config,omitempty"`
-
-	sourceConfig *Config
 }
 
 // OS specifies the container OS
