@@ -8,6 +8,7 @@ import (
 type InstanceFS struct {
 	Id         string
 	Path       string
+	IsNew      bool
 	Filesystem *Filesystem
 }
 

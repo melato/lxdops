@@ -3,6 +3,7 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"strings"
 
@@ -103,6 +104,7 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 		if err != nil {
 			return err
 		}
+		path.IsNew = true
 	}
 	return nil
 }
@@ -137,6 +139,10 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 	}
 
 	t.CreateFilesystems(instance, originInstance, originSnapshot)
+	filesystems, err := instance.Filesystems()
+	if err != nil {
+		return err
+	}
 
 	script := t.NewScript()
 	for deviceName, device := range t.Config.Devices {
@@ -144,11 +150,17 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 		if err != nil {
 			return err
 		}
-		if t.Config.DeviceOrigin == "" {
-			err = t.CreateDir(dir, true)
-			if err != nil {
-				return err
-			}
+		fs, found := filesystems[device.Filesystem]
+		if !found {
+			fmt.Fprintf(os.Stderr, "missing filesystem: %s\n", device.Filesystem)
+			continue
+		}
+		if !fs.IsNew && util.DirExists(dir) {
+			continue
+		}
+		err = t.CreateDir(dir, true)
+		if err != nil {
+			return err
 		}
 		if t.Config.DeviceTemplate != "" {
 			templateDir, err := templateInstance.DeviceDir(deviceName, device)
