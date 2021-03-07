@@ -89,6 +89,20 @@ func (t *ContainerOps) Devices(container string) error {
 	if err != nil {
 		return AnnotateLXDError(container, err)
 	}
-	util.PrintYaml(c.ExpandedDevices)
+	//util.PrintYaml(c.ExpandedDevices)
+	writer := &table.FixedWriter{Writer: os.Stdout}
+	var deviceName string
+	var d map[string]string
+	writer.Columns(
+		table.NewColumn("PATH", func() interface{} { return d["path"] }),
+		table.NewColumn("SOURCE", func() interface{} { return d["source"] }),
+		table.NewColumn("NAME", func() interface{} { return deviceName }),
+	)
+	for deviceName, d = range c.ExpandedDevices {
+		if d["type"] == "disk" {
+			writer.WriteRow()
+		}
+	}
+	writer.End()
 	return nil
 }
