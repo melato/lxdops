@@ -183,7 +183,10 @@ func (t *DeviceConfigurer) CreateProfile(instance *Instance) error {
 	if err != nil {
 		return err
 	}
-	post := api.ProfilesPost{Name: profileName, ProfilePut: api.ProfilePut{Devices: devices, Description: "lxdops devices"}}
+	post := api.ProfilesPost{Name: profileName, ProfilePut: api.ProfilePut{
+		Devices:     devices,
+		Config:      instance.Config.ProfileConfig,
+		Description: "lxdops profile"}}
 	if t.Trace {
 		fmt.Printf("create profile %s:\n", profileName)
 		util.PrintYaml(&post)

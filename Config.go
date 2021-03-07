@@ -84,6 +84,11 @@ type ConfigInherit struct {
 	// It defaults to "(container).lxdops", where (container) is the name of the instance
 	Profile Pattern `yaml:"profile-pattern"`
 
+	// ProfileConfig specifies Config entries to be added to the instance profile.
+	// This was meant for creating templates with boot.autostart: "false",
+	// without needing to use profiles external to lxdops.
+	ProfileConfig map[string]string
+
 	// Properties provide key-value pairs used for pattern substitution.
 	// They override built-in properties
 	Properties map[string]string `yaml:"properties"`

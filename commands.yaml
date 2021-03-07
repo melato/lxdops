@@ -57,17 +57,30 @@ commands:
   delete:
     short: delete a stopped container and its profile
     use: <configfile>...
-  description:
-    short: print the description of a config file
-    use: <config-file>
-    examples:
-    - test.yaml
-  devices:
-    short: list devices
-    use: <config-file>
-  filesystems:
-    short: list filesystems
-    use: <config-file>
+  instance:
+    commands:
+      project:
+        short: print instance project
+        use: <container>
+      description:
+        short: print instance description
+        use: <config-file>
+        examples:
+        - test.yaml
+      devices:
+        short: print instance devices
+        use: <config-file>
+      filesystems:
+        short: print instance filesystems
+        use: <config-file>
+      properties:
+        short: print instance properties
+        use: <config-file>
+      verify:
+        short: verify instance config
+        use: <config-file> ...
+        examples:
+        - verify *.yaml
   launch:
     short: launch a container
     use: <config-file> ...
@@ -78,9 +91,6 @@ commands:
     use: <config-file>
     examples:
     - parse test.yaml
-  properties:
-    short: print instance properties
-    use: <config-file>
   profile:
     short: profile utilities
     commands:
@@ -125,11 +135,6 @@ commands:
   snapshot:
     short: snapshot filesystems
     use: '@<snapshot> <config-file>...'
-  verify:
-    short: verify config files
-    use: <config-file> ...
-    examples:
-    - verify *.yaml
   zfsroot:
     short: print default zfsroot property
     long: | 

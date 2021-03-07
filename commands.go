@@ -35,12 +35,14 @@ func RootCommand() *command.SimpleCommand {
 	configurer := &Configurer{Client: client}
 	cmd.Command("configure").Flags(configurer).RunFunc(configurer.InstanceFunc(configurer.ConfigureContainer, true))
 
-	configOps := &ConfigOps{}
-	cmd.Command("verify").Flags(configOps).RunFunc(configOps.InstanceFunc(configOps.Verify, true))
-	cmd.Command("description").RunFunc(configOps.InstanceFunc(configOps.Description, false))
-	cmd.Command("properties").Flags(configOps).RunFunc(configOps.InstanceFunc(configOps.Properties, false))
-	cmd.Command("filesystems").Flags(configOps).RunFunc(configOps.InstanceFunc(configOps.PrintFilesystems, false))
-	cmd.Command("devices").Flags(configOps).RunFunc(configOps.InstanceFunc(configOps.PrintDevices, false))
+	instanceOps := &InstanceOps{}
+	instanceCmd := cmd.Command("instance").Flags(instanceOps)
+	instanceCmd.Command("verify").RunFunc(instanceOps.InstanceFunc(instanceOps.Verify, true))
+	instanceCmd.Command("description").RunFunc(instanceOps.InstanceFunc(instanceOps.Description, false))
+	instanceCmd.Command("properties").RunFunc(instanceOps.InstanceFunc(instanceOps.Properties, false))
+	instanceCmd.Command("filesystems").RunFunc(instanceOps.InstanceFunc(instanceOps.Filesystems, false))
+	instanceCmd.Command("devices").RunFunc(instanceOps.InstanceFunc(instanceOps.Devices, false))
+	instanceCmd.Command("project").RunFunc(instanceOps.InstanceFunc(instanceOps.Project, false))
 
 	profile := cmd.Command("profile")
 	profileConfigurer := &ProfileConfigurer{Client: client}

@@ -39,6 +39,19 @@ func (t *OS) Merge(c *OS) error {
 	return nil
 }
 
+func mergeMaps(a, b map[string]string) map[string]string {
+	if a == nil && b == nil {
+		return nil
+	}
+	if a == nil {
+		a = make(map[string]string)
+	}
+	for key, value := range b {
+		a[key] = value
+	}
+	return a
+}
+
 func (t *ConfigInherit) Merge(c *ConfigInherit) error {
 	if t.Project == "" {
 		t.Project = c.Project
@@ -46,12 +59,8 @@ func (t *ConfigInherit) Merge(c *ConfigInherit) error {
 	if t.Profile == "" {
 		t.Profile = c.Profile
 	}
-	if t.Properties == nil {
-		t.Properties = make(map[string]string)
-	}
-	for key, value := range c.Properties {
-		t.Properties[key] = value
-	}
+	t.Properties = mergeMaps(t.Properties, c.Properties)
+	t.ProfileConfig = mergeMaps(t.ProfileConfig, c.ProfileConfig)
 	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
 	if t.Filesystems == nil {
 		t.Filesystems = make(map[string]*Filesystem)
