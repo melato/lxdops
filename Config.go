@@ -86,7 +86,7 @@ type ConfigInherit struct {
 	// ProfileConfig specifies Config entries to be added to the instance profile.
 	// This was meant for creating templates with boot.autostart: "false",
 	// without needing to use profiles external to lxdops.
-	ProfileConfig map[string]string
+	ProfileConfig map[string]string `yaml:"profile-config,omitempty"`
 
 	// Properties provide key-value pairs used for pattern substitution.
 	// They override built-in properties
