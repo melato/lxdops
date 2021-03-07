@@ -13,19 +13,11 @@ func QualifiedContainerName(project string, container string) string {
 	return project + "_" + container
 }
 
-type SnapshotName struct {
-	Container string
-	Snapshot  string
-}
-
-func SplitSnapshotName(name string) SnapshotName {
-	var r SnapshotName
+func SplitSnapshotName(name string) (container, snapshot string) {
 	i := strings.Index(name, "/")
 	if i >= 0 {
-		r.Snapshot = name[i+1:]
-		r.Container = name[0:i]
+		return name[0:i], name[i+1:]
 	} else {
-		r.Container = name
+		return name, ""
 	}
-	return r
 }

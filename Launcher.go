@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
+	"melato.org/lxdops/util"
 	"melato.org/script"
 )
 
@@ -46,9 +48,13 @@ func (t *Launcher) NewConfigurer() *Configurer {
 }
 
 func (t *Launcher) lxcLaunch(instance *Instance, profiles []string) error {
+	config := instance.Config
+	osType := config.OS.Type()
+	if osType == nil {
+		return errors.New("unsupported OS type: " + config.OS.Name)
+	}
 	s := t.NewScript()
 	container := instance.Container()
-	config := instance.Config
 	var lxcArgs []string
 	if config.Project != "" {
 		lxcArgs = append(lxcArgs, "--project", config.Project)
@@ -59,7 +65,6 @@ func (t *Launcher) lxcLaunch(instance *Instance, profiles []string) error {
 	if osVersion == "" {
 		return errors.New("Missing version")
 	}
-	osType := config.OS.Type()
 	lxcArgs = append(lxcArgs, osType.ImageName(osVersion))
 	for _, profile := range profiles {
 		lxcArgs = append(lxcArgs, "-p", profile)
@@ -72,12 +77,160 @@ func (t *Launcher) lxcLaunch(instance *Instance, profiles []string) error {
 	return s.Error()
 }
 
+func (t *Launcher) createEmptyProfile(server lxd.InstanceServer, profile string) error {
+	post := api.ProfilesPost{Name: profile, ProfilePut: api.ProfilePut{Description: "lxdops placeholder profile"}}
+	if t.Trace {
+		fmt.Printf("create empty profile %s:\n", profile)
+	}
+	if !t.DryRun {
+		return server.CreateProfile(post)
+	}
+	return nil
+}
+
+func (t *Launcher) deleteProfiles(server lxd.InstanceServer, profiles []string) error {
+	// delete the missing profiles from the new container, and delete them
+	for _, profile := range profiles {
+		if t.Trace {
+			fmt.Printf("delete profile %s\n", profile)
+		}
+		if !t.DryRun {
+			err := server.DeleteProfile(profile)
+			if err != nil {
+				return AnnotateLXDError(profile, err)
+			}
+		}
+	}
+	return nil
+}
+
+// lxcCopy copy by invoking lxc
+func (t *Launcher) lxcCopy(instance *Instance, sourceProject, sourceContainer, snapshot string) error {
+	config := instance.Config
+	container := instance.Container()
+	var copyArgs []string
+	if sourceProject != "" {
+		copyArgs = append(copyArgs, "--project", sourceProject)
+	}
+
+	copyArgs = append(copyArgs, "copy")
+
+	if config.Project != "" {
+		copyArgs = append(copyArgs, "--target-project", config.Project)
+	}
+	if snapshot == "" {
+		copyArgs = append(copyArgs, "--container-only", sourceContainer)
+	} else {
+		copyArgs = append(copyArgs, sourceContainer+"/"+snapshot)
+	}
+	copyArgs = append(copyArgs, container)
+	s := t.NewScript()
+	s.Run("lxc", copyArgs...)
+	return s.Error()
+}
+
+func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, profiles []string) error {
+	s := t.NewScript()
+	container := instance.Container()
+	config := instance.Config
+	sourceConfig, err := config.GetSourceConfig()
+	if err != nil {
+		return err
+	}
+	sourceProject := sourceConfig.Project
+	if sourceProject == "" {
+		sourceProject = config.Project
+	}
+
+	sourceServer, err := t.Client.ProjectServer(sourceProject)
+	if err != nil {
+		return err
+	}
+	allProfiles, err := server.GetProfileNames()
+	if err != nil {
+		return err
+	}
+	sourceContainer, snapshot := SplitSnapshotName(config.Origin)
+	if sourceContainer == "" {
+		sourceInstance := sourceConfig.NewInstance(BaseName(string(config.SourceConfig)))
+		sourceContainer = sourceInstance.Container()
+	}
+	c, _, err := sourceServer.GetContainer(sourceContainer)
+	if err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	missingProfiles := util.StringSlice(c.Profiles).Diff(allProfiles)
+	// lxc copy will fail if the source container has profiles that do not exist in the target server
+	// so create the missing profiles, and delete them after the copy
+	for _, profile := range missingProfiles {
+		err := t.createEmptyProfile(server, profile)
+		if err != nil {
+			return err
+		}
+	}
+
+	var copyArgs []string
+	if sourceProject != "" {
+		copyArgs = append(copyArgs, "--project", sourceProject)
+	}
+
+	copyArgs = append(copyArgs, "copy")
+
+	if config.Project != "" {
+		copyArgs = append(copyArgs, "--target-project", config.Project)
+	}
+	if snapshot == "" {
+		copyArgs = append(copyArgs, "--container-only", sourceContainer)
+	} else {
+		copyArgs = append(copyArgs, sourceContainer+"/"+snapshot)
+	}
+	copyArgs = append(copyArgs, container)
+	s.Run("lxc", copyArgs...)
+	if s.HasError() {
+		t.deleteProfiles(server, missingProfiles)
+		return s.Error()
+	}
+
+	if !t.DryRun {
+		c, _, err := server.GetContainer(container)
+		if err != nil {
+			return AnnotateLXDError(container, err)
+		}
+		c.Profiles = profiles
+		op, err := server.UpdateContainer(container, c.ContainerPut, "")
+		if err != nil {
+			return err
+		}
+		if err := op.Wait(); err != nil {
+			return AnnotateLXDError(container, err)
+		}
+	}
+	err = t.deleteProfiles(server, missingProfiles)
+	if err != nil {
+		return err
+	}
+	if t.Trace {
+		fmt.Printf("start %s\n", container)
+	}
+	if !t.DryRun {
+		op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
+		if err != nil {
+			return AnnotateLXDError(container, err)
+		}
+		if err := op.Wait(); err != nil {
+			return AnnotateLXDError(container, err)
+		}
+
+		err = WaitForNetwork(server, container)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (t *Launcher) LaunchContainer(instance *Instance) error {
 	config := instance.Config
-	osType := config.OS.Type()
-	if osType == nil {
-		return errors.New("unsupported OS type: " + config.OS.Name)
-	}
 	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
@@ -114,58 +267,9 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 			return err
 		}
 	} else {
-		sourceConfig, err := config.GetSourceConfig()
+		err := t.copyContainer(instance, server, profiles)
 		if err != nil {
 			return err
-		}
-		var copyArgs []string
-		sourceProject := sourceConfig.Project
-		if sourceProject == "" {
-			sourceProject = config.Project
-		}
-		if sourceProject != "" {
-			copyArgs = append(copyArgs, "--project", sourceProject)
-		}
-		copyArgs = append(copyArgs, "copy")
-
-		if config.Project != "" {
-			copyArgs = append(copyArgs, "--target-project", config.Project)
-		}
-		sn := SplitSnapshotName(config.Origin)
-		if sn.Snapshot == "" {
-			copyArgs = append(copyArgs, "--container-only", sn.Container)
-		} else {
-			copyArgs = append(copyArgs, sn.Container+"/"+sn.Snapshot)
-		}
-		copyArgs = append(copyArgs, container)
-		s.Run("lxc", copyArgs...)
-		if s.HasError() {
-			return s.Error()
-		}
-
-		if !t.DryRun {
-			c, _, err := server.GetContainer(container)
-			if err != nil {
-				return AnnotateLXDError(container, err)
-			}
-			c.Profiles = profiles
-			op, err := server.UpdateContainer(container, c.ContainerPut, "")
-			if err != nil {
-				return err
-			}
-			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(container, err)
-			}
-
-			op, err = server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
-			if err != nil {
-				return AnnotateLXDError(container, err)
-			}
-
-			err = WaitForNetwork(server, container)
-			if err != nil {
-				return err
-			}
 		}
 	}
 	t.NewConfigurer().ConfigureContainer(instance)
