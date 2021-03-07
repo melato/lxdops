@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/client"
-	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/password"
 	"melato.org/lxdops/util"
 	"melato.org/script/v2"
@@ -271,7 +270,7 @@ func (t *Configurer) runScripts(project, container string, scripts []*Script) er
 			if err != nil {
 				return err
 			}
-			err := StartContainer(server, container)
+			err = StartContainer(server, container)
 			if err != nil {
 				return err
 			}
