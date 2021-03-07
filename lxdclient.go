@@ -3,10 +3,8 @@ package lxdops
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	lxd "github.com/lxc/lxd/client"
-	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/util"
 )
 
@@ -50,47 +48,6 @@ func (t *LxdClient) ProjectServer(project string) (lxd.InstanceServer, error) {
 	return server.UseProject(project), nil
 }
 
-func AnnotateLXDError(name string, err error) error {
-	if err == nil {
-		return err
-	}
-	return errors.New(name + ": " + err.Error())
-}
-
-func WaitForNetwork(server lxd.InstanceServer, container string) error {
-	for i := 0; i < 30; i++ {
-		state, _, err := server.GetContainerState(container)
-		if err != nil {
-			return AnnotateLXDError(container, err)
-		}
-		if state == nil {
-			continue
-		}
-		for _, net := range state.Network {
-			for _, a := range net.Addresses {
-				if a.Family == "inet" && a.Scope == "global" {
-					fmt.Println(a.Address)
-					return nil
-				}
-			}
-		}
-		fmt.Printf("status: %s\n", state.Status)
-		time.Sleep(1 * time.Second)
-	}
-	return errors.New("could not get ip address for: " + container)
-}
-
-func UpdateContainerState(server lxd.InstanceServer, container string, action string) error {
-	op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
-	if err != nil {
-		return AnnotateLXDError(container, err)
-	}
-	if err := op.Wait(); err != nil {
-		return AnnotateLXDError(container, err)
-	}
-	return nil
-}
-
 func (t *LxdClient) GetDefaultDataset() (string, error) {
 	server, err := t.RootServer()
 	if err != nil {
@@ -105,15 +62,6 @@ func (t *LxdClient) GetDefaultDataset() (string, error) {
 		return name, errors.New("no zfs.pool_name")
 	}
 	return name, nil
-}
-
-func FileExists(server lxd.InstanceServer, container string, file string) bool {
-	reader, _, err := server.GetContainerFile(container, file)
-	if err != nil {
-		return false
-	}
-	reader.Close()
-	return true
 }
 
 func (pattern Pattern) Substitute(properties *util.PatternProperties) (string, error) {

@@ -215,7 +215,7 @@ func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, 
 		fmt.Printf("start %s\n", container)
 	}
 	if !t.DryRun {
-		err := UpdateContainerState(server, container, "start")
+		err := StartContainer(server, container)
 		if err != nil {
 			return err
 		}
@@ -258,7 +258,6 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 		}
 		profiles = append(profiles, profileName)
 	}
-	s := t.NewScript()
 	container := instance.Container()
 	if config.Origin == "" {
 		err := t.lxcLaunch(instance, profiles)
@@ -287,16 +286,13 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 	if config.Stop {
 		fmt.Printf("stop %s\n", container)
 		if !t.DryRun {
-			op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "stop"}, "")
+			err := StopContainer(server, container)
 			if err != nil {
-				return AnnotateLXDError(container, err)
-			}
-			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(container, err)
+				return err
 			}
 		}
 	}
-	return s.Error()
+	return nil
 }
 
 func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
@@ -308,7 +304,7 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 	}
 	if !t.DryRun {
 		if stop {
-			_ = UpdateContainerState(server, container, "stop")
+			_ = StopContainer(server, container)
 		}
 
 		op, err := server.DeleteContainer(container)

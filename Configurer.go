@@ -267,19 +267,13 @@ func (t *Configurer) runScripts(project, container string, scripts []*Script) er
 			}
 		}
 		if script.Reboot {
-			op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "stop"}, "")
+			err := StopContainer(server, container)
 			if err != nil {
-				return AnnotateLXDError(container, err)
+				return err
 			}
-			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(container, err)
-			}
-			op, err = server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
+			err := StartContainer(server, container)
 			if err != nil {
-				return AnnotateLXDError(container, err)
-			}
-			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(container, err)
+				return err
 			}
 		}
 	}
