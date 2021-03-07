@@ -42,6 +42,9 @@ commands:
       profiles:
         short: print the container profiles
         use: <container>
+      devices:
+        short: list container disk devices
+        use: <container>
       state:
         short: dump the container state, in yaml
         use: <container>

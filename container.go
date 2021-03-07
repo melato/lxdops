@@ -83,3 +83,12 @@ func (t *ContainerOps) State(container string, action ...string) error {
 	util.PrintYaml(state)
 	return nil
 }
+
+func (t *ContainerOps) Devices(container string) error {
+	c, _, err := t.server.GetContainer(container)
+	if err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	util.PrintYaml(c.ExpandedDevices)
+	return nil
+}
