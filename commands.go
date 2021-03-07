@@ -67,7 +67,8 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd.Command("network").RunFunc(containerOps.Network)
 	containerCmd.Command("wait").RunFunc(containerOps.Wait)
 	containerCmd.Command("state").RunFunc(containerOps.State)
-	containerCmd.Command("devices").RunFunc(containerOps.Devices)
+	containerDevices := &ContainerDevicesOp{ContainerOps: containerOps}
+	containerCmd.Command("devices").Flags(containerDevices).RunFunc(containerDevices.Devices)
 
 	projectCmd := cmd.Command("project")
 	createProject := &ProjectCreate{Client: client}

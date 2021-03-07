@@ -95,12 +95,20 @@ func (t disk_device_sorter) Len() int           { return len(t) }
 func (t disk_device_sorter) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
 func (t disk_device_sorter) Less(i, j int) bool { return t[i].Source < t[j].Source }
 
-func (t *ContainerOps) Devices(container string) error {
-	c, _, err := t.server.GetContainer(container)
+type ContainerDevicesOp struct {
+	ContainerOps *ContainerOps `name:""`
+	Yaml         bool
+}
+
+func (t *ContainerDevicesOp) Devices(container string) error {
+	c, _, err := t.ContainerOps.server.GetContainer(container)
 	if err != nil {
 		return AnnotateLXDError(container, err)
 	}
-	//util.PrintYaml(c.ExpandedDevices)
+	if t.Yaml {
+		util.PrintYaml(c.ExpandedDevices)
+		return nil
+	}
 	writer := &table.FixedWriter{Writer: os.Stdout}
 
 	var devices []disk_device
