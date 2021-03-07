@@ -6,6 +6,7 @@ import (
 	"time"
 
 	lxd "github.com/lxc/lxd/client"
+	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/util"
 )
 
@@ -77,6 +78,17 @@ func WaitForNetwork(server lxd.InstanceServer, container string) error {
 		time.Sleep(1 * time.Second)
 	}
 	return errors.New("could not get ip address for: " + container)
+}
+
+func UpdateContainerState(server lxd.InstanceServer, container string, action string) error {
+	op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
+	if err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	if err := op.Wait(); err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	return nil
 }
 
 func (t *LxdClient) GetDefaultDataset() (string, error) {

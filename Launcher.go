@@ -35,7 +35,7 @@ func (t *Launcher) NewScript() *script.Script {
 
 func (t *Launcher) Rebuild(instance *Instance) error {
 	t.Trace = true
-	err := t.deleteContainer(instance)
+	err := t.deleteContainer(instance, true)
 	if err != nil {
 		return err
 	}
@@ -215,12 +215,9 @@ func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, 
 		fmt.Printf("start %s\n", container)
 	}
 	if !t.DryRun {
-		op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: "start"}, "")
+		err := UpdateContainerState(server, container, "start")
 		if err != nil {
-			return AnnotateLXDError(container, err)
-		}
-		if err := op.Wait(); err != nil {
-			return AnnotateLXDError(container, err)
+			return err
 		}
 
 		err = WaitForNetwork(server, container)
@@ -302,7 +299,7 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 	return s.Error()
 }
 
-func (t *Launcher) deleteContainer(instance *Instance) error {
+func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 	config := instance.Config
 	container := instance.Container()
 	server, err := t.Client.ProjectServer(config.Project)
@@ -310,6 +307,10 @@ func (t *Launcher) deleteContainer(instance *Instance) error {
 		return err
 	}
 	if !t.DryRun {
+		if stop {
+			_ = UpdateContainerState(server, container, "stop")
+		}
+
 		op, err := server.DeleteContainer(container)
 		if err == nil {
 			if t.Trace {
@@ -340,7 +341,7 @@ func (t *Launcher) deleteContainer(instance *Instance) error {
 }
 
 func (t *Launcher) DeleteContainer(instance *Instance) error {
-	err := t.deleteContainer(instance)
+	err := t.deleteContainer(instance, false)
 	if err != nil {
 		return err
 	}
