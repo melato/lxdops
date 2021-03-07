@@ -26,7 +26,7 @@ long: |
   Devices are attached to the container via an instance profile.
 commands:
   addresses:
-    short: export container addresses
+    short: export network addresses for all containers
     use:
   configure:
     short: configure an existing container
@@ -58,6 +58,7 @@ commands:
     short: delete a stopped container and its profile
     use: <configfile>...
   instance:
+    short: show information about an instance/config
     commands:
       project:
         short: print instance project
@@ -82,7 +83,7 @@ commands:
         examples:
         - verify *.yaml
   launch:
-    short: launch a container
+    short: launch an instance
     use: <config-file> ...
     examples:
     - launch php.yaml
@@ -133,7 +134,7 @@ commands:
     use: <configFile> <newname>
     long: Renames the container, its filesystems, and its devices profile
   snapshot:
-    short: snapshot filesystems
+    short: snapshot instance filesystems
     use: '@<snapshot> <config-file>...'
   zfsroot:
     short: print default zfsroot property

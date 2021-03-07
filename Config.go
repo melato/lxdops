@@ -6,9 +6,8 @@ type HostPath string
 
 // Pattern is a string that is converted via property substitution, before it is used
 // Properties are denoted in the pattern via (<key>), where <key> is the property key
-// Built-in properties are:  instance, zfsroot, project, /project, project_instance
-// Custom properties are defined in Config.Properties
-// Custom properties can override built-in properties
+// There are built-in properties like instance, project.
+// Custom properties are defined in Config.Properties, and override built-in properties
 type Pattern string
 
 // Config - Instance configuration
