@@ -77,11 +77,18 @@ func (config *Config) verifyDevices() bool {
 
 func (config *Config) Verify() bool {
 	valid := true
+	users := make(map[string]bool)
 	for _, u := range config.Users {
 		if !u.IsValidName() {
 			valid = false
 			fmt.Fprintf(os.Stderr, "invalid user name: %s\n", u.Name)
 		}
+		u = u.EffectiveUser()
+		if users[u.Name] {
+			valid = false
+			fmt.Fprintf(os.Stderr, "duplicate user: %s\n", u.Name)
+		}
+		users[u.Name] = true
 	}
 	for _, file := range config.RequiredFiles {
 		if !config.VerifyFileExists(file) {

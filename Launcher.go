@@ -12,7 +12,7 @@ import (
 type Launcher struct {
 	Client *LxdClient `name:"-"`
 	ConfigOptions
-	Trace  bool `name:""` //`name:"trace,t" usage:"print exec arguments"`
+	Trace  bool `name:"t" usage:"trace print what is happening"`
 	DryRun bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 }
 
