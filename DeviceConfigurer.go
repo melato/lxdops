@@ -121,8 +121,15 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 			if len(parts) != 2 {
 				return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
 			}
-			originInstance = sourceConfig.NewInstance(parts[0])
+			originName := parts[0]
 			originSnapshot = parts[1]
+			if originName == "" {
+				originName = instance.SourceName()
+			}
+			if originName == "" {
+				return errors.New("missing device origin name")
+			}
+			originInstance = sourceConfig.NewInstance(originName)
 		}
 		if t.Config.DeviceTemplate != "" {
 			templateInstance = sourceConfig.NewInstance(t.Config.DeviceTemplate)

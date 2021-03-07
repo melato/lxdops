@@ -152,8 +152,10 @@ func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, 
 	}
 	sourceContainer, snapshot := SplitSnapshotName(config.Origin)
 	if sourceContainer == "" {
-		sourceInstance := sourceConfig.NewInstance(BaseName(string(config.SourceConfig)))
-		sourceContainer = sourceInstance.Container()
+		sourceContainer, err = instance.SourceContainer()
+		if config.SourceConfig == "" {
+			return errors.New("missing origin container")
+		}
 	}
 	c, _, err := sourceServer.GetContainer(sourceContainer)
 	if err != nil {

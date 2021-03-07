@@ -87,3 +87,26 @@ func (t *Instance) DeviceDir(deviceId string, device *Device) (string, error) {
 		return fsPath.Dir(), nil
 	}
 }
+
+// SourceName returns the instance name of the source config, if any.
+func (t *Instance) SourceName() string {
+	config := t.Config
+	if config.SourceConfig == "" {
+		return ""
+	}
+	return BaseName(string(config.SourceConfig))
+}
+
+// SourceContainer returns the name of the container of the source config, if any.
+func (t *Instance) SourceContainer() (string, error) {
+	config := t.Config
+	if config.SourceConfig == "" {
+		return "", nil
+	}
+	sourceConfig, err := config.GetSourceConfig()
+	if err != nil {
+		return "", err
+	}
+	sourceInstance := sourceConfig.NewInstance(BaseName(string(config.SourceConfig)))
+	return sourceInstance.Container(), nil
+}
