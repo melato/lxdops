@@ -3,6 +3,7 @@ package lxdops
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
@@ -84,6 +85,16 @@ func (t *ContainerOps) State(container string, action ...string) error {
 	return nil
 }
 
+type disk_device struct {
+	Name, Source, Path string
+	Readonly           string
+}
+type disk_device_sorter []disk_device
+
+func (t disk_device_sorter) Len() int           { return len(t) }
+func (t disk_device_sorter) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
+func (t disk_device_sorter) Less(i, j int) bool { return t[i].Source < t[j].Source }
+
 func (t *ContainerOps) Devices(container string) error {
 	c, _, err := t.server.GetContainer(container)
 	if err != nil {
@@ -91,17 +102,24 @@ func (t *ContainerOps) Devices(container string) error {
 	}
 	//util.PrintYaml(c.ExpandedDevices)
 	writer := &table.FixedWriter{Writer: os.Stdout}
-	var deviceName string
-	var d map[string]string
-	writer.Columns(
-		table.NewColumn("PATH", func() interface{} { return d["path"] }),
-		table.NewColumn("SOURCE", func() interface{} { return d["source"] }),
-		table.NewColumn("NAME", func() interface{} { return deviceName }),
-	)
-	for deviceName, d = range c.ExpandedDevices {
+
+	var devices []disk_device
+	for name, d := range c.ExpandedDevices {
 		if d["type"] == "disk" {
-			writer.WriteRow()
+			devices = append(devices, disk_device{Name: name, Path: d["path"], Source: d["source"], Readonly: d["readonly"]})
 		}
+	}
+	sort.Sort(disk_device_sorter(devices))
+
+	var d disk_device
+	writer.Columns(
+		table.NewColumn("SOURCE", func() interface{} { return d.Source }),
+		table.NewColumn("PATH", func() interface{} { return d.Path }),
+		table.NewColumn("NAME", func() interface{} { return d.Name }),
+		table.NewColumn("READONLY", func() interface{} { return d.Readonly }),
+	)
+	for _, d = range devices {
+		writer.WriteRow()
 	}
 	writer.End()
 	return nil
