@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 
 	"melato.org/command"
@@ -8,11 +9,14 @@ import (
 	"melato.org/lxdops/os"
 )
 
+//go:embed version
+var version string
+
 func main() {
 	lxdops.OSTypes["alpine"] = &os.Alpine{}
 	lxdops.OSTypes["debian"] = &os.Debian{}
 	lxdops.OSTypes["ubuntu"] = &os.Ubuntu{}
 	cmd := lxdops.RootCommand()
-	cmd.Command("version").NoConfig().RunMethod(func() { fmt.Println(Version) }).Short("print program version")
+	cmd.Command("version").NoConfig().RunMethod(func() { fmt.Println(version) }).Short("print program version")
 	command.Main(cmd)
 }
