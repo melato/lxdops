@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"melato.org/lxdops/util"
+	"melato.org/script/v2"
 )
 
 type Instance struct {
@@ -126,4 +127,32 @@ func (t *Instance) SourceContainer() (string, error) {
 	}
 	sourceInstance := sourceConfig.NewInstance(BaseName(string(config.SourceConfig)))
 	return sourceInstance.Container(), nil
+}
+
+// Snapshot creates a snapshot of all ZFS filesystems of the instance
+func (instance *Instance) Snapshot(t SnapshotParams) error {
+	filesystems, err := instance.FilesystemList()
+	if err != nil {
+		return err
+	}
+	fslist := InstanceFSList(filesystems)
+	fslist.Sort()
+	s := &script.Script{Trace: true}
+	if t.Destroy {
+		if t.Recursive {
+			roots := fslist.Roots()
+			for _, fs := range roots {
+				s.Run("sudo", "zfs", "destroy", "-R", fs.Path+"@"+t.Snapshot)
+			}
+		} else {
+			for _, fs := range fslist {
+				s.Run("sudo", "zfs", "destroy", fs.Path+"@"+t.Snapshot)
+			}
+		}
+	} else {
+		for _, fs := range fslist {
+			s.Run("sudo", "zfs", "snapshot", fs.Path+"@"+t.Snapshot)
+		}
+	}
+	return s.Error()
 }

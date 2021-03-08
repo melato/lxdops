@@ -106,31 +106,6 @@ func (t *Launcher) deleteProfiles(server lxd.InstanceServer, profiles []string) 
 	return nil
 }
 
-// lxcCopy copy by invoking lxc
-func (t *Launcher) lxcCopy(instance *Instance, sourceProject, sourceContainer, snapshot string) error {
-	config := instance.Config
-	container := instance.Container()
-	var copyArgs []string
-	if sourceProject != "" {
-		copyArgs = append(copyArgs, "--project", sourceProject)
-	}
-
-	copyArgs = append(copyArgs, "copy")
-
-	if config.Project != "" {
-		copyArgs = append(copyArgs, "--target-project", config.Project)
-	}
-	if snapshot == "" {
-		copyArgs = append(copyArgs, "--container-only", sourceContainer)
-	} else {
-		copyArgs = append(copyArgs, sourceContainer+"/"+snapshot)
-	}
-	copyArgs = append(copyArgs, container)
-	s := t.NewScript()
-	s.Run("lxc", copyArgs...)
-	return s.Error()
-}
-
 func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, profiles []string) error {
 	s := t.NewScript()
 	container := instance.Container()
@@ -184,7 +159,7 @@ func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, 
 		copyArgs = append(copyArgs, "--target-project", config.Project)
 	}
 	if snapshot == "" {
-		copyArgs = append(copyArgs, "--container-only", sourceContainer)
+		copyArgs = append(copyArgs, "--instance-only", sourceContainer)
 	} else {
 		copyArgs = append(copyArgs, sourceContainer+"/"+snapshot)
 	}

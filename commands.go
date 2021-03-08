@@ -29,8 +29,8 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename)
 	cmd.Command("create-devices").Flags(launcher).RunFunc(launcher.InstanceFunc(launcher.CreateDevices, true))
 
-	snapshot := &Snapshot{Client: client}
-	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.Snapshot)
+	snapshot := &Snapshot{}
+	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.InstanceFunc(snapshot.Snapshot, true))
 
 	configurer := &Configurer{Client: client}
 	cmd.Command("configure").Flags(configurer).RunFunc(configurer.InstanceFunc(configurer.ConfigureContainer, true))
