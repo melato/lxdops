@@ -231,6 +231,7 @@ func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, 
 }
 
 func (t *Launcher) LaunchContainer(instance *Instance) error {
+	t.Trace = true
 	config := instance.Config
 	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
