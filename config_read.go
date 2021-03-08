@@ -83,7 +83,6 @@ func (t *ConfigInherit) Merge(c *ConfigInherit) error {
 		t.LxcOptions = c.LxcOptions
 	}
 
-	t.RequiredFiles = append(t.RequiredFiles, c.RequiredFiles...)
 	if t.Filesystems == nil {
 		t.Filesystems = make(map[string]*Filesystem)
 	}

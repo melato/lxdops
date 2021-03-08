@@ -68,9 +68,6 @@ type ConfigInherit struct {
 	// Include paths are either absolute or relative to the path of the including config.
 	Include []HostPath `yaml:"include,omitempty"`
 
-	// These are files or directories that must exist on the host.
-	RequiredFiles []HostPath `yaml:"require,omitempty"`
-
 	// Filesystems are zfs filesystems or plain directories that are created
 	// when an instance is created.  Devices are created inside filesystems.
 	Filesystems map[string]*Filesystem `yaml:"filesystems"`

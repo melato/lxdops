@@ -90,11 +90,6 @@ func (config *Config) Verify() bool {
 		}
 		users[u.Name] = true
 	}
-	for _, file := range config.RequiredFiles {
-		if !config.VerifyFileExists(file) {
-			valid = false
-		}
-	}
 	for _, file := range config.Files {
 		if !config.VerifyFileExists(file.Source) {
 			valid = false
