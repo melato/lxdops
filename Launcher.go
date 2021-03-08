@@ -230,6 +230,14 @@ func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, 
 	return nil
 }
 
+func (t *Launcher) CreateDevices(instance *Instance) error {
+	t.Trace = true
+	dev := NewDeviceConfigurer(t.Client, instance.Config)
+	dev.Trace = t.Trace
+	dev.DryRun = t.DryRun
+	return dev.ConfigureDevices(instance)
+}
+
 func (t *Launcher) LaunchContainer(instance *Instance) error {
 	t.Trace = true
 	config := instance.Config
@@ -467,11 +475,4 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 		}
 	}
 	return nil
-}
-
-func (t *Launcher) CreateDevices(name string, config *Config) error {
-	dev := NewDeviceConfigurer(t.Client, config)
-	dev.Trace = t.Trace
-	dev.DryRun = t.DryRun
-	return dev.ConfigureDevices(config.NewInstance(name))
 }

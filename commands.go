@@ -27,7 +27,7 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("delete").Flags(launcher).RunFunc(launcher.InstanceFunc(launcher.DeleteContainer, true))
 	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.InstanceFunc(launcher.Rebuild, true))
 	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename)
-	cmd.Command("create-devices").Flags(launcher).RunFunc(launcher.CreateDevices)
+	cmd.Command("create-devices").Flags(launcher).RunFunc(launcher.InstanceFunc(launcher.CreateDevices, true))
 
 	snapshot := &Snapshot{Client: client}
 	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.Snapshot)

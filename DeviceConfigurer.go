@@ -9,7 +9,7 @@ import (
 
 	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/util"
-	"melato.org/script/v2"
+	"melato.org/script"
 )
 
 type DeviceConfigurer struct {
@@ -50,21 +50,29 @@ func (t *DeviceConfigurer) CreateFilesystem(fs InstanceFS, originDataset string)
 		return t.CreateDir(fs.Dir(), true)
 	}
 
-	script := t.NewScript()
+	var args []string
 	if originDataset != "" {
-		script.Run("sudo", "zfs", "clone", "-p", originDataset, fs.Path)
-		return script.Error()
+		args = []string{"zfs", "clone", "-p"}
+	} else {
+		args = []string{"zfs", "create", "-p"}
+
 	}
 
-	// create
-	args := []string{"zfs", "create", "-p"}
+	// add properties
 	for key, value := range fs.Filesystem.Zfsproperties {
 		args = append(args, "-o", key+"="+value)
 	}
+
+	if originDataset != "" {
+		args = append(args, originDataset)
+	}
 	args = append(args, fs.Path)
-	script.Run("sudo", args...)
-	t.chownDir(script, fs.Dir())
-	return script.Error()
+	s := t.NewScript()
+	s.Run("sudo", args...)
+	if originDataset == "" {
+		t.chownDir(s, fs.Dir())
+	}
+	return s.Error()
 }
 
 func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapshot string) error {
