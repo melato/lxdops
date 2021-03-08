@@ -3,7 +3,9 @@ package lxdops
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
@@ -330,7 +332,11 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 	if !t.DryRun {
 		err := server.DeleteProfile(profileName)
 		if err == nil && t.Trace {
-			fmt.Printf("deleted profile %s\n", profileName)
+			fmt.Printf("delete profile %s\n", profileName)
+		}
+	} else {
+		if (InstanceServer{server}).ProfileExists(profileName) {
+			fmt.Printf("delete profile %s\n", profileName)
 		}
 	}
 	return nil
@@ -345,11 +351,27 @@ func (t *Launcher) DeleteContainer(instance *Instance) error {
 	if err != nil {
 		return err
 	}
-	if len(filesystems) > 0 {
-		fmt.Fprintln(os.Stderr, "not deleted filesystems:")
-		for _, fs := range filesystems {
-			fmt.Println(fs.Path)
+	var zfsFilesystems []string
+	var dirFilesystems []string
+	for _, fs := range filesystems {
+		if fs.IsZfs() {
+			zfsFilesystems = append(zfsFilesystems, fs.Path)
+		} else {
+			dirFilesystems = append(dirFilesystems, fs.Path)
 		}
+	}
+	fmt.Fprintln(os.Stderr, "remaining filesystems:")
+	if len(zfsFilesystems) > 0 {
+		cmd := exec.Command("zfs", append([]string{"list", "-o", "name,mountpoint"}, zfsFilesystems...)...)
+		cmd.Stderr = io.Discard
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
+	if len(dirFilesystems) > 0 {
+		cmd := exec.Command("ls", append([]string{"-l"}, dirFilesystems...)...)
+		cmd.Stderr = io.Discard
+		cmd.Stdout = os.Stdout
+		cmd.Run()
 	}
 	return nil
 }

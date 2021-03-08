@@ -12,6 +12,10 @@ import (
 
 const DefaultProject = "default"
 
+type InstanceServer struct {
+	Server lxd.InstanceServer
+}
+
 func QualifiedContainerName(project string, container string) string {
 	if project == DefaultProject {
 		return container
@@ -57,23 +61,12 @@ func WaitForNetwork(server lxd.InstanceServer, container string) error {
 	return errors.New("could not get ip address for: " + container)
 }
 
-func UpdateContainerState(server lxd.InstanceServer, container string, action string) error {
-	op, err := server.UpdateContainerState(container, api.ContainerStatePut{Action: action}, "")
-	if err != nil {
-		return AnnotateLXDError(container, err)
-	}
-	if err := op.Wait(); err != nil {
-		return AnnotateLXDError(container, err)
-	}
-	return nil
-}
-
 func StartContainer(server lxd.InstanceServer, container string) error {
-	return UpdateContainerState(server, container, "start")
+	return InstanceServer{server}.StartContainer(container)
 }
 
 func StopContainer(server lxd.InstanceServer, container string) error {
-	return UpdateContainerState(server, container, "stop")
+	return InstanceServer{server}.StopContainer(container)
 }
 
 func FileExists(server lxd.InstanceServer, container string, file string) bool {
@@ -83,4 +76,30 @@ func FileExists(server lxd.InstanceServer, container string, file string) bool {
 	}
 	reader.Close()
 	return true
+}
+
+func (t InstanceServer) updateContainerState(container string, action string) error {
+	op, err := t.Server.UpdateContainerState(container, api.ContainerStatePut{Action: action}, "")
+	if err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	if err := op.Wait(); err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	return nil
+}
+
+func (t InstanceServer) StartContainer(container string) error {
+	return t.updateContainerState(container, "start")
+}
+
+func (t InstanceServer) StopContainer(container string) error {
+	return t.updateContainerState(container, "stop")
+}
+func (t InstanceServer) ProfileExists(profile string) bool {
+	_, _, err := t.Server.GetProfile(profile)
+	if err == nil {
+		return true
+	}
+	return false
 }
