@@ -2,7 +2,7 @@ package lxdops
 
 import (
 	"encoding/csv"
-	"errors"
+	"io"
 	"os"
 	"strings"
 
@@ -27,7 +27,7 @@ func (t *NetworkManager) ParseAddress(addr string) string {
 }
 
 func (t *NetworkManager) GetProjectAddresses(server lxd.ContainerServer, project string) ([]*HostAddress, error) {
-	containers, err := server.GetContainersFull()
+	containers, err := server.UseProject(project).GetContainersFull()
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +68,18 @@ func (t *NetworkManager) GetAddresses() ([]*HostAddress, error) {
 	return addresses, nil
 }
 
+func (t *NetworkManager) printAddresses(addresses []*HostAddress, headers bool, writer io.Writer) error {
+	var csv = csv.NewWriter(writer)
+	if headers {
+		csv.Write([]string{"address", "name"})
+	}
+	for _, a := range addresses {
+		csv.Write([]string{a.Address, a.Name})
+	}
+	csv.Flush()
+	return csv.Error()
+}
+
 func (t *NetworkManager) WriteAddresses(addresses []*HostAddress, file string, headers bool) error {
 	f, err := os.Create(file)
 	if err != nil {
@@ -92,9 +104,6 @@ type NetworkOp struct {
 }
 
 func (t *NetworkOp) ExportAddresses() error {
-	if t.OutputFile == "" {
-		return errors.New("Missing output file")
-	}
 	net := &NetworkManager{Client: t.Client}
 	containers, err := net.GetAddresses()
 
@@ -102,5 +111,14 @@ func (t *NetworkOp) ExportAddresses() error {
 		return err
 	}
 
-	return net.WriteAddresses(containers, t.OutputFile, t.Headers)
+	if t.OutputFile == "" {
+		return net.printAddresses(containers, t.Headers, os.Stdout)
+	} else {
+		f, err := os.Create(t.OutputFile)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		return net.printAddresses(containers, t.Headers, f)
+	}
 }
