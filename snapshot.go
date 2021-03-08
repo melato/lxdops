@@ -3,6 +3,8 @@ package lxdops
 import (
 	"errors"
 	"time"
+
+	"melato.org/script/v2"
 )
 
 type SnapshotParams struct {
@@ -32,6 +34,29 @@ func (t *Snapshot) Configured() error {
 	return nil
 }
 
-func (t *Snapshot) Snapshot(instance *Instance) error {
-	return instance.Snapshot(t.SnapshotParams)
+func (t *Snapshot) DestroySnapshot(instance *Instance) error {
+	filesystems, err := instance.FilesystemList()
+	if err != nil {
+		return err
+	}
+	s := &script.Script{Trace: true}
+	if t.Recursive {
+		roots := InstanceFSList(filesystems).Roots()
+		for _, fs := range roots {
+			s.Run("sudo", "zfs", "destroy", "-R", fs.Path+"@"+t.Snapshot)
+		}
+	} else {
+		for _, fs := range filesystems {
+			s.Run("sudo", "zfs", "destroy", fs.Path+"@"+t.Snapshot)
+		}
+	}
+	return s.Error()
+}
+
+func (t *Snapshot) Run(instance *Instance) error {
+	if t.Destroy {
+		return t.DestroySnapshot(instance)
+	} else {
+		return instance.Snapshot(t.Snapshot)
+	}
 }
