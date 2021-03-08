@@ -61,14 +61,6 @@ func WaitForNetwork(server lxd.InstanceServer, container string) error {
 	return errors.New("could not get ip address for: " + container)
 }
 
-func StartContainer(server lxd.InstanceServer, container string) error {
-	return InstanceServer{server}.StartContainer(container)
-}
-
-func StopContainer(server lxd.InstanceServer, container string) error {
-	return InstanceServer{server}.StopContainer(container)
-}
-
 func FileExists(server lxd.InstanceServer, container string, file string) bool {
 	reader, _, err := server.GetContainerFile(container, file)
 	if err != nil {

@@ -37,7 +37,7 @@ func (t *InstanceOps) Properties(instance *Instance) error {
 }
 
 func (t *InstanceOps) Filesystems(instance *Instance) error {
-	filesystems, err := instance.Filesystems()
+	filesystems, err := instance.FilesystemList()
 	if err != nil {
 		return err
 	}
@@ -57,22 +57,19 @@ func (t *InstanceOps) Filesystems(instance *Instance) error {
 
 func (t *InstanceOps) Devices(instance *Instance) error {
 	writer := &table.FixedWriter{Writer: os.Stdout}
-	var deviceName string
-	var d *Device
+	devices, err := instance.DeviceList()
+	if err != nil {
+		return err
+	}
+	var d InstanceDevice
 	writer.Columns(
-		table.NewColumn("SOURCE", func() interface{} {
-			dir, err := instance.DeviceDir(deviceName, d)
-			if err != nil {
-				return err
-			}
-			return dir
-		}),
-		table.NewColumn("PATH", func() interface{} { return d.Path }),
-		table.NewColumn("NAME", func() interface{} { return deviceName }),
-		table.NewColumn("DIR", func() interface{} { return d.Dir }),
-		table.NewColumn("FILESYSTEM", func() interface{} { return d.Filesystem }),
+		table.NewColumn("SOURCE", func() interface{} { return d.Source }),
+		table.NewColumn("PATH", func() interface{} { return d.Device.Path }),
+		table.NewColumn("NAME", func() interface{} { return d.Name }),
+		table.NewColumn("DIR", func() interface{} { return d.Device.Dir }),
+		table.NewColumn("FILESYSTEM", func() interface{} { return d.Device.Filesystem }),
 	)
-	for deviceName, d = range instance.Config.Devices {
+	for _, d = range devices {
 		writer.WriteRow()
 	}
 	writer.End()

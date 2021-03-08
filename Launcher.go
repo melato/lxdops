@@ -217,7 +217,7 @@ func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, 
 		fmt.Printf("start %s\n", container)
 	}
 	if !t.DryRun {
-		err := StartContainer(server, container)
+		err = (InstanceServer{server}).StartContainer(container)
 		if err != nil {
 			return err
 		}
@@ -288,7 +288,7 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 	if config.Stop {
 		fmt.Printf("stop %s\n", container)
 		if !t.DryRun {
-			err := StopContainer(server, container)
+			err = (InstanceServer{server}).StopContainer(container)
 			if err != nil {
 				return err
 			}
@@ -306,7 +306,7 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 	}
 	if !t.DryRun {
 		if stop {
-			_ = StopContainer(server, container)
+			err = (InstanceServer{server}).StopContainer(container)
 		}
 
 		op, err := server.DeleteContainer(container)

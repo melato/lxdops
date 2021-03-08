@@ -283,11 +283,11 @@ func (t *Configurer) runScripts(project, container string, scripts []*Script) er
 			}
 		}
 		if script.Reboot {
-			err := StopContainer(server, container)
+			err = (InstanceServer{server}).StopContainer(container)
 			if err != nil {
 				return err
 			}
-			err = StartContainer(server, container)
+			err = (InstanceServer{server}).StartContainer(container)
 			if err != nil {
 				return err
 			}

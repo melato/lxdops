@@ -55,7 +55,24 @@ func (t *Instance) FilesystemList() ([]InstanceFS, error) {
 	for _, path := range paths {
 		list = append(list, path)
 	}
-	return InstanceFSList(list), nil
+	InstanceFSList(list).Sort()
+	return list, nil
+}
+
+func (t *Instance) DeviceList() ([]InstanceDevice, error) {
+	var devices []InstanceDevice
+	for name, device := range t.Config.Devices {
+		d := InstanceDevice{Name: name, Device: device}
+		dir, err := t.DeviceDir(name, device)
+		if err != nil {
+			return nil, err
+		}
+		d.Source = dir
+		devices = append(devices, d)
+	}
+
+	InstanceDeviceList(devices).Sort()
+	return devices, nil
 }
 
 func (t *Instance) DeviceDir(deviceId string, device *Device) (string, error) {
