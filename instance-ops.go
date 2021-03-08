@@ -60,7 +60,6 @@ func (t *InstanceOps) Devices(instance *Instance) error {
 	var deviceName string
 	var d *Device
 	writer.Columns(
-		table.NewColumn("PATH", func() interface{} { return d.Path }),
 		table.NewColumn("SOURCE", func() interface{} {
 			dir, err := instance.DeviceDir(deviceName, d)
 			if err != nil {
@@ -68,9 +67,10 @@ func (t *InstanceOps) Devices(instance *Instance) error {
 			}
 			return dir
 		}),
+		table.NewColumn("PATH", func() interface{} { return d.Path }),
 		table.NewColumn("NAME", func() interface{} { return deviceName }),
-		table.NewColumn("FILESYSTEM", func() interface{} { return d.Filesystem }),
 		table.NewColumn("DIR", func() interface{} { return d.Dir }),
+		table.NewColumn("FILESYSTEM", func() interface{} { return d.Filesystem }),
 	)
 	for deviceName, d = range instance.Config.Devices {
 		writer.WriteRow()
