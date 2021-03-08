@@ -216,7 +216,6 @@ func (t *Configurer) changePasswords(config *Config, name string, users []string
 	}
 	content := t.chpasswdInput(pass, users)
 	ex := t.NewExec(config.Project, name)
-	fmt.Printf("trace=%v dry-run=%v\n", t.Trace, t.DryRun)
 	if t.Trace {
 		ex.Trace = false // don't display passwords
 		ppass := make([]byte, length)
