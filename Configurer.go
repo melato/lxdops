@@ -193,6 +193,14 @@ func (t *Configurer) createUsers(config *Config, name string) error {
 	return nil
 }
 
+func (t *Configurer) chpasswdInput(pass string, users []string) string {
+	var lines []string
+	for _, user := range users {
+		lines = append(lines, user+":"+pass)
+	}
+	return strings.Join(lines, "\n")
+}
+
 func (t *Configurer) changePasswords(config *Config, name string, users []string) error {
 	if !config.OS.Type().NeedPasswords() {
 		return nil
@@ -201,16 +209,25 @@ func (t *Configurer) changePasswords(config *Config, name string, users []string
 		return nil
 	}
 
-	pass, err := password.Generate(20)
+	length := 20
+	pass, err := password.Generate(length)
 	if err != nil {
 		return err
 	}
-	var lines []string
-	for _, user := range users {
-		lines = append(lines, user+":"+pass)
+	content := t.chpasswdInput(pass, users)
+	ex := t.NewExec(config.Project, name)
+	fmt.Printf("trace=%v dry-run=%v\n", t.Trace, t.DryRun)
+	if t.Trace {
+		ex.Trace = false // don't display passwords
+		ppass := make([]byte, length)
+		for i := 0; i < length; i++ {
+			ppass[i] = '*'
+		}
+		fmt.Println("chpasswd < --- (password hidden)")
+		fmt.Println(t.chpasswdInput(string(ppass), users))
+		fmt.Println("---")
 	}
-	content := strings.Join(lines, "\n")
-	return t.NewExec(config.Project, name).Run(content, "chpasswd")
+	return ex.Run(content, "chpasswd")
 }
 
 func (t *Configurer) changeUserPasswords(config *Config, name string) error {
