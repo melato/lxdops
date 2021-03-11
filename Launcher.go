@@ -106,7 +106,7 @@ func (t *Launcher) deleteProfiles(server lxd.InstanceServer, profiles []string) 
 	return nil
 }
 
-func (t *Launcher) copyContainer(instance *Instance, source Origin, server lxd.InstanceServer, profiles []string) error {
+func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, server lxd.InstanceServer, profiles []string) error {
 	s := t.NewScript()
 	container := instance.Container()
 	config := instance.Config
@@ -226,17 +226,15 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 		profiles = append(profiles, profileName)
 	}
 	container := instance.Container()
-	origin, err := instance.GetOrigin()
-	if err != nil {
-		return err
-	}
-	if origin.IsDefined() {
+	source := instance.ContainerSource()
+	fmt.Printf("source:%v\n", source)
+	if !source.IsDefined() {
 		err := t.lxcLaunch(instance, profiles)
 		if err != nil {
 			return err
 		}
 	} else {
-		err := t.copyContainer(instance, *origin, server, profiles)
+		err := t.copyContainer(instance, *source, server, profiles)
 		if err != nil {
 			return err
 		}

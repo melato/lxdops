@@ -6,10 +6,6 @@ import (
 	"strings"
 )
 
-const (
-	DefaultProfileSuffix = "lxdops"
-)
-
 type ConfigOptions struct {
 	Project    string   `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
 	Name       string   `name:"name" usage:"The name of the container to launch or configure.  If missing, use a separate container for each config, using the name of the config."`

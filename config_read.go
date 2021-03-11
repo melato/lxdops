@@ -71,6 +71,9 @@ func (t *ConfigInherit) Merge(c *ConfigInherit) error {
 	if t.Project == "" {
 		t.Project = c.Project
 	}
+	if t.Container == "" {
+		t.Container = c.Container
+	}
 	if t.Profile == "" {
 		t.Profile = c.Profile
 	}

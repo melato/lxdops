@@ -116,10 +116,7 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 }
 
 func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
-	source, err := instance.GetDeviceSource()
-	if err != nil {
-		return err
-	}
+	source := instance.DeviceSource()
 
 	if source.IsDefined() && source.Clone {
 		t.CreateFilesystems(instance, source.Instance, source.Snapshot)

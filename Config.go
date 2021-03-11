@@ -44,8 +44,11 @@ type ConfigInherit struct {
 	// Project is the LXD project where the container is
 	Project string `yaml:"project,omitempty"`
 
+	// The name of the container.  Defaults to (instance)
+	Container Pattern `yaml:"x-container,omitempty"`
+
 	// ProfilePattern specifies how the instance profile should be named.
-	// It defaults to "(container).lxdops", where (container) is the name of the instance
+	// It defaults to "(instance).lxdops"
 	Profile Pattern `yaml:"profile-pattern"`
 
 	// ProfileConfig specifies Config entries to be added to the instance profile.
@@ -60,7 +63,7 @@ type ConfigInherit struct {
 	// Source specifies where to copy or clone the instance from
 	Source `yaml:",inline"`
 
-	LxcOptions []string `yaml:"lxc-options,omitempty,flow"`
+	LxcOptions []string `yaml:"x-lxc-options,omitempty,flow"`
 
 	// Include is a list of other configs that are to be included.
 	// Include paths are either absolute or relative to the path of the including config.
@@ -104,9 +107,9 @@ type ConfigInherit struct {
 // Example:
 // suppose test-a.yaml has:
 //   origin: a/copy
-//   filesystems: "default": "z/test/(container)"
+//   filesystems: "default": "z/test/(instance)"
 //   device-origin: a@copy
-//   source-filesystems "default": "z/prod/(container)"
+//   source-filesystems "default": "z/prod/(instance)"
 //   devices: home, path=/home, filesystem=default
 // This would do something like:
 //    zfs clone z/prod/a@copy z/test/test-a
@@ -138,7 +141,7 @@ type Source struct {
 	// The name of the instance used for the source filesystems
 	// is the base name of the filename, without the extension.
 	// Various parts of these items can be overriden by other source properties above
-	SourceConfig HostPath `yaml:"source-config,omitempty"`
+	SourceConfig HostPath `yaml:"x-source-config,omitempty"`
 }
 
 // OS specifies the container OS
@@ -178,7 +181,7 @@ type Device struct {
 	// If empty, it default to the device Name
 	// If Dir == ".", the device source is the same as the Filesystem directory
 	// Rarely used:
-	// Dir goes through pattern substitution, using parenthesized tokens, for example (container)
+	// Dir goes through pattern substitution, using parenthesized tokens, for example (instance)
 	// Dir may be absolute, but this is no longer necessary now that filesystems are specified, since one can define the "/" filesystem.
 	Dir Pattern `yaml:",omitempty"`
 }
