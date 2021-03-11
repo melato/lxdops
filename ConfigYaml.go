@@ -14,12 +14,12 @@ func ReadConfigYaml(file string) (*Config, error) {
 		return nil, err
 	}
 
-	var x *Config
+	var x Config
 	err = yaml.Unmarshal(data, &x)
 	if err != nil {
 		return nil, err
 	}
-	return x, err
+	return &x, err
 }
 
 func PrintConfigYaml(config *Config) error {
