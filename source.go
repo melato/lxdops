@@ -22,6 +22,10 @@ func (t *DeviceSource) IsDefined() bool {
 	return t.Instance != nil
 }
 
+func (t *DeviceSource) String() string {
+	return fmt.Sprintf("instance=%s snapshot=%s clone=%v", t.Instance.Name, t.Snapshot, t.Clone)
+}
+
 func (t *ContainerSource) parse(s string) {
 	i := strings.Index(s, "/")
 	pc := s
@@ -61,7 +65,7 @@ func (t *Instance) newDeviceSource() (*DeviceSource, error) {
 			return nil, err
 		}
 	} else if config.DeviceOrigin != "" {
-		s, err := config.DeviceTemplate.Substitute(t.Properties)
+		s, err := config.DeviceOrigin.Substitute(t.Properties)
 		if err != nil {
 			return nil, err
 		}
