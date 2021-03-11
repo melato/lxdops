@@ -30,19 +30,19 @@ type Config struct {
 
 type ConfigTop struct {
 	// Description is provided for documentation
-	Description string `yaml:"description,omitempty"`
+	Description string `yaml:"description"`
 
 	// Stop specifies that the container should be stopped at the end of the configuration
-	Stop bool `yaml:"stop,omitempty"`
+	Stop bool `yaml:"stop"`
 
 	// Snapshot specifies that that the container should be snapshoted with this name at the end of the configuration process.
-	Snapshot string `yaml:"snapshot,omitempty"`
+	Snapshot string `yaml:"snapshot"`
 }
 
 type ConfigInherit struct {
 	OS *OS
 	// Project is the LXD project where the container is
-	Project string `yaml:"project,omitempty"`
+	Project string `yaml:"project"`
 
 	// The name of the container.  Defaults to (instance)
 	Container Pattern `yaml:"x-container,omitempty"`
@@ -54,7 +54,7 @@ type ConfigInherit struct {
 	// ProfileConfig specifies Config entries to be added to the instance profile.
 	// This was meant for creating templates with boot.autostart: "false",
 	// without needing to use profiles external to lxdops.
-	ProfileConfig map[string]string `yaml:"profile-config,omitempty"`
+	ProfileConfig map[string]string `yaml:"profile-config"`
 
 	// Properties provide key-value pairs used for pattern substitution.
 	// They override built-in properties
@@ -74,25 +74,25 @@ type ConfigInherit struct {
 	Filesystems map[string]*Filesystem `yaml:"filesystems"`
 	// Devices are disk devices that are directories within the instance filesystems
 	// They are created and attached to the container via the instance profile
-	Devices map[string]*Device `yaml:"devices,omitempty"`
+	Devices map[string]*Device `yaml:"devices"`
 	// Profiles are attached to the container.  The instance profile should not be listed here.
 
-	Profiles []string `yaml:"profiles,omitempty"`
+	Profiles []string `yaml:"profiles"`
 
 	// PreScripts are scripts that are executed early, before packages, users, files, or Scripts
-	PreScripts []*Script `yaml:"pre-scripts,omitempty"`
+	PreScripts []*Script `yaml:"pre-scripts"`
 
 	// Packages are OS packages that are installed when the instance is launched
-	Packages []string `yaml:"packages,omitempty"`
+	Packages []string `yaml:"packages"`
 
 	// Users are OS users that are created when the instance is launched
-	Users []*User `yaml:"users,omitempty"`
+	Users []*User `yaml:"users"`
 	// Files are files that are copied from the host to the container when the instance is launched (as with lxc file push).
-	Files []*File `yaml:"files,omitempty"`
+	Files []*File `yaml:"files"`
 	// Scripts are scripts that are executed in the container (as with lxc exec)
-	Scripts []*Script `yaml:"scripts,omitempty"`
+	Scripts []*Script `yaml:"scripts"`
 	// Passwords are a list of OS accounts, whose password is set to a random password
-	Passwords []string `yaml:"passwords,omitempty"`
+	Passwords []string `yaml:"passwords"`
 }
 
 // Source specifies how to copy or clone the instance container, filesystem, and device directories.
@@ -121,19 +121,19 @@ type Source struct {
 	// origin is the name of a container and a snapshot to clone from.
 	// It has the form [<project>_]<container>[/<snapshot>]
 	// It overrides SourceConfig
-	Origin Pattern `yaml:"origin,omitempty"`
+	Origin Pattern `yaml:"origin"`
 
 	// device-template is the name of an instance, whose devices are copied (using rsync)
 	// to a new instance with launch.
 	// The devices are copied from the filesystems specified in SourceConfig, or this config.
-	DeviceTemplate Pattern `yaml:"device-template,omitempty"`
+	DeviceTemplate Pattern `yaml:"device-template"`
 
 	// device-origin is the name an instance and s short snapshot name.
 	// It has the form <instance>@<snapshot> where <instance> is an instance name,
 	// and @<snapshot> is a the short snapshot name of the instance filesystems.
 	// Each device zfs filesystem is cloned from @<snapshot>
 	// The filesytems are those specified in SourceConfig, if any, otherwise this config.
-	DeviceOrigin Pattern `yaml:"device-origin,omitempty"`
+	DeviceOrigin Pattern `yaml:"device-origin"`
 
 	// source-config specifies a config file that is used to determine:
 	//   - The LXD project, container, and snapshot to clone when launching the instance.
@@ -150,12 +150,12 @@ type OS struct {
 	// All included configuration files should have the same OS Name.
 	// Supported OS names are "alpine", "debian", "ubuntu".
 	// Support for an OS is the ability to determine the LXD image, install packages, create users, set passwords
-	Name string `yaml:"name,omitempty" xml:"name,attr,omitempty"`
+	Name string `yaml:"name"`
 	// Version is the image version, e.g. 3.13, 10.04.  The image name is composed of Name/Version
 	// Version is optional in configuration files, but the final assembled configuration file should have a OS Version.
 	// It should typically be specified in one configuration file that is included by all other configuration files that use use this OS
-	Version string `yaml:"version,omitempty" xml:"version,attr,omitempty"`
-	osType  OSType `xml:"-"`
+	Version string `yaml:"version"`
+	osType  OSType
 }
 
 // Filesystem is a ZFS filesystem or a plain directory that is created when an instance is created
@@ -164,18 +164,18 @@ type Filesystem struct {
 	// Pattern is a pattern that is used to produce the directory or zfs filesystem
 	// If the pattern begins with '/', it is a directory
 	// If it does not begin with '/', it is a zfs filesystem name
-	Pattern Pattern `xml:"name,attr"`
+	Pattern Pattern
 	// Zfsproperties is a list of properties that are set when a zfs filesystem is created or cloned
-	Zfsproperties map[string]string `yaml:",omitempty"`
+	Zfsproperties map[string]string `yaml:""`
 }
 
 // A Device is an LXD disk device that is attached to the instance profile, which in turn is attached to a container
 type Device struct {
 	// Path is the device "path" in the LXD disk device
-	Path string `xml:"path,attr"`
+	Path string
 
 	// Filesystem is the Filesystem Id that this device belongs to
-	Filesystem string `yaml:",omitempty"`
+	Filesystem string `yaml:"filesystem"`
 
 	// Dir is the subdirectory of the Device, relative to its Filesystem
 	// If empty, it default to the device Name
@@ -183,7 +183,7 @@ type Device struct {
 	// Rarely used:
 	// Dir goes through pattern substitution, using parenthesized tokens, for example (instance)
 	// Dir may be absolute, but this is no longer necessary now that filesystems are specified, since one can define the "/" filesystem.
-	Dir Pattern `yaml:",omitempty"`
+	Dir Pattern `yaml:""`
 }
 
 // File specifies a file that is copied from the host to the container
@@ -220,25 +220,25 @@ type Script struct {
 
 	// File is an optional host file that contains the script content.
 	// It should be an executable.  It is copied to the container in /root/ and run there.
-	File HostPath `yaml:"file,omitempty"`
+	File HostPath `yaml:"file"`
 
 	// Reboot specifies that the container should be rebooted after running this script
 	// This may be needed when replacing /etc files
 	// Reboot may be slow, so avoid it, if possible
-	Reboot bool `yaml:"reboot,omitempty"`
+	Reboot bool `yaml:"reboot"`
 
 	// Body is the content of the script
 	// It is passed as the stdin to sh
-	Body string `yaml:"body,omitempty"`
+	Body string `yaml:"body"`
 
 	// Dir is the directory in the container to set as the working directory when running the script
-	Dir string `yaml:"dir,omitempty"`
+	Dir string `yaml:"dir"`
 
 	// Uid is the container uid to run the script as
-	Uid uint32 `yaml:"uid,omitempty"`
+	Uid uint32 `yaml:"uid"`
 
 	// Gid is the container gid to run the script as
-	Gid uint32 `yaml:"gid,omitempty"`
+	Gid uint32 `yaml:"gid"`
 }
 
 // An OS user
@@ -246,15 +246,15 @@ type User struct {
 	// Name is the user name.  If missing, the user takes the name of current host user
 	Name string `yaml:"name"`
 	// Uid is an optional uid for the user
-	Uid string `yaml:"uid,omitempty"`
+	Uid string `yaml:"uid"`
 	// Sudo gives full passwordless sudo privileges to the user
-	Sudo bool `yaml:"sudo,omitempty"`
+	Sudo bool `yaml:"sudo"`
 	// Ssh specifies that the current user's ~.ssh/authorized_keys should be copied from the host to this user
-	Ssh bool `yaml:"ssh,omitempty"`
+	Ssh bool `yaml:"ssh"`
 	// Shell is the user shell
-	Shell string `yaml:"shell,omitempty"`
+	Shell string `yaml:"shell"`
 	// Home is the user home directory, optional
-	Home string `yaml:"home,omitempty"`
+	Home string `yaml:"home"`
 	// Groups is a list of groups that the user is added to
-	Groups []string `yaml:"groups,omitempty"`
+	Groups []string `yaml:"groups"`
 }

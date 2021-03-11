@@ -42,7 +42,7 @@ func (t *InstanceOps) Filesystems(instance *Instance) error {
 		return err
 	}
 	writer := &table.FixedWriter{Writer: os.Stdout}
-	var fs InstanceFS
+	var fs *InstanceFS
 	writer.Columns(
 		table.NewColumn("FILESYSTEM", func() interface{} { return fs.Id }),
 		table.NewColumn("PATH", func() interface{} { return fs.Path }),

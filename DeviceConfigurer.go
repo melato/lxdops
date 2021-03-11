@@ -43,8 +43,9 @@ func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {
 	return nil
 }
 
-func (t *DeviceConfigurer) CreateFilesystem(fs InstanceFS, originDataset string) error {
+func (t *DeviceConfigurer) CreateFilesystem(fs *InstanceFS, originDataset string) error {
 	if fs.IsDir() {
+		fs.IsNew = true
 		return t.CreateDir(fs.Dir(), true)
 	}
 
@@ -69,6 +70,7 @@ func (t *DeviceConfigurer) CreateFilesystem(fs InstanceFS, originDataset string)
 	s.Run("sudo", args...)
 	if originDataset == "" {
 		t.chownDir(s, fs.Dir())
+		fs.IsNew = true
 	}
 	return s.Error()
 }
@@ -78,7 +80,7 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 	if err != nil {
 		return err
 	}
-	var originPaths map[string]InstanceFS
+	var originPaths map[string]*InstanceFS
 	if origin != nil {
 		originPaths, err = origin.Filesystems()
 		if err != nil {
@@ -90,7 +92,7 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 			}
 		}
 	}
-	var pathList []InstanceFS
+	var pathList []*InstanceFS
 	for _, path := range paths {
 		if origin != nil || !util.DirExists(path.Dir()) {
 			pathList = append(pathList, path)
@@ -110,7 +112,6 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 		if err != nil {
 			return err
 		}
-		path.IsNew = true
 	}
 	return nil
 }

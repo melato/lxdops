@@ -198,6 +198,7 @@ func (t *Launcher) CreateDevices(instance *Instance) error {
 }
 
 func (t *Launcher) LaunchContainer(instance *Instance) error {
+	fmt.Println("launch", instance.Name)
 	t.Trace = true
 	config := instance.Config
 	server, err := t.Client.ProjectServer(config.Project)

@@ -28,7 +28,7 @@ func (t *InstanceFS) Dir() string {
 	}
 }
 
-type InstanceFSList []InstanceFS
+type InstanceFSList []*InstanceFS
 
 func (t InstanceFSList) Len() int           { return len(t) }
 func (t InstanceFSList) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
@@ -37,7 +37,7 @@ func (t InstanceFSList) Less(i, j int) bool { return t[i].Path < t[j].Path }
 func (t InstanceFSList) Sort() { sort.Sort(t) }
 
 // Roots returns the FSPaths that are not children of other FSPaths, within this set.
-func (t InstanceFSList) Roots() []InstanceFS {
+func (t InstanceFSList) Roots() []*InstanceFS {
 	paths := make([]string, t.Len())
 	fsMap := make(map[string]int)
 	for i, fs := range t {
@@ -45,7 +45,7 @@ func (t InstanceFSList) Roots() []InstanceFS {
 		fsMap[fs.Path] = i
 	}
 	rootPaths := RootPaths(paths)
-	roots := make([]InstanceFS, len(rootPaths))
+	roots := make([]*InstanceFS, len(rootPaths))
 	for i, path := range rootPaths {
 		roots[i] = t[fsMap[path]]
 	}

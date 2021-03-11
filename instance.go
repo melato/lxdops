@@ -17,7 +17,7 @@ type Instance struct {
 	deviceSource    *DeviceSource
 	Project         string
 	Properties      *util.PatternProperties
-	fspaths         map[string]InstanceFS
+	fspaths         map[string]*InstanceFS
 	sourceConfig    *Config
 }
 
@@ -32,7 +32,7 @@ func (t *Instance) substitute(e *error, pattern Pattern, defaultPattern Pattern)
 	return value
 }
 
-func (config *Config) NewInstance(name string) (*Instance, error) {
+func (config *Config) newInstance(name string, includeSource bool) (*Instance, error) {
 	t := &Instance{Config: config, Name: name}
 	t.Properties = config.NewProperties(name)
 	var err error
@@ -41,15 +41,24 @@ func (config *Config) NewInstance(name string) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.containerSource, err = t.newContainerSource()
-	if err != nil {
-		return nil, err
-	}
-	t.deviceSource, err = t.newDeviceSource()
-	if err != nil {
-		return nil, err
+	if includeSource {
+		t.containerSource, err = t.newContainerSource()
+		if err != nil {
+			return nil, err
+		}
+		t.deviceSource, err = t.newDeviceSource()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		t.containerSource = &ContainerSource{}
+		t.deviceSource = &DeviceSource{}
 	}
 	return t, nil
+}
+
+func (config *Config) NewInstance(name string) (*Instance, error) {
+	return config.newInstance(name, true)
 }
 
 func (t *Instance) ContainerSource() *ContainerSource {
@@ -68,27 +77,27 @@ func (t *Instance) Container() string {
 	return t.container
 }
 
-func (t *Instance) Filesystems() (map[string]InstanceFS, error) {
+func (t *Instance) Filesystems() (map[string]*InstanceFS, error) {
 	if t.fspaths == nil {
-		fspaths := make(map[string]InstanceFS)
+		fspaths := make(map[string]*InstanceFS)
 		for id, fs := range t.Config.Filesystems {
 			path, err := fs.Pattern.Substitute(t.Properties)
 			if err != nil {
 				return nil, err
 			}
-			fspaths[id] = InstanceFS{Id: id, Path: path, Filesystem: fs}
+			fspaths[id] = &InstanceFS{Id: id, Path: path, Filesystem: fs}
 		}
 		t.fspaths = fspaths
 	}
 	return t.fspaths, nil
 }
 
-func (t *Instance) FilesystemList() ([]InstanceFS, error) {
+func (t *Instance) FilesystemList() ([]*InstanceFS, error) {
 	paths, err := t.Filesystems()
 	if err != nil {
 		return nil, err
 	}
-	var list []InstanceFS
+	var list []*InstanceFS
 	for _, path := range paths {
 		list = append(list, path)
 	}
