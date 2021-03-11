@@ -119,6 +119,7 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 	source := instance.DeviceSource()
 
+	fmt.Printf("configure devices, source=%v\n", source)
 	if source.IsDefined() && source.Clone {
 		t.CreateFilesystems(instance, source.Instance, source.Snapshot)
 	} else {

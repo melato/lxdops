@@ -75,6 +75,7 @@ func (t *Instance) newDeviceSource() (*DeviceSource, error) {
 		}
 		name = parts[0]
 		source.Snapshot = parts[1]
+		source.Clone = true
 	} else {
 		return source, nil
 	}
