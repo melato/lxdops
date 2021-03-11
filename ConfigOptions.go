@@ -87,7 +87,7 @@ func (t *ConfigOptions) Instance(file string) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	return config.NewInstance(name), nil
+	return config.NewInstance(name)
 }
 
 func (t *ConfigOptions) RunInstances(f func(*Instance) error, args ...string) error {

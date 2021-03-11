@@ -37,8 +37,6 @@ type ConfigTop struct {
 
 	// Snapshot specifies that that the container should be snapshoted with this name at the end of the configuration process.
 	Snapshot string `yaml:"snapshot,omitempty"`
-
-	sourceConfig *Config
 }
 
 type ConfigInherit struct {
@@ -75,6 +73,7 @@ type ConfigInherit struct {
 	// They are created and attached to the container via the instance profile
 	Devices map[string]*Device `yaml:"devices,omitempty"`
 	// Profiles are attached to the container.  The instance profile should not be listed here.
+
 	Profiles []string `yaml:"profiles,omitempty"`
 
 	// PreScripts are scripts that are executed early, before packages, users, files, or Scripts
@@ -117,26 +116,28 @@ type ConfigInherit struct {
 //    lxc profile add test-a test-a.lxdops
 type Source struct {
 	// origin is the name of a container and a snapshot to clone from.
-	// It should have the form {container}/{snapshot}
-	// If SourceConfig is specified, it is used for the project of the cloned project.
-	// Otherwise, the project of the cloned container is the project of this config.
-	Origin string `yaml:"origin,omitempty"`
+	// It has the form [<project>_]<container>[/<snapshot>]
+	// It overrides SourceConfig
+	Origin Pattern `yaml:"origin,omitempty"`
 
 	// device-template is the name of an instance, whose devices are copied (using rsync)
 	// to a new instance with launch.
 	// The devices are copied from the filesystems specified in SourceConfig, or this config.
-	DeviceTemplate string `yaml:"device-template,omitempty"`
+	DeviceTemplate Pattern `yaml:"device-template,omitempty"`
 
 	// device-origin is the name an instance and s short snapshot name.
 	// It has the form <instance>@<snapshot> where <instance> is an instance name,
 	// and @<snapshot> is a the short snapshot name of the instance filesystems.
 	// Each device zfs filesystem is cloned from @<snapshot>
 	// The filesytems are those specified in SourceConfig, if any, otherwise this config.
-	DeviceOrigin string `yaml:"device-origin,omitempty"`
+	DeviceOrigin Pattern `yaml:"device-origin,omitempty"`
 
-	// source-config specifies a config file whose filesystems are used as source-filesystems
-	// if it is empty, use the same config as this instance.
-	// It is also used to specify the source project of the Origin container.
+	// source-config specifies a config file that is used to determine:
+	//   - The LXD project, container, and snapshot to clone when launching the instance.
+	//   - The source filesystems used for cloning filesystems or copying device directories.
+	// The name of the instance used for the source filesystems
+	// is the base name of the filename, without the extension.
+	// Various parts of these items can be overriden by other source properties above
 	SourceConfig HostPath `yaml:"source-config,omitempty"`
 }
 

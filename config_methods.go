@@ -149,27 +149,9 @@ func (t *Config) ResolvePaths(dir string) {
 	t.SourceConfig = t.SourceConfig.Resolve(dir)
 }
 
-func (t *Config) ProfileNamex(name string) (string, error) {
-	return t.NewInstance(name).ProfileName()
-}
-
 // Return the filesystem for the given id, or nil if it doesn't exist.
 func (t *Config) Filesystem(id string) *Filesystem {
 	return t.Filesystems[id]
-}
-
-func (t *Config) GetSourceConfig() (*Config, error) {
-	if t.SourceConfig == "" {
-		return t, nil
-	}
-	if t.sourceConfig == nil {
-		config, err := ReadConfig(string(t.SourceConfig))
-		if err != nil {
-			return nil, err
-		}
-		t.sourceConfig = config
-	}
-	return t.sourceConfig, nil
 }
 
 func (config *Config) NewProperties(name string) *util.PatternProperties {

@@ -31,10 +31,7 @@ func (t *ProfileConfigurer) NewScript() *script.Script {
 }
 
 func (t *ProfileConfigurer) Profiles(instance *Instance) ([]string, error) {
-	profile, err := instance.ProfileName()
-	if err != nil {
-		return nil, err
-	}
+	profile := instance.ProfileName()
 	return append(instance.Config.Profiles, profile), nil
 }
 

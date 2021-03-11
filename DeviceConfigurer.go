@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"strings"
-
 	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/util"
 	"melato.org/script"
@@ -118,35 +116,16 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 }
 
 func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
-	var originInstance *Instance
-	var templateInstance *Instance
-	var originSnapshot string
-	if t.Config.DeviceOrigin != "" || t.Config.DeviceTemplate != "" {
-		sourceConfig, err := t.Config.GetSourceConfig()
-		if err != nil {
-			return err
-		}
-		if t.Config.DeviceOrigin != "" {
-			parts := strings.Split(t.Config.DeviceOrigin, "@")
-			if len(parts) != 2 {
-				return errors.New("device origin should be a snapshot: " + t.Config.DeviceOrigin)
-			}
-			originName := parts[0]
-			originSnapshot = parts[1]
-			if originName == "" {
-				originName = instance.SourceName()
-			}
-			if originName == "" {
-				return errors.New("missing device origin name")
-			}
-			originInstance = sourceConfig.NewInstance(originName)
-		}
-		if t.Config.DeviceTemplate != "" {
-			templateInstance = sourceConfig.NewInstance(t.Config.DeviceTemplate)
-		}
+	source, err := instance.GetDeviceSource()
+	if err != nil {
+		return err
 	}
 
-	t.CreateFilesystems(instance, originInstance, originSnapshot)
+	if source.IsDefined() && source.Clone {
+		t.CreateFilesystems(instance, source.Instance, source.Snapshot)
+	} else {
+		t.CreateFilesystems(instance, nil, "")
+	}
 	filesystems, err := instance.Filesystems()
 	if err != nil {
 		return err
@@ -170,8 +149,8 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 		if err != nil {
 			return err
 		}
-		if t.Config.DeviceTemplate != "" {
-			templateDir, err := templateInstance.DeviceDir(deviceName, device)
+		if source.IsDefined() && !source.Clone {
+			templateDir, err := source.Instance.DeviceDir(deviceName, device)
 			if err != nil {
 				return err
 			}
@@ -202,10 +181,7 @@ func (t *DeviceConfigurer) CreateProfile(instance *Instance) error {
 		}
 		devices[deviceName] = map[string]string{"type": "disk", "path": device.Path, "source": dir}
 	}
-	profileName, err := instance.ProfileName()
-	if err != nil {
-		return err
-	}
+	profileName := instance.ProfileName()
 	server, err := t.Client.ProjectServer(t.Config.Project)
 	if err != nil {
 		return err

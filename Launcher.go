@@ -106,20 +106,11 @@ func (t *Launcher) deleteProfiles(server lxd.InstanceServer, profiles []string) 
 	return nil
 }
 
-func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, profiles []string) error {
+func (t *Launcher) copyContainer(instance *Instance, source Origin, server lxd.InstanceServer, profiles []string) error {
 	s := t.NewScript()
 	container := instance.Container()
 	config := instance.Config
-	sourceConfig, err := config.GetSourceConfig()
-	if err != nil {
-		return err
-	}
-	sourceProject := sourceConfig.Project
-	if sourceProject == "" {
-		sourceProject = config.Project
-	}
-
-	sourceServer, err := t.Client.ProjectServer(sourceProject)
+	sourceServer, err := t.Client.ProjectServer(source.Project)
 	if err != nil {
 		return err
 	}
@@ -127,16 +118,9 @@ func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, 
 	if err != nil {
 		return err
 	}
-	sourceContainer, snapshot := SplitSnapshotName(config.Origin)
-	if sourceContainer == "" {
-		sourceContainer, err = instance.SourceContainer()
-		if config.SourceConfig == "" {
-			return errors.New("missing origin container")
-		}
-	}
-	c, _, err := sourceServer.GetContainer(sourceContainer)
+	c, _, err := sourceServer.GetContainer(source.Container)
 	if err != nil {
-		return AnnotateLXDError(container, err)
+		return AnnotateLXDError(source.Container, err)
 	}
 	missingProfiles := util.StringSlice(c.Profiles).Diff(allProfiles)
 	// lxc copy will fail if the source container has profiles that do not exist in the target server
@@ -149,8 +133,8 @@ func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, 
 	}
 
 	var copyArgs []string
-	if sourceProject != "" {
-		copyArgs = append(copyArgs, "--project", sourceProject)
+	if source.Project != "" {
+		copyArgs = append(copyArgs, "--project", source.Project)
 	}
 
 	copyArgs = append(copyArgs, "copy")
@@ -158,10 +142,10 @@ func (t *Launcher) copyContainer(instance *Instance, server lxd.InstanceServer, 
 	if config.Project != "" {
 		copyArgs = append(copyArgs, "--target-project", config.Project)
 	}
-	if snapshot == "" {
-		copyArgs = append(copyArgs, "--instance-only", sourceContainer)
+	if source.Snapshot == "" {
+		copyArgs = append(copyArgs, "--instance-only", source.Container)
 	} else {
-		copyArgs = append(copyArgs, sourceContainer+"/"+snapshot)
+		copyArgs = append(copyArgs, source.Container+"/"+source.Snapshot)
 	}
 	copyArgs = append(copyArgs, container)
 	s.Run("lxc", copyArgs...)
@@ -232,10 +216,7 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 		return err
 	}
 
-	profileName, err := instance.ProfileName()
-	if err != nil {
-		return err
-	}
+	profileName := instance.ProfileName()
 	var profiles []string
 	profiles = append(profiles, config.Profiles...)
 	if config.Devices != nil {
@@ -245,13 +226,17 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 		profiles = append(profiles, profileName)
 	}
 	container := instance.Container()
-	if config.Origin == "" {
+	origin, err := instance.GetOrigin()
+	if err != nil {
+		return err
+	}
+	if origin.IsDefined() {
 		err := t.lxcLaunch(instance, profiles)
 		if err != nil {
 			return err
 		}
 	} else {
-		err := t.copyContainer(instance, server, profiles)
+		err := t.copyContainer(instance, *origin, server, profiles)
 		if err != nil {
 			return err
 		}
@@ -308,10 +293,7 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 			}
 		}
 	}
-	profileName, err := instance.ProfileName()
-	if err != nil {
-		return err
-	}
+	profileName := instance.ProfileName()
 
 	if !t.DryRun {
 		err := server.DeleteProfile(profileName)
@@ -372,15 +354,12 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 	if instance.Name == newname {
 		return errors.New("cannot rename to the same name")
 	}
-	oldprofile, err := instance.ProfileName()
+	oldprofile := instance.ProfileName()
+	newInstance, err := instance.Config.NewInstance(newname)
 	if err != nil {
 		return err
 	}
-	newInstance := instance.Config.NewInstance(newname)
-	newprofile, err := newInstance.ProfileName()
-	if err != nil {
-		return err
-	}
+	newprofile := newInstance.ProfileName()
 	server, err := t.Client.ProjectServer(instance.Config.Project)
 	if err != nil {
 		return err
