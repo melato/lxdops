@@ -37,6 +37,31 @@ func (t *ContainerOps) Profiles(container string) error {
 	return nil
 }
 
+func (t *ContainerOps) Config(container string) error {
+	c, _, err := t.server.GetContainer(container)
+	if err != nil {
+		return AnnotateLXDError(container, err)
+	}
+	writer := &table.FixedWriter{Writer: os.Stdout}
+	var keys []string
+	for key, _ := range c.Config {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	var key, value string
+	writer.Columns(
+		table.NewColumn("KEY", func() interface{} { return key }),
+		table.NewColumn("VALUE", func() interface{} { return value }),
+	)
+
+	for _, key = range keys {
+		value = c.Config[key]
+		writer.WriteRow()
+	}
+	writer.End()
+	return nil
+}
+
 func (t *ContainerOps) Network(container string) error {
 	server := t.server
 	state, _, err := server.GetContainerState(container)
