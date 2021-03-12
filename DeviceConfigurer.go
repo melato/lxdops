@@ -175,16 +175,15 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 }
 
 func (t *DeviceConfigurer) CreateProfile(instance *Instance) error {
-	devices := make(map[string]map[string]string)
-
-	for deviceName, device := range t.Config.Devices {
-		dir, err := instance.DeviceDir(deviceName, device)
-		if err != nil {
-			return err
-		}
-		devices[deviceName] = map[string]string{"type": "disk", "path": device.Path, "source": dir}
-	}
 	profileName := instance.ProfileName()
+	if profileName == "" {
+		return nil
+	}
+	devices, err := instance.CreateDeviceMap()
+	if err != nil {
+		return err
+	}
+
 	server, err := t.Client.ProjectServer(t.Config.Project)
 	if err != nil {
 		return err

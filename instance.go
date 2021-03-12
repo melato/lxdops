@@ -180,3 +180,16 @@ func (t *Instance) GetSourceConfig() (*Config, error) {
 	}
 	return t.sourceConfig, nil
 }
+
+func (t *Instance) CreateDeviceMap() (map[string]map[string]string, error) {
+	devices := make(map[string]map[string]string)
+
+	for deviceName, device := range t.Config.Devices {
+		dir, err := t.DeviceDir(deviceName, device)
+		if err != nil {
+			return nil, err
+		}
+		devices[deviceName] = map[string]string{"type": "disk", "path": device.Path, "source": dir}
+	}
+	return devices, nil
+}

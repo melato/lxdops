@@ -201,7 +201,15 @@ func (t *Launcher) CreateProfile(instance *Instance) error {
 	dev := NewDeviceConfigurer(t.Client, instance.Config)
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
-	return dev.CreateProfile(instance)
+	profileName := instance.ProfileName()
+	if profileName != "" {
+		fmt.Println(profileName)
+		return dev.CreateProfile(instance)
+	} else {
+		fmt.Println("skipping instance %s: no lxdops profile\n", instance.Name)
+		return nil
+	}
+
 }
 
 func (t *Launcher) LaunchContainer(instance *Instance) error {
@@ -219,12 +227,15 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 	if err != nil {
 		return err
 	}
-	err = dev.CreateProfile(instance)
-	if err != nil {
-		return err
-	}
 
 	profileName := instance.ProfileName()
+	if profileName != "" {
+		err = dev.CreateProfile(instance)
+		if err != nil {
+			return err
+		}
+	}
+
 	var profiles []string
 	profiles = append(profiles, config.Profiles...)
 	if config.Devices != nil {
