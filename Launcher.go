@@ -197,6 +197,13 @@ func (t *Launcher) CreateDevices(instance *Instance) error {
 	return dev.ConfigureDevices(instance)
 }
 
+func (t *Launcher) CreateProfile(instance *Instance) error {
+	dev := NewDeviceConfigurer(t.Client, instance.Config)
+	dev.Trace = t.Trace
+	dev.DryRun = t.DryRun
+	return dev.CreateProfile(instance)
+}
+
 func (t *Launcher) LaunchContainer(instance *Instance) error {
 	fmt.Println("launch", instance.Name)
 	t.Trace = true

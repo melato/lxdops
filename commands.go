@@ -28,6 +28,7 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("rebuild").Flags(launcher).RunFunc(launcher.InstanceFunc(launcher.Rebuild, true))
 	cmd.Command("rename").Flags(launcher).RunFunc(launcher.Rename)
 	cmd.Command("create-devices").Flags(launcher).RunFunc(launcher.InstanceFunc(launcher.CreateDevices, true))
+	cmd.Command("create-profile").Flags(launcher).RunFunc(launcher.InstanceFunc(launcher.CreateProfile, true))
 
 	snapshot := &Snapshot{}
 	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.InstanceFunc(snapshot.Run, true))
