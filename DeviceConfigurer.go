@@ -120,10 +120,14 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 	source := instance.DeviceSource()
 
 	fmt.Printf("configure devices, source=%v\n", source)
+	var err error
 	if source.IsDefined() && source.Clone {
-		t.CreateFilesystems(instance, source.Instance, source.Snapshot)
+		err = t.CreateFilesystems(instance, source.Instance, source.Snapshot)
 	} else {
-		t.CreateFilesystems(instance, nil, "")
+		err = t.CreateFilesystems(instance, nil, "")
+	}
+	if err != nil {
+		return err
 	}
 	filesystems, err := instance.Filesystems()
 	if err != nil {
