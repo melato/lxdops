@@ -88,6 +88,9 @@ commands:
       filesystems:
         short: print instance filesystems
         use: <config-file>
+      packages:
+        short: print config packages
+        use: <config-file>
       properties:
         short: print instance properties
         use: <config-file>

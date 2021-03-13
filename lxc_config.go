@@ -1,7 +1,6 @@
 package lxdops
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -58,7 +57,6 @@ func (t *lxc_config) CurrentProject() string {
 			project = "default"
 		}
 		t.currentProject = project
-		fmt.Fprintf(os.Stderr, "using lxc current project: %s\n", project)
 	}
 	return t.currentProject
 }

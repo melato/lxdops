@@ -25,14 +25,23 @@ func (t *InstanceOps) Verify(instance *Instance) error {
 	return nil
 }
 
-// Print the description of a config file.
+// Description prints the description of the instance
 func (t *InstanceOps) Description(instance *Instance) error {
 	fmt.Println(instance.Config.Description)
 	return nil
 }
 
+// Properties prints the instance properties
 func (t *InstanceOps) Properties(instance *Instance) error {
 	instance.Properties.ShowHelp(os.Stdout)
+	return nil
+}
+
+// Packages prints the packages installed by the instance
+func (t *InstanceOps) Packages(instance *Instance) error {
+	for _, pkg := range instance.Config.Packages {
+		fmt.Println(pkg)
+	}
 	return nil
 }
 
