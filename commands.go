@@ -57,8 +57,10 @@ func RootCommand() *command.SimpleCommand {
 	profile.Command("add-disk").RunFunc(lxdOps.AddDiskDevice)
 	cmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot)
 
+	configCmd := cmd.Command("config")
 	parse := &ParseOp{}
-	cmd.Command("parse").Flags(parse).RunFunc(parse.Run)
+	configCmd.Command("parse").Flags(parse).RunFunc(parse.Run)
+	configCmd.Command("includes").RunFunc(parse.Includes)
 
 	networkOp := &NetworkOp{Client: client}
 	cmd.Command("addresses").Flags(networkOp).RunMethodE(networkOp.ExportAddresses)

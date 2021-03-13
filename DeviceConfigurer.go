@@ -118,8 +118,6 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 
 func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 	source := instance.DeviceSource()
-
-	fmt.Printf("configure devices, source=%v\n", source)
 	var err error
 	if source.IsDefined() && source.Clone {
 		err = t.CreateFilesystems(instance, source.Instance, source.Snapshot)
@@ -179,7 +177,7 @@ func (t *DeviceConfigurer) CreateProfile(instance *Instance) error {
 	if profileName == "" {
 		return nil
 	}
-	devices, err := instance.CreateDeviceMap()
+	devices, err := instance.NewDeviceMap()
 	if err != nil {
 		return err
 	}

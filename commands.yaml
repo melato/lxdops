@@ -45,6 +45,9 @@ commands:
       devices:
         short: print container disk devices
         use: <container>
+      config:
+        short: print container configuration
+        use: <container>
       state:
         short: print container state, in yaml
         use: <container>
@@ -53,10 +56,21 @@ commands:
         use: <container>...
   create-devices:
     short: create devices
-    use: <container-name> <configfile>...
+  create-profile:
+    short: create lxdops profile for instance
   delete:
     short: delete a stopped container and its profile
     use: <configfile>...
+  config:
+    short: config .yaml utilities
+    commands:
+      parse:
+        short: parse a config file
+        use: <config-file>
+        examples:
+        - parse test.yaml
+      includes:
+        short: list included files
   instance:
     short: show information about an instance/config
     commands:
@@ -87,11 +101,6 @@ commands:
     use: <config-file> ...
     examples:
     - launch php.yaml
-  parse:
-    short: parse a config file
-    use: <config-file>
-    examples:
-    - parse test.yaml
   profile:
     short: profile utilities
     commands:

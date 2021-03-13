@@ -49,7 +49,7 @@ func (t *Launcher) NewConfigurer() *Configurer {
 	return c
 }
 
-func (t *Launcher) lxcLaunch(instance *Instance, profiles []string) error {
+func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, profiles []string) error {
 	config := instance.Config
 	osType := config.OS.Type()
 	if osType == nil {
@@ -57,11 +57,16 @@ func (t *Launcher) lxcLaunch(instance *Instance, profiles []string) error {
 	}
 	s := t.NewScript()
 	container := instance.Container()
+	profileName := instance.ProfileName()
 	var lxcArgs []string
 	if config.Project != "" {
 		lxcArgs = append(lxcArgs, "--project", config.Project)
 	}
-	lxcArgs = append(lxcArgs, "launch")
+	if profileName != "" {
+		lxcArgs = append(lxcArgs, "launch")
+	} else {
+		lxcArgs = append(lxcArgs, "init")
+	}
 
 	osVersion := config.OS.Version
 	if osVersion == "" {
@@ -76,7 +81,13 @@ func (t *Launcher) lxcLaunch(instance *Instance, profiles []string) error {
 	}
 	lxcArgs = append(lxcArgs, container)
 	s.Run("lxc", lxcArgs...)
-	return s.Error()
+	if s.HasError() {
+		return s.Error()
+	}
+	if profileName == "" {
+		return t.configureContainer(instance, server, profiles)
+	}
+	return nil
 }
 
 func (t *Launcher) createEmptyProfile(server lxd.InstanceServer, profile string) error {
@@ -101,6 +112,72 @@ func (t *Launcher) deleteProfiles(server lxd.InstanceServer, profiles []string) 
 			if err != nil {
 				return AnnotateLXDError(profile, err)
 			}
+		}
+	}
+	return nil
+}
+
+// configureContainer configures the container directly, if necessary, and starts it
+func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceServer, profiles []string) error {
+	container := instance.Container()
+	config := instance.Config
+	profileName := instance.ProfileName()
+	if !t.DryRun {
+		c, _, err := server.GetContainer(container)
+		if err != nil {
+			return AnnotateLXDError(container, err)
+		}
+		c.Profiles = profiles
+		if profileName == "" {
+			// there is no lxdops profile.  configure container directly
+			devices, err := instance.NewDeviceMap()
+			if err != nil {
+				return err
+			}
+			source := instance.DeviceSource()
+			if source.IsDefined() {
+				// remove old devices, specified by source config
+				for name, _ := range source.Instance.Config.Devices {
+					delete(c.Devices, name)
+					if t.Trace {
+						fmt.Println("remove source device: %s\n", name)
+					}
+				}
+			}
+
+			for name, device := range devices {
+				c.Devices[name] = device
+				if t.Trace {
+					fmt.Println("add device: %s\n", name)
+				}
+			}
+			for key, value := range config.ProfileConfig {
+				c.Config[key] = value
+				if t.Trace {
+					fmt.Println("config %s = %s\n", key, value)
+				}
+			}
+		}
+		op, err := server.UpdateContainer(container, c.ContainerPut, "")
+		if err != nil {
+			return err
+		}
+		if err := op.Wait(); err != nil {
+			return AnnotateLXDError(container, err)
+		}
+	}
+	if t.Trace {
+		fmt.Printf("start %s\n", container)
+	}
+	if !t.DryRun {
+		err := (InstanceServer{server}).StartContainer(container)
+		if err != nil {
+			return err
+		}
+
+		err = WaitForNetwork(server, container)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -154,37 +231,13 @@ func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, ser
 		return s.Error()
 	}
 
-	if !t.DryRun {
-		c, _, err := server.GetContainer(container)
-		if err != nil {
-			return AnnotateLXDError(container, err)
-		}
-		c.Profiles = profiles
-		op, err := server.UpdateContainer(container, c.ContainerPut, "")
-		if err != nil {
-			return err
-		}
-		if err := op.Wait(); err != nil {
-			return AnnotateLXDError(container, err)
-		}
-	}
-	err = t.deleteProfiles(server, missingProfiles)
+	err = t.configureContainer(instance, server, profiles)
+	err2 := t.deleteProfiles(server, missingProfiles)
 	if err != nil {
 		return err
 	}
-	if t.Trace {
-		fmt.Printf("start %s\n", container)
-	}
-	if !t.DryRun {
-		err = (InstanceServer{server}).StartContainer(container)
-		if err != nil {
-			return err
-		}
-
-		err = WaitForNetwork(server, container)
-		if err != nil {
-			return err
-		}
+	if err2 != nil {
+		return err
 	}
 	return nil
 }
@@ -242,13 +295,15 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 		if len(profiles) == 0 {
 			profiles = append(profiles, "default")
 		}
-		profiles = append(profiles, profileName)
+		if profileName != "" {
+			profiles = append(profiles, profileName)
+		}
 	}
 	container := instance.Container()
 	source := instance.ContainerSource()
 	fmt.Printf("source:%v\n", source)
 	if !source.IsDefined() {
-		err := t.lxcLaunch(instance, profiles)
+		err := t.lxcLaunch(instance, server, profiles)
 		if err != nil {
 			return err
 		}
