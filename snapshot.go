@@ -11,7 +11,7 @@ type SnapshotParams struct {
 	DryRun    bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	Snapshot  string `name:"s" usage:"short snapshot name"`
 	Destroy   bool   `name:"d" usage:"destroy snapshots"`
-	Recursive bool   `name:"R" usage:"zfs destroy -R: Recursively destroy all dependents, including cloned datasets`
+	Recursive bool   `name:"R" usage:"zfs destroy -R: Recursively destroy all dependents, including cloned datasets"`
 }
 
 type Snapshot struct {

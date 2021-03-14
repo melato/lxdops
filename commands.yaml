@@ -67,8 +67,12 @@ commands:
       parse:
         short: parse a config file
         use: <config-file>
-        examples:
-        - parse test.yaml
+      print:
+        short: parse and print a config file
+        use: <config-file>
+      script:
+        short: print the body of a script
+        use: <config-file> <script-name>
       includes:
         short: list included files
   instance:

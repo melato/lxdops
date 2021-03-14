@@ -194,9 +194,6 @@ type File struct {
 	// Source is the file path on the host
 	Source HostPath
 
-	// Recursive is not supported and will be removed.  Only single files are supported.
-	Recursive bool
-
 	// The file's mode as a string, e.g. 0775
 	Mode string
 

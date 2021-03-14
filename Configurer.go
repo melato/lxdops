@@ -307,6 +307,9 @@ func (t *Configurer) copyFiles(config *Config, container string) error {
 		return err
 	}
 	for _, f := range config.Files {
+		if t.Trace {
+			fmt.Printf("create file: %s\n", f.Path)
+		}
 		file, err := os.Open(string(f.Source))
 		if err != nil {
 			return err

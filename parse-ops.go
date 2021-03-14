@@ -6,35 +6,54 @@ import (
 )
 
 type ParseOp struct {
-	Raw    bool   `usage:"do not process includes"`
-	Script string `usage:"print the body of the script with the specified name"`
+	Raw bool `usage:"do not process includes"`
+	//Script string `usage:"print the body of the script with the specified name"`
 }
 
-func (t *ParseOp) Run(file string) error {
-	var err error
-	var config *Config
+func (t *ParseOp) parseConfig(file string) (*Config, error) {
 	if t.Raw {
-		config, err = ReadRawConfig(file)
+		return ReadRawConfig(file)
 	} else {
-		config, err = ReadConfig(file)
+		return ReadConfig(file)
 	}
+}
+
+func (t *ParseOp) Parse(file string) error {
+	_, err := t.parseConfig(file)
+	return err
+}
+
+func (t *ParseOp) Print(file string) error {
+	config, err := t.parseConfig(file)
 	if err != nil {
 		return err
 	}
-	if t.Script != "" {
-		for _, script := range config.Scripts {
-			fmt.Println("script", script.Name)
-			if t.Script == script.Name {
-				fmt.Println(script.Body)
-			}
-		}
-	} else {
-		config.Print()
-	}
+	config.Print()
 	return nil
 }
 
-func (t *ParseOp) readIncludes(file string, included map[string]bool) error {
+type ConfigOps struct {
+}
+
+func (t *ConfigOps) printScript(scripts []*Script, script string) {
+	for _, s := range scripts {
+		if script == s.Name {
+			fmt.Println(s.Body)
+		}
+	}
+}
+
+func (t *ConfigOps) Script(file string, script string) error {
+	config, err := ReadConfig(file)
+	if err != nil {
+		return err
+	}
+	t.printScript(config.PreScripts, script)
+	t.printScript(config.Scripts, script)
+	return nil
+}
+
+func (t *ConfigOps) readIncludes(file string, included map[string]bool) error {
 	config, err := ReadRawConfig(file)
 	if err != nil {
 		return err
@@ -51,7 +70,7 @@ func (t *ParseOp) readIncludes(file string, included map[string]bool) error {
 	return nil
 }
 
-func (t *ParseOp) Includes(file ...string) error {
+func (t *ConfigOps) Includes(file ...string) error {
 	included := make(map[string]bool)
 	for _, file := range file {
 		if included[file] {

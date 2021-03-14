@@ -60,8 +60,11 @@ func RootCommand() *command.SimpleCommand {
 
 	configCmd := cmd.Command("config")
 	parse := &ParseOp{}
-	configCmd.Command("parse").Flags(parse).RunFunc(parse.Run)
-	configCmd.Command("includes").RunFunc(parse.Includes)
+	configCmd.Command("parse").Flags(parse).RunFunc(parse.Parse)
+	configCmd.Command("print").Flags(parse).RunFunc(parse.Print)
+	configOps := &ConfigOps{}
+	configCmd.Command("includes").RunFunc(configOps.Includes)
+	configCmd.Command("script").RunFunc(configOps.Script)
 
 	networkOp := &NetworkOp{Client: client}
 	cmd.Command("addresses").Flags(networkOp).RunMethodE(networkOp.ExportAddresses)
