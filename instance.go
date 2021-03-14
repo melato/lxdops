@@ -32,9 +32,30 @@ func (t *Instance) substitute(e *error, pattern Pattern, defaultPattern Pattern)
 	return value
 }
 
-func (config *Config) newInstance(name string, includeSource bool) (*Instance, error) {
+func (instance *Instance) newProperties() *util.PatternProperties {
+	config := instance.Config
+	name := instance.Name
+	properties := &util.PatternProperties{Properties: config.Properties}
+	properties.SetConstant("instance", name)
+	project := config.Project
+	var projectSlash, project_instance string
+	if project == "" || project == "default" {
+		project = "default"
+		projectSlash = ""
+		project_instance = name
+	} else {
+		projectSlash = project + "/"
+		project_instance = project + "_" + name
+	}
+	properties.SetConstant("project", project)
+	properties.SetConstant("project/", projectSlash)
+	properties.SetConstant("project_instance", project_instance)
+	return properties
+}
+
+func newInstance(config *Config, name string, includeSource bool) (*Instance, error) {
 	t := &Instance{Config: config, Name: name}
-	t.Properties = config.NewProperties(name)
+	t.Properties = t.newProperties()
 	var err error
 	t.container = t.substitute(&err, config.Container, "(instance)")
 	t.profile = t.substitute(&err, config.Profile, "(instance).lxdops")
@@ -57,8 +78,8 @@ func (config *Config) newInstance(name string, includeSource bool) (*Instance, e
 	return t, nil
 }
 
-func (config *Config) NewInstance(name string) (*Instance, error) {
-	return config.newInstance(name, true)
+func NewInstance(config *Config, name string) (*Instance, error) {
+	return newInstance(config, name, true)
 }
 
 func (t *Instance) ContainerSource() *ContainerSource {

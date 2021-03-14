@@ -86,7 +86,7 @@ func (t *Instance) newDeviceSource() (*DeviceSource, error) {
 	if err != nil {
 		return nil, err
 	}
-	source.Instance, err = sourceConfig.newInstance(name, false)
+	source.Instance, err = newInstance(sourceConfig, name, false)
 	if err != nil {
 		return nil, err
 	}

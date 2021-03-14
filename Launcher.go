@@ -427,7 +427,7 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 		return errors.New("cannot rename to the same name")
 	}
 	oldprofile := instance.ProfileName()
-	newInstance, err := instance.Config.NewInstance(newname)
+	newInstance, err := NewInstance(instance.Config, newname)
 	if err != nil {
 		return err
 	}
