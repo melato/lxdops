@@ -28,7 +28,7 @@ func (t *Launcher) Configured() error {
 	if t.DryRun {
 		t.Trace = true
 	}
-	return nil
+	return t.ConfigOptions.Configured()
 }
 
 func (t *Launcher) NewScript() *script.Script {
@@ -427,7 +427,7 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 		return errors.New("cannot rename to the same name")
 	}
 	oldprofile := instance.ProfileName()
-	newInstance, err := NewInstance(instance.Config, newname)
+	newInstance, err := instance.NewInstance(newname)
 	if err != nil {
 		return err
 	}

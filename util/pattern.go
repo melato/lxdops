@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 
+	"melato.org/export/table3"
 	"melato.org/export/template"
 )
 
@@ -47,10 +48,19 @@ func (t *PatternProperties) ShowHelp(w io.Writer) {
 		}
 	}
 	sort.Strings(keys)
-	for _, key := range keys {
-		value, _ := t.Get(key)
-		fmt.Fprintf(w, "(%s): %s\n", key, value)
+	var key, value string
+	writer := &table.FixedWriter{Writer: os.Stdout}
+	writer.Columns(
+		table.NewColumn("KEY", func() interface{} { return key }),
+		table.NewColumn("VALUE", func() interface{} { return value }),
+	)
+
+	for _, key = range keys {
+		value, _ = t.Get(key)
+		writer.WriteRow()
+		fmt.Fprintf(w, "%s: %s\n", key, value)
 	}
+	writer.End()
 }
 
 func (t *PatternProperties) Get(key string) (string, error) {

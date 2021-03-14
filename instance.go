@@ -9,16 +9,17 @@ import (
 )
 
 type Instance struct {
-	Config          *Config
-	Name            string
-	container       string
-	profile         string
-	containerSource *ContainerSource
-	deviceSource    *DeviceSource
-	Project         string
-	Properties      *util.PatternProperties
-	fspaths         map[string]*InstanceFS
-	sourceConfig    *Config
+	GlobalProperties map[string]string
+	Config           *Config
+	Name             string
+	container        string
+	profile          string
+	containerSource  *ContainerSource
+	deviceSource     *DeviceSource
+	Project          string
+	Properties       *util.PatternProperties
+	fspaths          map[string]*InstanceFS
+	sourceConfig     *Config
 }
 
 func (t *Instance) substitute(e *error, pattern Pattern, defaultPattern Pattern) string {
@@ -36,6 +37,9 @@ func (instance *Instance) newProperties() *util.PatternProperties {
 	config := instance.Config
 	name := instance.Name
 	properties := &util.PatternProperties{Properties: config.Properties}
+	for key, value := range instance.GlobalProperties {
+		properties.SetConstant(key, value)
+	}
 	properties.SetConstant("instance", name)
 	project := config.Project
 	var projectSlash, project_instance string
@@ -53,8 +57,8 @@ func (instance *Instance) newProperties() *util.PatternProperties {
 	return properties
 }
 
-func newInstance(config *Config, name string, includeSource bool) (*Instance, error) {
-	t := &Instance{Config: config, Name: name}
+func newInstance(globalProperties map[string]string, config *Config, name string, includeSource bool) (*Instance, error) {
+	t := &Instance{GlobalProperties: globalProperties, Config: config, Name: name}
 	t.Properties = t.newProperties()
 	var err error
 	t.container = t.substitute(&err, config.Container, "(instance)")
@@ -78,8 +82,12 @@ func newInstance(config *Config, name string, includeSource bool) (*Instance, er
 	return t, nil
 }
 
-func NewInstance(config *Config, name string) (*Instance, error) {
-	return newInstance(config, name, true)
+func NewInstance(globalProperties map[string]string, config *Config, name string) (*Instance, error) {
+	return newInstance(globalProperties, config, name, true)
+}
+
+func (t *Instance) NewInstance(name string) (*Instance, error) {
+	return NewInstance(t.GlobalProperties, t.Config, name)
 }
 
 func (t *Instance) ContainerSource() *ContainerSource {

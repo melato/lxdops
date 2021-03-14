@@ -23,7 +23,7 @@ func (t *ProfileConfigurer) Configured() error {
 	if t.DryRun {
 		t.Trace = true
 	}
-	return nil
+	return t.ConfigOptions.Configured()
 }
 
 func (t *ProfileConfigurer) NewScript() *script.Script {

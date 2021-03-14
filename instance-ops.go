@@ -13,11 +13,15 @@ type InstanceOps struct {
 	DryRun bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 }
 
+func (t *InstanceOps) Init() error {
+	return t.ConfigOptions.Init()
+}
+
 func (t *InstanceOps) Configured() error {
 	if t.DryRun {
 		t.Trace = true
 	}
-	return nil
+	return t.ConfigOptions.Configured()
 }
 
 func (t *InstanceOps) Verify(instance *Instance) error {

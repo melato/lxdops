@@ -32,6 +32,10 @@ func (t *Configurer) Init() error {
 	return t.ConfigOptions.Init()
 }
 
+func (t *Configurer) Configured() error {
+	return t.ConfigOptions.Configured()
+}
+
 func (t *Configurer) NewScript() *script.Script {
 	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 }
