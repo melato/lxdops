@@ -69,24 +69,7 @@ func (t *InstanceOps) Filesystems(instance *Instance) error {
 }
 
 func (t *InstanceOps) Devices(instance *Instance) error {
-	writer := &table.FixedWriter{Writer: os.Stdout}
-	devices, err := instance.DeviceList()
-	if err != nil {
-		return err
-	}
-	var d InstanceDevice
-	writer.Columns(
-		table.NewColumn("SOURCE", func() interface{} { return d.Source }),
-		table.NewColumn("PATH", func() interface{} { return d.Device.Path }),
-		table.NewColumn("NAME", func() interface{} { return d.Name }),
-		table.NewColumn("DIR", func() interface{} { return d.Device.Dir }),
-		table.NewColumn("FILESYSTEM", func() interface{} { return d.Device.Filesystem }),
-	)
-	for _, d = range devices {
-		writer.WriteRow()
-	}
-	writer.End()
-	return nil
+	return instance.PrintDevices()
 }
 
 func (t *InstanceOps) Project(instance *Instance) error {

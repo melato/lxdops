@@ -191,8 +191,7 @@ func (t *DeviceConfigurer) CreateProfile(instance *Instance) error {
 		Config:      instance.Config.ProfileConfig,
 		Description: "lxdops profile"}}
 	if t.Trace {
-		fmt.Printf("create profile %s:\n", profileName)
-		util.PrintYaml(&post)
+		instance.PrintDevices()
 	}
 	if !t.DryRun {
 		return server.CreateProfile(post)

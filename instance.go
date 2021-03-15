@@ -1,9 +1,11 @@
 package lxdops
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
+	"melato.org/export/table3"
 	"melato.org/lxdops/util"
 	"melato.org/script/v2"
 )
@@ -221,4 +223,25 @@ func (t *Instance) NewDeviceMap() (map[string]map[string]string, error) {
 		devices[deviceName] = map[string]string{"type": "disk", "path": device.Path, "source": dir}
 	}
 	return devices, nil
+}
+
+func (instance *Instance) PrintDevices() error {
+	writer := &table.FixedWriter{Writer: os.Stdout}
+	devices, err := instance.DeviceList()
+	if err != nil {
+		return err
+	}
+	var d InstanceDevice
+	writer.Columns(
+		table.NewColumn("SOURCE", func() interface{} { return d.Source }),
+		table.NewColumn("PATH", func() interface{} { return d.Device.Path }),
+		table.NewColumn("NAME", func() interface{} { return d.Name }),
+		table.NewColumn("DIR", func() interface{} { return d.Device.Dir }),
+		table.NewColumn("FILESYSTEM", func() interface{} { return d.Device.Filesystem }),
+	)
+	for _, d = range devices {
+		writer.WriteRow()
+	}
+	writer.End()
+	return nil
 }
