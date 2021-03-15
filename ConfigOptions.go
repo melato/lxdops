@@ -2,40 +2,25 @@ package lxdops
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"strings"
-
-	"melato.org/lxdops/util"
 )
 
 type ConfigOptions struct {
-	Project          string   `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
-	Name             string   `name:"name" usage:"The name of the container to launch or configure.  If missing, use a separate container for each config, using the name of the config."`
-	Properties       []string `name:"P" usage:"a command-line property in the form <key>=<value>.  Command-line properties override instance and global properties"`
-	PropertiesFile   string   `name:"properties" usage:"a file containing global config properties.  Instance properties override global properties"`
-	properties       map[string]string
-	GlobalProperties map[string]string `name:"-"`
+	Project    string   `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
+	Name       string   `name:"name" usage:"The name of the container to launch or configure.  If missing, use a separate container for each config, using the name of the config."`
+	Properties []string `name:"P" usage:"a command-line property in the form <key>=<value>.  Command-line properties override instance and global properties"`
+	properties map[string]string
+	PropertyOptions
 	lxc_config
 }
 
 func (t *ConfigOptions) Init() error {
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		return err
-	}
-	t.PropertiesFile = filepath.Join(configDir, "lxdops", "properties.yaml")
-	return nil
+	return t.PropertyOptions.Init()
 }
 
 func (t *ConfigOptions) Configured() error {
-	if t.PropertiesFile != "" {
-		_, err := os.Stat(t.PropertiesFile)
-		if err == nil {
-			return util.ReadYaml(t.PropertiesFile, &t.GlobalProperties)
-		}
-	}
-	return nil
+	return t.PropertyOptions.Configured()
 }
 
 func (t *ConfigOptions) initProperties() error {

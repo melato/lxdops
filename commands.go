@@ -56,7 +56,9 @@ func RootCommand() *command.SimpleCommand {
 	lxdOps := &LxdOps{Client: client}
 	profile.Command("exists").RunFunc(lxdOps.ProfileExists)
 	profile.Command("add-disk").RunFunc(lxdOps.AddDiskDevice)
-	cmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot)
+
+	propertyCmd := cmd.Command("property")
+	propertyCmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot)
 
 	configCmd := cmd.Command("config")
 	parse := &ParseOp{}
