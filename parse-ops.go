@@ -6,7 +6,8 @@ import (
 )
 
 type ParseOp struct {
-	Raw bool `usage:"do not process includes"`
+	Raw     bool `usage:"do not process includes"`
+	Verbose bool `name:"v" usage:"verbose"`
 	//Script string `usage:"print the body of the script with the specified name"`
 }
 
@@ -14,14 +15,13 @@ func (t *ParseOp) parseConfig(file string) (*Config, error) {
 	if t.Raw {
 		return ReadRawConfig(file)
 	} else {
-		r := &ConfigReader{Warn: true}
+		r := &ConfigReader{Warn: true, Verbose: t.Verbose}
 		return r.Read(file)
 	}
 }
 
 func (t *ParseOp) Parse(file ...string) error {
 	for _, file := range file {
-		fmt.Printf("parsing %s\n", file)
 		_, err := t.parseConfig(file)
 		if err != nil {
 			return err

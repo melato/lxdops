@@ -11,7 +11,7 @@ import (
 type ProjectCopyProfiles struct {
 	Client        *LxdClient `name:"-"`
 	SourceProject string     `name:"source-project" usage:"project to copy profiles from"`
-	TargetProject string     `name:"target-project" usage:"project to copy profiles to "`
+	TargetProject string     `name:"target-project" usage:"project to copy profiles to"`
 }
 
 type ProjectCreate struct {

@@ -11,7 +11,10 @@ import (
 
 type ConfigReader struct {
 	Warn     bool
+	Verbose  bool
 	included map[string]bool
+	file     string
+	warned   bool
 }
 
 func (r *ConfigReader) isIncluded(file string) bool {
@@ -44,6 +47,14 @@ func (t *OS) Merge(c *OS) error {
 	return nil
 }
 
+func (r *ConfigReader) warn(format string, arg ...interface{}) {
+	if !r.warned {
+		fmt.Println(r.file)
+		r.warned = true
+	}
+	fmt.Printf(format, arg...)
+}
+
 func (r *ConfigReader) mergeMaps(a, b map[string]string) map[string]string {
 	if a == nil && b == nil {
 		return nil
@@ -55,7 +66,7 @@ func (r *ConfigReader) mergeMaps(a, b map[string]string) map[string]string {
 		if r.Warn {
 			oldValue, exists := a[key]
 			if exists {
-				fmt.Println("%s %s overriden by %s\n", key, oldValue, value)
+				r.warn("%s: \"%s\" overriden by \"%s\"\n", key, oldValue, value)
 			}
 		}
 		a[key] = value
@@ -137,6 +148,9 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 		fmt.Fprintf(os.Stderr, "ignoring duplicate include: %s\n", file)
 		return nil
 	}
+	if r.Verbose {
+		fmt.Println(file)
+	}
 	config, err := ReadRawConfig(file)
 	if err != nil {
 		return err
@@ -157,7 +171,7 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 		}
 	}
 	for _, f := range config.Include {
-		err := r.mergeFile(config, string(f))
+		err := r.mergeFile(t, string(f))
 		if err != nil {
 			return err
 		}
@@ -174,6 +188,12 @@ func (t *ConfigInherit) removeDuplicates() {
 }
 
 func (r *ConfigReader) Read(file string) (*Config, error) {
+	r.warned = false
+	r.included = nil
+	r.file = file
+	if r.Verbose {
+		r.warned = true
+	}
 	result := &Config{}
 	err := r.mergeFile(result, file)
 	if err != nil {
