@@ -14,13 +14,20 @@ func (t *ParseOp) parseConfig(file string) (*Config, error) {
 	if t.Raw {
 		return ReadRawConfig(file)
 	} else {
-		return ReadConfig(file)
+		r := &ConfigReader{Warn: true}
+		return r.Read(file)
 	}
 }
 
-func (t *ParseOp) Parse(file string) error {
-	_, err := t.parseConfig(file)
-	return err
+func (t *ParseOp) Parse(file ...string) error {
+	for _, file := range file {
+		fmt.Printf("parsing %s\n", file)
+		_, err := t.parseConfig(file)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (t *ParseOp) Print(file string) error {

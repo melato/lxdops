@@ -10,6 +10,7 @@ import (
 )
 
 type ConfigReader struct {
+	Warn     bool
 	included map[string]bool
 }
 
@@ -51,6 +52,12 @@ func (r *ConfigReader) mergeMaps(a, b map[string]string) map[string]string {
 		a = make(map[string]string)
 	}
 	for key, value := range b {
+		if r.Warn {
+			oldValue, exists := a[key]
+			if exists {
+				fmt.Println("%s %s overriden by %s\n", key, oldValue, value)
+			}
+		}
 		a[key] = value
 	}
 	return a
@@ -94,12 +101,24 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) {
 		t.Filesystems = make(map[string]*Filesystem)
 	}
 	for id, fs := range c.Filesystems {
+		if r.Warn {
+			_, exists := t.Filesystems[id]
+			if exists {
+				fmt.Println("filesystem %s is overriden\n", id)
+			}
+		}
 		t.Filesystems[id] = fs
 	}
 	if t.Devices == nil {
 		t.Devices = make(map[string]*Device)
 	}
 	for id, d := range c.Devices {
+		if r.Warn {
+			_, exists := t.Devices[id]
+			if exists {
+				fmt.Println("device %s is overriden\n", id)
+			}
+		}
 		t.Devices[id] = d
 	}
 	t.PreScripts = append(t.PreScripts, c.PreScripts...)
