@@ -61,6 +61,7 @@ func RootCommand() *command.SimpleCommand {
 	propertyOps := &PropertyOptions{}
 	propertyCmd.Command("list").Flags(propertyOps).RunFunc(propertyOps.List)
 	propertyCmd.Command("set").Flags(propertyOps).RunFunc(propertyOps.Set)
+	propertyCmd.Command("file").Flags(propertyOps).RunFunc(propertyOps.File)
 	propertyCmd.Command("zfsroot").RunFunc(lxdOps.ZFSRoot)
 
 	configCmd := cmd.Command("config")

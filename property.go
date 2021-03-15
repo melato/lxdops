@@ -1,6 +1,7 @@
 package lxdops
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -35,9 +36,21 @@ func (t *PropertyOptions) List() {
 	util.PrintMap(t.GlobalProperties)
 }
 
+func (t *PropertyOptions) File() {
+	fmt.Println(t.PropertiesFile)
+}
+
 func (t *PropertyOptions) Set(key, value string) error {
+	if t.GlobalProperties == nil {
+		t.GlobalProperties = make(map[string]string)
+	}
 	t.GlobalProperties[key] = value
 	if t.PropertiesFile != "" {
+		dir := filepath.Dir(t.PropertiesFile)
+		err := os.MkdirAll(dir, os.FileMode(0775))
+		if err != nil {
+			return err
+		}
 		return util.WriteYaml(t.PropertiesFile, t.GlobalProperties)
 	}
 	return nil

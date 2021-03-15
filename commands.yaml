@@ -157,6 +157,8 @@ commands:
     commands:
       list:
         short: list global property value
+      file:
+        short: print the filename of the global properties
       set:
         short: set a global property
         use: <key> <value>
