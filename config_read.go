@@ -154,9 +154,8 @@ func (t *ConfigInherit) removeDuplicates() {
 	// how about Require, Devices, Users, Scripts?
 }
 
-func ReadConfig(file string) (*Config, error) {
+func (r *ConfigReader) Read(file string) (*Config, error) {
 	result := &Config{}
-	r := &ConfigReader{}
 	err := r.mergeFile(result, file)
 	if err != nil {
 		return nil, err
@@ -165,4 +164,9 @@ func ReadConfig(file string) (*Config, error) {
 		result.OS = &OS{}
 	}
 	return result, err
+}
+
+func ReadConfig(file string) (*Config, error) {
+	r := &ConfigReader{}
+	return r.Read(file)
 }
