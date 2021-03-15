@@ -5,19 +5,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"melato.org/lxdops/util"
 )
 
-func (t *Config) mergeDescriptions(desc ...string) string {
-	var parts []string
-	for _, desc := range desc {
-		if desc != "" {
-			parts = append(parts, desc)
-		}
+type ConfigReader struct {
+	included map[string]bool
+}
+
+func (r *ConfigReader) isIncluded(file string) bool {
+	return r.included[file]
+}
+
+func (r *ConfigReader) addIncluded(file string) {
+	if r.included == nil {
+		r.included = make(map[string]bool)
 	}
-	return strings.Join(parts, "\n")
+	r.included[file] = true
 }
 
 func (t *OS) Merge(c *OS) error {
@@ -39,7 +43,7 @@ func (t *OS) Merge(c *OS) error {
 	return nil
 }
 
-func mergeMaps(a, b map[string]string) map[string]string {
+func (r *ConfigReader) mergeMaps(a, b map[string]string) map[string]string {
 	if a == nil && b == nil {
 		return nil
 	}
@@ -52,7 +56,7 @@ func mergeMaps(a, b map[string]string) map[string]string {
 	return a
 }
 
-func (t *Source) Merge(c *Source) {
+func (r *ConfigReader) mergeSource(t, c *Source) {
 	if t.Origin == "" {
 		t.Origin = c.Origin
 	}
@@ -67,7 +71,7 @@ func (t *Source) Merge(c *Source) {
 	}
 }
 
-func (t *ConfigInherit) Merge(c *ConfigInherit) error {
+func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) {
 	if t.Project == "" {
 		t.Project = c.Project
 	}
@@ -77,10 +81,10 @@ func (t *ConfigInherit) Merge(c *ConfigInherit) error {
 	if t.Profile == "" {
 		t.Profile = c.Profile
 	}
-	t.Properties = mergeMaps(t.Properties, c.Properties)
-	t.ProfileConfig = mergeMaps(t.ProfileConfig, c.ProfileConfig)
+	t.Properties = r.mergeMaps(t.Properties, c.Properties)
+	t.ProfileConfig = r.mergeMaps(t.ProfileConfig, c.ProfileConfig)
 
-	t.Source.Merge(&c.Source)
+	r.mergeSource(&t.Source, &c.Source)
 
 	if len(t.LxcOptions) == 0 {
 		t.LxcOptions = c.LxcOptions
@@ -107,11 +111,10 @@ func (t *ConfigInherit) Merge(c *ConfigInherit) error {
 	t.Passwords = append(t.Passwords, c.Passwords...)
 
 	t.removeDuplicates()
-	return nil
 }
 
-func (t *Config) merge(file string, included map[string]bool) error {
-	if _, found := included[file]; found {
+func (r *ConfigReader) mergeFile(t *Config, file string) error {
+	if r.isIncluded(file) {
 		fmt.Fprintf(os.Stderr, "ignoring duplicate include: %s\n", file)
 		return nil
 	}
@@ -121,11 +124,11 @@ func (t *Config) merge(file string, included map[string]bool) error {
 	}
 	dir := filepath.Dir(file)
 	config.ResolvePaths(dir)
-	if len(included) == 0 {
+	if len(r.included) == 0 {
 		t.ConfigTop = config.ConfigTop
 
 	}
-	included[file] = true
+	r.addIncluded(file)
 	if t.OS == nil {
 		t.OS = config.OS
 	} else {
@@ -135,15 +138,12 @@ func (t *Config) merge(file string, included map[string]bool) error {
 		}
 	}
 	for _, f := range config.Include {
-		err := t.merge(string(f), included)
+		err := r.mergeFile(config, string(f))
 		if err != nil {
 			return err
 		}
 	}
-	err = t.ConfigInherit.Merge(&config.ConfigInherit)
-	if err != nil {
-		return err
-	}
+	r.mergeInherit(&t.ConfigInherit, &config.ConfigInherit)
 	return nil
 }
 
@@ -156,8 +156,8 @@ func (t *ConfigInherit) removeDuplicates() {
 
 func ReadConfig(file string) (*Config, error) {
 	result := &Config{}
-	included := make(map[string]bool)
-	err := result.merge(file, included)
+	r := &ConfigReader{}
+	err := r.mergeFile(result, file)
 	if err != nil {
 		return nil, err
 	}

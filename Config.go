@@ -40,7 +40,12 @@ type ConfigTop struct {
 }
 
 type ConfigInherit struct {
+	// Properties provide key-value pairs used for pattern substitution.
+	// They override built-in properties
+	Properties map[string]string `yaml:"properties"`
+
 	OS *OS
+
 	// Project is the LXD project where the container is
 	Project string `yaml:"project"`
 
@@ -55,10 +60,6 @@ type ConfigInherit struct {
 	// This was meant for creating templates with boot.autostart: "false",
 	// without needing to use profiles external to lxdops.
 	ProfileConfig map[string]string `yaml:"profile-config"`
-
-	// Properties provide key-value pairs used for pattern substitution.
-	// They override built-in properties
-	Properties map[string]string `yaml:"properties"`
 
 	// Source specifies where to copy or clone the instance from
 	Source `yaml:",inline"`

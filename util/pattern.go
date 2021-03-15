@@ -58,7 +58,6 @@ func (t *PatternProperties) ShowHelp(w io.Writer) {
 	for _, key = range keys {
 		value, _ = t.Get(key)
 		writer.WriteRow()
-		fmt.Fprintf(w, "%s: %s\n", key, value)
 	}
 	writer.End()
 }
