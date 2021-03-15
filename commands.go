@@ -58,7 +58,10 @@ func RootCommand() *command.SimpleCommand {
 	profile.Command("add-disk").RunFunc(lxdOps.AddDiskDevice)
 
 	propertyCmd := cmd.Command("property")
-	propertyCmd.Command("zfsroot").RunMethodE(lxdOps.ZFSRoot)
+	propertyOps := &PropertyOptions{}
+	propertyCmd.Command("list").Flags(propertyOps).RunFunc(propertyOps.List)
+	propertyCmd.Command("set").Flags(propertyOps).RunFunc(propertyOps.Set)
+	propertyCmd.Command("zfsroot").RunFunc(lxdOps.ZFSRoot)
 
 	configCmd := cmd.Command("config")
 	parse := &ParseOp{}

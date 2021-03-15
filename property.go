@@ -30,3 +30,15 @@ func (t *PropertyOptions) Configured() error {
 	}
 	return nil
 }
+
+func (t *PropertyOptions) List() {
+	util.PrintMap(t.GlobalProperties)
+}
+
+func (t *PropertyOptions) Set(key, value string) error {
+	t.GlobalProperties[key] = value
+	if t.PropertiesFile != "" {
+		return util.WriteYaml(t.PropertiesFile, t.GlobalProperties)
+	}
+	return nil
+}

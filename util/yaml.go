@@ -24,3 +24,11 @@ func ReadYaml(file string, v interface{}) error {
 
 	return yaml.Unmarshal(data, v)
 }
+
+func WriteYaml(file string, v interface{}) error {
+	data, err := yaml.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(file, data, os.FileMode(0664))
+}

@@ -152,15 +152,18 @@ commands:
   snapshot:
     short: snapshot instance filesystems
     use: '@<snapshot> <config-file>...'
-  zfsroot:
-    short: print default zfsroot property
-    long: | 
-      zfsroot detects the ZFS filesystem for the default LXD storage,
-      and prints the root of that filesystem.
-      This is the value for the (zfsroot) property, unless
-      it is overriden in the config (recommended).
-      The (zfsroot) property is a quick way to get started, because it
-      finds a ZFS dataset to use as the root dataset for lxdops filesystems.
-      It does not work if the LXD ZFS dataset is a root ZFS filesystem.
-    use:
+  property:
+    short: manage global properties
+    commands:
+      list:
+        short: list global property value
+      set:
+        short: set a global property
+        use: <key> <value>
+      zfsroot:
+        short: detect an appropriate zfsroot property
+        long: | 
+          zfsroot detects the ZFS filesystem for the default LXD storage,
+          and prints the root of that filesystem.
+          It does not work if the LXD ZFS dataset is a root ZFS filesystem.
 
