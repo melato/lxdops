@@ -211,6 +211,9 @@ func (t *DeviceConfigurer) RenameFilesystems(oldInstance, newInstance *Instance)
 	s := t.NewScript()
 	for _, oldpath := range InstanceFSList(oldPaths).Roots() {
 		newpath := newPaths[oldpath.Id]
+		if oldpath.Path == newpath.Path {
+			continue
+		}
 		if oldpath.IsDir() {
 			newdir := newpath.Dir()
 			if util.DirExists(newdir) {
@@ -218,7 +221,7 @@ func (t *DeviceConfigurer) RenameFilesystems(oldInstance, newInstance *Instance)
 			}
 			s.Run("mv", oldpath.Dir(), newdir)
 		} else {
-			s.Run("sudo", "zfs", "rename", oldpath.Dir(), newpath.Dir())
+			s.Run("sudo", "zfs", "rename", oldpath.Path, newpath.Path)
 		}
 	}
 	return s.Error()
