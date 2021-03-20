@@ -63,11 +63,9 @@ func (r *ConfigReader) mergeMaps(a, b map[string]string) (map[string]string, err
 		a = make(map[string]string)
 	}
 	for key, value := range b {
-		if r.Warn {
-			oldValue, _ := a[key]
-			if oldValue != value && oldValue != "" {
-				return nil, errors.New(fmt.Sprintf("%s:= \"%s\" already defined as \"%s\"\n", key, value, oldValue))
-			}
+		oldValue, _ := a[key]
+		if oldValue != value && oldValue != "" {
+			return nil, errors.New(fmt.Sprintf("%s:= \"%s\" already defined as \"%s\"\n", key, value, oldValue))
 		}
 		a[key] = value
 	}
