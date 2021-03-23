@@ -4,7 +4,7 @@ import (
 	"os"
 	"sort"
 
-	"melato.org/export/table3"
+	"melato.org/table3"
 )
 
 func MapKeys(m map[string]string) []string {

@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"melato.org/export/table3"
 	"melato.org/lxdops/util"
 	"melato.org/script/v2"
+	"melato.org/table3"
 )
 
 type Instance struct {

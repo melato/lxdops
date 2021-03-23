@@ -7,8 +7,8 @@ import (
 	"os"
 	"sort"
 
-	"melato.org/export/table3"
 	"melato.org/export/template"
+	"melato.org/table3"
 )
 
 /** Implements a simple pattern substitution on strings, using properties and functions

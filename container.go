@@ -7,8 +7,8 @@ import (
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
-	"melato.org/export/table3"
 	"melato.org/lxdops/util"
+	"melato.org/table3"
 )
 
 type ContainerOps struct {

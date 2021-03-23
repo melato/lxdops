@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"melato.org/export/table3"
+	"melato.org/table3"
 )
 
 type InstanceOps struct {
