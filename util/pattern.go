@@ -7,7 +7,7 @@ import (
 	"os"
 	"sort"
 
-	"melato.org/export/template"
+	"melato.org/lxdops/template"
 	"melato.org/table3"
 )
 
