@@ -1,5 +1,0 @@
-os:
-  name: alpine
-include:
-- alpine.yaml
-snapshot: copy

@@ -1,6 +1,0 @@
-profile-pattern: (instance).lxdops
-include:
-- filesystems.yaml
-- devices.yaml
-properties:
-    section: prod

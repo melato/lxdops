@@ -1,5 +1,0 @@
-os:
-  name: alpine
-  version: 3.12
-profiles:
-- alpine-3.12

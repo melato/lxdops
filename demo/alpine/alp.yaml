@@ -1,6 +1,0 @@
-os:
-  name: alpine
-packages:
-- curl
-include:
-- alpine.yaml

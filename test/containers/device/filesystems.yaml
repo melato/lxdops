@@ -1,6 +1,0 @@
-profile-pattern: (instance).lxdops
-filesystems:
-  - id: main
-    pattern: (zfsroot)/lxdops/(section)/main/(project/)(instance)
-  - id: log
-    pattern: (zfsroot)/lxdops/(section)/log/(project/)(instance)

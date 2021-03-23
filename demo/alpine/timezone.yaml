@@ -1,6 +1,0 @@
-os:
-  name: alpine
-scripts:
-- name: timezone
-  body: setup-timezone -z Europe/Athens
-
