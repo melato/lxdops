@@ -42,6 +42,8 @@ type ConfigTop struct {
 type ConfigInherit struct {
 	// Properties provide key-value pairs used for pattern substitution.
 	// They override built-in properties
+	// Properties from all included files are merged before they are applied.  Properties cannot override non-empty properties,
+	// in order to avoid unexpected behavior that depends on the order of included files.
 	Properties map[string]string `yaml:"properties"`
 
 	OS *OS

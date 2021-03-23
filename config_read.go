@@ -55,23 +55,21 @@ func (r *ConfigReader) warn(format string, arg ...interface{}) {
 	fmt.Printf(format, arg...)
 }
 
-func (r *ConfigReader) mergeMaps(a, b map[string]string) map[string]string {
+func (r *ConfigReader) mergeMaps(a, b map[string]string) (map[string]string, error) {
 	if a == nil && b == nil {
-		return nil
+		return nil, nil
 	}
 	if a == nil {
 		a = make(map[string]string)
 	}
 	for key, value := range b {
-		if r.Warn {
-			oldValue, exists := a[key]
-			if exists {
-				r.warn("%s: \"%s\" overriden by \"%s\"\n", key, oldValue, value)
-			}
+		oldValue, _ := a[key]
+		if oldValue != value && oldValue != "" {
+			return nil, errors.New(fmt.Sprintf("%s:= \"%s\" already defined as \"%s\"\n", key, value, oldValue))
 		}
 		a[key] = value
 	}
-	return a
+	return a, nil
 }
 
 func (r *ConfigReader) mergeSource(t, c *Source) {
@@ -89,7 +87,7 @@ func (r *ConfigReader) mergeSource(t, c *Source) {
 	}
 }
 
-func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) {
+func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 	if t.Project == "" {
 		t.Project = c.Project
 	}
@@ -99,8 +97,15 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) {
 	if t.Profile == "" {
 		t.Profile = c.Profile
 	}
-	t.Properties = r.mergeMaps(t.Properties, c.Properties)
-	t.ProfileConfig = r.mergeMaps(t.ProfileConfig, c.ProfileConfig)
+	var err error
+	t.Properties, err = r.mergeMaps(t.Properties, c.Properties)
+	if err != nil {
+		return err
+	}
+	t.ProfileConfig, err = r.mergeMaps(t.ProfileConfig, c.ProfileConfig)
+	if err != nil {
+		return err
+	}
 
 	r.mergeSource(&t.Source, &c.Source)
 
@@ -141,6 +146,7 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) {
 	t.Passwords = append(t.Passwords, c.Passwords...)
 
 	t.removeDuplicates()
+	return nil
 }
 
 func (r *ConfigReader) mergeFile(t *Config, file string) error {
@@ -176,8 +182,7 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 			return err
 		}
 	}
-	r.mergeInherit(&t.ConfigInherit, &config.ConfigInherit)
-	return nil
+	return r.mergeInherit(&t.ConfigInherit, &config.ConfigInherit)
 }
 
 func (t *ConfigInherit) removeDuplicates() {
