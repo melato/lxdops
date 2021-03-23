@@ -15,8 +15,7 @@ type ProjectCopyProfiles struct {
 }
 
 type ProjectCreate struct {
-	Client   *LxdClient `name:"-"`
-	Profiles bool       `name:"profiles" usage:"create a project with its own profiles"`
+	Client *LxdClient `name:"-"`
 }
 
 func (t *ProjectCopyProfiles) CopyProfiles(profiles []string) error {
@@ -64,9 +63,7 @@ func (t *ProjectCreate) Create(projects ...string) error {
 	projectPut := api.ProjectPut{Config: map[string]string{
 		"features.images": "false",
 	}}
-	if !t.Profiles {
-		projectPut.Config["features.profiles"] = "false"
-	}
+	projectPut.Config["features.profiles"] = "false"
 	profile, _, err := server.GetProfile("default")
 	if err != nil {
 		return errors.New("cannot get default profile")
