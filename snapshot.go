@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"melato.org/script/v2"
+	"melato.org/script"
 )
 
 type SnapshotParams struct {

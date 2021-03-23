@@ -12,7 +12,7 @@ import (
 	lxd "github.com/lxc/lxd/client"
 	"melato.org/lxdops/password"
 	"melato.org/lxdops/util"
-	"melato.org/script/v2"
+	"melato.org/script"
 )
 
 type Configurer struct {

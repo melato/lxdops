@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"melato.org/script/v2"
+	"melato.org/script"
 )
 
 type Ids struct {

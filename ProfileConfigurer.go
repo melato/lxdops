@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"melato.org/lxdops/util"
-	"melato.org/script/v2"
+	"melato.org/script"
 )
 
 type ProfileConfigurer struct {
