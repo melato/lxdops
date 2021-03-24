@@ -18,7 +18,6 @@ type Instance struct {
 	profile          string
 	containerSource  *ContainerSource
 	deviceSource     *DeviceSource
-	Project          string
 	Properties       *util.PatternProperties
 	fspaths          map[string]*InstanceFS
 	sourceConfig     *Config
@@ -206,6 +205,10 @@ func (t *Instance) GetSourceConfig() (*Config, error) {
 		config, err := ReadConfig(string(t.Config.SourceConfig))
 		if err != nil {
 			return nil, err
+		}
+		if config.Project == "" {
+			// fill-in missing project with our project
+			config.Project = t.Config.Project
 		}
 		t.sourceConfig = config
 	}
