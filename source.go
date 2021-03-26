@@ -102,7 +102,7 @@ func (t *Instance) newContainerSource() (*ContainerSource, error) {
 	if s != "" {
 		source.parse(s)
 		if source.Project == "" {
-			source.Project = t.Project
+			source.Project = t.Config.Project
 		}
 	}
 	return source, nil
