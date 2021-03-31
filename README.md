@@ -135,6 +135,6 @@ A more elaborate set of configuration files is provided in a separate repository
 - go get github.com/lxc/lxd
 - # ...
 - cd main
-- echo dev > version
+- date > version
 - export GO111MODULE=auto
 - go install -ldflags -extldflags "-static" lxdops.go
