@@ -1,0 +1,9 @@
+users:
+    - name: user1
+      uid: 2001
+      shell: /bin/bash
+      sudo: true
+      ssh: true
+      groups:
+        - wheel
+        - adm

@@ -1,0 +1,7 @@
+filesystems:
+  main:
+    pattern: (zfsroot)/(project/)home/(instance)
+devices:
+  home:
+    path: /home
+    filesystem: main
