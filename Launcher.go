@@ -441,7 +441,7 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 	dev.DryRun = t.DryRun
 
 	containerName := instance.Container()
-	newContainerName := instance.Container()
+	newContainerName := newInstance.Container()
 	var container *api.Container
 	if len(instance.Config.Devices) > 0 {
 		_, _, err := server.GetProfile(newprofile)
@@ -456,7 +456,7 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 	if !t.DryRun {
 		op, err := server.RenameContainer(containerName, api.ContainerPost{Name: newInstance.Container()})
 		if err != nil {
-			return err
+			return AnnotateLXDError(containerName, err)
 		}
 		if err := op.Wait(); err != nil {
 			return err
@@ -484,19 +484,23 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 		}
 		if t.Trace {
 			fmt.Printf("apply %s profiles: %v\n", newname, container.Profiles)
-			fmt.Printf("delete profile %s\n", oldprofile)
 		}
 		if !t.DryRun {
 			op, err := server.UpdateContainer(newContainerName, container.ContainerPut, "")
 			if err != nil {
-				return err
+				return AnnotateLXDError(newContainerName, err)
 			}
 			if err := op.Wait(); err != nil {
 				return AnnotateLXDError(newContainerName, err)
 			}
+		}
+		if t.Trace {
+			fmt.Printf("delete profile %s\n", oldprofile)
+		}
+		if !t.DryRun {
 			err = server.DeleteProfile(oldprofile)
 			if err != nil {
-				return err
+				return AnnotateLXDError(oldprofile, err)
 			}
 		}
 	}
