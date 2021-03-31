@@ -51,8 +51,8 @@ type ConfigInherit struct {
 	// Project is the LXD project where the container is
 	Project string `yaml:"project"`
 
-	// The name of the container.  Defaults to (instance)
-	Container Pattern `yaml:"x-container,omitempty"`
+	// Experimental: The name of the container. Defaults to (instance)
+	Container Pattern `yaml:"container,omitempty"`
 
 	// ProfilePattern specifies how the instance profile should be named.
 	// It defaults to "(instance).lxdops"
@@ -66,7 +66,8 @@ type ConfigInherit struct {
 	// Source specifies where to copy or clone the instance from
 	Source `yaml:",inline"`
 
-	LxcOptions []string `yaml:"x-lxc-options,omitempty,flow"`
+	// Extra options passed to lxc launch.
+	LxcOptions []string `yaml:"lxc-options,omitempty,flow"`
 
 	// Include is a list of other configs that are to be included.
 	// Include paths are either absolute or relative to the path of the including config.
@@ -138,13 +139,13 @@ type Source struct {
 	// The filesytems are those specified in SourceConfig, if any, otherwise this config.
 	DeviceOrigin Pattern `yaml:"device-origin"`
 
-	// source-config specifies a config file that is used to determine:
+	// Experimental: source-config specifies a config file that is used to determine:
 	//   - The LXD project, container, and snapshot to clone when launching the instance.
 	//   - The source filesystems used for cloning filesystems or copying device directories.
 	// The name of the instance used for the source filesystems
 	// is the base name of the filename, without the extension.
 	// Various parts of these items can be overriden by other source properties above
-	SourceConfig HostPath `yaml:"x-source-config,omitempty"`
+	SourceConfig HostPath `yaml:"source-config,omitempty"`
 }
 
 // OS specifies the container OS
