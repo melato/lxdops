@@ -1,0 +1,16 @@
+os:
+  name: alpine
+  version: 3.13
+packages:
+- sudo
+- bash
+stop: true
+snapshot: copy
+filesystems:
+  main:
+    pattern: (zfsroot)/(project/)host/(instance)
+devices:
+  home:
+    path: /home
+    filesystem: main
+
