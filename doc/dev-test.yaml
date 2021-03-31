@@ -1,0 +1,20 @@
+os:
+  name: alpine
+origin: alp/copy
+device-origin: dev@test
+users:
+    - name: user1
+      uid: 2001
+      shell: /bin/bash
+      sudo: true
+      ssh: true
+      groups:
+        - wheel
+        - adm
+filesystems:
+  main:
+    pattern: (zfsroot)/(project/)host/(instance)
+devices:
+  home:
+    path: /home
+    filesystem: main
