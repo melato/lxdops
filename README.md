@@ -134,6 +134,22 @@ go get melato.org/command
 go get melato.org/script
 go get melato.org/table3
 go get melato.org/lxdops
+```
+
+If you prefer to not use my go get server, something like this also works:
+```
+mkdir -p $GOPATH/src/melato.org
+cd $GOPATH/src/melato.org
+git clone https://github.com/melato/command
+git clone https://github.com/melato/script
+git clone https://github.com/melato/table3
+git clone https://github.com/melato/lxdops
+
+go get gopkg.in/yaml.v2
+go get github.com/lxc/lxd
+```
+
+```
 export GO111MODULE=auto
 export GOBIN=~/bin
 mkdir -p $GOBIN
