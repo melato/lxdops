@@ -6,7 +6,7 @@ To run the examples in a clean LXD project, *t1*:
 ```
 lxdops project create t1
 lxc project switch t1
-lxdops property set zfsroot z/demo # use any ZFS filesystem that can be created with *zfs create -p*
+lxdops property set zfsroot z/demo # use any ZFS filesystem that can be created with "zfs create -p"
 
 cd ./demo
 lxdops launch alp.yaml
@@ -129,12 +129,26 @@ If an instance does not specify a specific project, lxdops will use the current 
 A more elaborate set of configuration files is provided in a separate repository: https://github.com/melato/lxdops.script
 
 # Build (requires go 1.16)
-- go get melato.org/command
-- go get melato.org/script
-- gopkg.in/yaml.v2
-- go get github.com/lxc/lxd
-- # ...
-- cd main
-- date > version
-- export GO111MODULE=auto
-- go install -ldflags -extldflags "-static" lxdops.go
+```
+go get melato.org/command
+go get melato.org/script
+go get melato.org/table3
+go get melato.org/lxdops
+export GO111MODULE=auto
+export GOBIN=~/bin
+mkdir -p $GOBIN
+
+cd $GOPATH/src/melato.org/lxdops/main
+# or
+# cd go/src/melato.org/lxdops/main
+date > version
+go install lxdops.go
+# I use static build:
+# go install -ldflags -extldflags "-static" lxdops.go
+
+~/bin/lxdops version
+```
+On a minimal (Ubuntu) system, you may need to do this (if you get build errors):
+```
+sudo apt install git gcc libc6-dev
+```
