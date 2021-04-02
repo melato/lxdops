@@ -2,21 +2,11 @@ package lxdops
 
 import (
 	"fmt"
-	"path/filepath"
 )
 
 type LxdOps struct {
 	Client *LxdClient `name:"-"`
 	Trace  bool       `name:"trace,t" usage:"print exec arguments"`
-}
-
-func (t *LxdOps) ZFSRoot() error {
-	dataset, err := t.Client.GetDefaultDataset()
-	if err != nil {
-		return err
-	}
-	fmt.Println(filepath.Dir(dataset))
-	return nil
 }
 
 func (t *LxdOps) AddDiskDevice(profile, source, path string) error {

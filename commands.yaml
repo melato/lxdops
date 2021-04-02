@@ -162,10 +162,4 @@ commands:
       set:
         short: set a global property
         use: <key> <value>
-      zfsroot:
-        short: detect an appropriate zfsroot property
-        long: | 
-          zfsroot detects the ZFS filesystem for the default LXD storage,
-          and prints the root of that filesystem.
-          It does not work if the LXD ZFS dataset is a root ZFS filesystem.
 

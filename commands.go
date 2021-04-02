@@ -62,7 +62,6 @@ func RootCommand() *command.SimpleCommand {
 	propertyCmd.Command("list").Flags(propertyOps).RunFunc(propertyOps.List)
 	propertyCmd.Command("set").Flags(propertyOps).RunFunc(propertyOps.Set)
 	propertyCmd.Command("file").Flags(propertyOps).RunFunc(propertyOps.File)
-	propertyCmd.Command("zfsroot").RunFunc(lxdOps.ZFSRoot)
 
 	configCmd := cmd.Command("config")
 	parse := &ParseOp{}
@@ -71,9 +70,6 @@ func RootCommand() *command.SimpleCommand {
 	configOps := &ConfigOps{}
 	configCmd.Command("includes").RunFunc(configOps.Includes)
 	configCmd.Command("script").RunFunc(configOps.Script)
-
-	networkOp := &NetworkOp{Client: client}
-	cmd.Command("addresses").Flags(networkOp).RunMethodE(networkOp.ExportAddresses)
 
 	containerOps := &ContainerOps{Client: client}
 	containerCmd := cmd.Command("container")

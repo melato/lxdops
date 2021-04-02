@@ -16,13 +16,6 @@ type InstanceServer struct {
 	Server lxd.InstanceServer
 }
 
-func QualifiedContainerName(project string, container string) string {
-	if project == DefaultProject {
-		return container
-	}
-	return project + "_" + container
-}
-
 func SplitSnapshotName(name string) (container, snapshot string) {
 	i := strings.Index(name, "/")
 	if i >= 0 {
