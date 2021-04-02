@@ -2,17 +2,34 @@
 Go program that uses YAML configuration files to launch and configure LXD containers with attached disk devices.
 
 # Examples
-To run the examples in a clean LXD project, *t1*:
+Run the examples in a clean LXD project.
+
+If you want to create a clean LXD project, *t1*, you can do it as follows:
 ```
 lxdops project create t1
+# This creates a new project with its own profiles, and copies the default profile from the default project.
+
+# make *t1* the current project:
 lxc project switch t1
-lxdops property set zfsroot z/demo # use any ZFS filesystem that can be created with "zfs create -p"
+```
+
+```
+lxdops property set zfsroot z/demo
+# Replace "z/demo" with any ZFS filesystem that can be created with "sudo zfs create -p"
 
 cd ./demo
 lxdops launch alp.yaml
 lxdops launch dev.yaml
 lxdops snapshot -s test dev.yaml
 lxdops launch dev-test.yaml
+# we've created a stopped container *alp*, and then cloned it to two other containers, *dev* and *dev-test*.
+# All containers have a separate /home directory.  *dev-test* /home is a clone of *dev* /home
+
+# Rebuild all three containers from the latest LXD image, while keeping /home the same:
+lxdops rebuild alp.yaml
+lxdops rebuild dev-test.yaml
+# test dev-test, to make sure all is well, and then rebuild more containers like it:
+lxdops rebuild dev.yaml
 
 ```
 
@@ -130,10 +147,14 @@ A more elaborate set of configuration files is provided in a separate repository
 
 # Build (requires go 1.16)
 ```
+export GO111MODULE=auto
+export GOBIN=~/bin
+
 go get melato.org/command
 go get melato.org/script
 go get melato.org/table3
 go get melato.org/lxdops
+# ignore the "unrecognized import path" error, for now.
 ```
 
 If you prefer to not use my go get server, something like this also works:
@@ -150,9 +171,6 @@ go get github.com/lxc/lxd
 ```
 
 ```
-export GO111MODULE=auto
-export GOBIN=~/bin
-mkdir -p $GOBIN
 
 cd $GOPATH/src/melato.org/lxdops/main
 # or
