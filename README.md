@@ -148,13 +148,11 @@ A more elaborate set of configuration files is provided in a separate repository
 # Build (requires go 1.16)
 ```
 export GO111MODULE=auto
+export GOPATH=~/go
 export GOBIN=~/bin
 
-go get melato.org/command
-go get melato.org/script
-go get melato.org/table3
 go get melato.org/lxdops
-# ignore the "unrecognized import path" error, for now.
+# this will clone the lxdops repository from github and all dependencies to $GOPATH/src
 ```
 
 If you prefer to not use my go get server, something like this also works:
@@ -173,16 +171,24 @@ go get github.com/lxc/lxd
 ```
 
 cd $GOPATH/src/melato.org/lxdops/main
-# or
-# cd go/src/melato.org/lxdops/main
 date > version
 go install lxdops.go
-# I use static build:
-# go install -ldflags -extldflags "-static" lxdops.go
 
+# check that it was built:
 ~/bin/lxdops version
 ```
-On a minimal (Ubuntu) system, you may need to do this (if you get build errors):
+## Debian/Ubuntu
+On a minimal Debian or Ubuntu system, you may need to do this, if you get build errors:
 ```
 sudo apt install git gcc libc6-dev
+```
+
+## Alpine
+On Alpine Linux, you may need to do this:
+```
+apk add git gcc libc-dev linux-headers
+```
+and compile with static linking:
+```
+go install -ldflags -extldflags "-static" lxdops.go
 ```
