@@ -1,37 +1,56 @@
 # lxdops
-Go program that uses YAML configuration files to launch and configure LXD containers with attached disk devices.
+Go program that launches and configures LXD containers and manages ZFS filesystems attached to these containers as disk devices.
+It reads container and filesystem configuration from YAML files.
 
 # Examples
-Run the examples in a clean LXD project.
-
-If you want to create a clean LXD project, *t1*, you can do it as follows:
-```
-lxdops project create t1
-# This creates a new project with its own profiles, and copies the default profile from the default project.
-
-# make *t1* the current project:
-lxc project switch t1
-```
+- Create and configure a stopped container that we'll use to clone other containers from:
 
 ```
-lxdops property set zfsroot z/demo
-# Replace "z/demo" with any ZFS filesystem that can be created with "sudo zfs create -p"
-
-cd ./demo
 lxdops launch alp.yaml
-lxdops launch dev.yaml
-lxdops snapshot -s test dev.yaml
-lxdops launch dev-test.yaml
-# we've created a stopped container *alp*, and then cloned it to two other containers, *dev* and *dev-test*.
-# All containers have a separate /home directory.  *dev-test* /home is a clone of *dev* /home
+```
 
-# Rebuild all three containers from the latest LXD image, while keeping /home the same:
+- Create a *dev-test* container by cloning *alp*:
+```
+lxdops launch dev.yaml
+```
+
+- Create @test ZFS snapshots of *dev*'s attached disk devices:
+
+```
+lxdops snapshot -s test dev.yaml
+```
+
+- Create a *dev-test* the same way that dev was created, but using disk devices cloned from *dev*@test:
+
+```
+lxdops launch dev-test.yaml
+```
+
+- Rebuild all three containers from the latest LXD image:
+```
 lxdops rebuild alp.yaml
 lxdops rebuild dev-test.yaml
 # test dev-test, to make sure all is well, and then rebuild more containers like it:
 lxdops rebuild dev.yaml
-
 ```
+
+Every container in these examples has its own /home directory as an attached disk device, independent from the container.
+If the filesystem/device directory does not exist, it will be created.
+
+The examples are in demo/
+```
+cd ./demo
+```
+
+Before running them, specify a (zfsroot) global property:
+```
+lxdops property set zfsroot <zfs-filesystem>
+```
+Replace <zfs-filesystem> with an existing ZFS filesystem (preferably empty).
+
+It's best to run the examples in a clean LXD project so they don't interfere with any other containers or profiles.
+See the *LXD Project Support* section below about how to create a clean project.
+
 
 ## home.yaml (included by other examples)
 ```
@@ -43,7 +62,8 @@ devices:
     path: /home
     filesystem: main
 ```
-- specify a /home filesystem to attach to containers
+- specify a /home filesystem to attach to containers.
+The location of the filesystem is parameterized by the name of the container (instance), the LXD project (project/) and a global property (zfsroot).
 
 ## user.yaml (included by other examples)
 ```
@@ -74,10 +94,11 @@ stop: true
 snapshot: copy
 ```
 - create an alpine container
-- create a zfs filesystem and attach it to the container
+- create a zfs filesystem and attach it to the container as /home
 - install the specified packages
 - stop the container after configuring
 - create a container snapshot named "copy"
+- we don't create any users in this container.  We'll create users in its clones.
 
 ## dev.yaml - clone a container 
 ```
@@ -92,7 +113,8 @@ include:
 ```
 
 - clone the alp/copy container snapshot
-- attach a /home directory
+- attach a new /home directory
+- copy files form alp's /home
 - add a user
 
 ## dev-test.yaml - clone a container and its attached filesystems
@@ -106,24 +128,25 @@ include:
 - user.yaml
 ```
 
-- clone the alp/copy container snapshot
-- clone the dev home@test filesystem and attach it as /home
-- add the user again
+- clone alp/copy, just like dev
+- attach /home, by cloning it from *dev*'s home@test
+- add a user, just like dev
 
 # Description
 
-lxdops launches, copies, and deletes *instances*.
+lxdops launches, copies, and deletes *lxdops instances*.
 
-An **instance** is:
+An lxdops **instance** is:
 - An LXD container
 - A set of ZFS filesystems
 - A set of disk devices that are in these filesystems and are attached to the container (via a profile)
+- An LXD profile that specifies the attached disk devices
 
 A Yaml instance configuration file specifies how to launch and configure an instance.  It specifies:
 - packages to install in the container
 - LXD profiles to attach to the container
-- ZFS Filesystems to create and zfs properties for those filesystems
-- Disk Devices to create and attach to the container
+- ZFS Filesystems to create and zfs properties for these filesystems
+- Disk Devices in these filesystems that are attached to the container
 - An LXD profile to create with the instance devices
 - scripts to run in the container
 - files to push to the container
@@ -140,6 +163,16 @@ lxdops has support for LXD projects and can clone instances across projects.
 I find it simpler to keep all my instances in a single project.
 
 If an instance does not specify a specific project, lxdops will use the current LXD project, as specified in ~/snap/lxd/current/.config/lxc/config.yml or ~/.config/lxc/config.yml
+
+To create a new clean LXD project, *t1*, you can use an lxdops convenience command:
+```
+lxdops project create t1
+lxc project switch t1
+```
+This creates a new project with:
+- Its own profiles.  lxdops creates a profile for each container
+- Shared images.  lxdops does not create, modify, or delete any images
+- The default profile copied from the default project
 
 # More Examples
 
@@ -168,8 +201,8 @@ go get gopkg.in/yaml.v2
 go get github.com/lxc/lxd
 ```
 
+Compile:
 ```
-
 cd $GOPATH/src/melato.org/lxdops/main
 date > version
 go install lxdops.go
@@ -180,7 +213,7 @@ go install lxdops.go
 ## Debian/Ubuntu
 On a minimal Debian or Ubuntu system, you may need to do this, if you get build errors:
 ```
-sudo apt install git gcc libc6-dev
+apt install git gcc libc6-dev
 ```
 
 ## Alpine
@@ -188,7 +221,24 @@ On Alpine Linux, you may need to do this:
 ```
 apk add git gcc libc-dev linux-headers
 ```
-and compile with static linking:
+and compile with static linking, so you can use it on a Debian/Ubuntu LXD host:
 ```
 go install -ldflags -extldflags "-static" lxdops.go
 ```
+
+# External Programs
+
+lxdops calls these external programs, on the host, with *sudo* when necessary:
+- lxc (It mostly uses the LXD API, but uses the "lxc" command for launching and cloning containers)
+- zfs
+- rsync
+- chown
+- mkdir
+- mv
+
+lxdops calls these external programs, in the container:
+- sh
+- chpasswd
+- chown
+- OS-specific commands for adding packages and creating users
+
