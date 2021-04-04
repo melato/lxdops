@@ -9,7 +9,7 @@ It reads container and filesystem configuration from YAML files.
 lxdops launch alp.yaml
 ```
 
-- Create a *dev-test* container by cloning *alp*:
+- Create a *dev* container by cloning *alp*:
 ```
 lxdops launch dev.yaml
 ```
@@ -20,7 +20,7 @@ lxdops launch dev.yaml
 lxdops snapshot -s test dev.yaml
 ```
 
-- Create a *dev-test* the same way that dev was created, but using disk devices cloned from *dev*@test:
+- Make a clone of *dev* for testing
 
 ```
 lxdops launch dev-test.yaml
@@ -30,12 +30,12 @@ lxdops launch dev-test.yaml
 ```
 lxdops rebuild alp.yaml
 lxdops rebuild dev-test.yaml
-# test dev-test, to make sure all is well, and then rebuild more containers like it:
+# test dev-test, to make sure all is well, and then rebuild *dev*:
 lxdops rebuild dev.yaml
 ```
 
-Every container in these examples has its own /home directory as an attached disk device, independent from the container.
-If the filesystem/device directory does not exist, it will be created.
+Every container in these examples has its own /home filesystem as an attached disk device, independent from the container.
+If the /home filesystem exists, it will be reused, otherwise it will be created, or cloned and/or copied from another container.
 
 The examples are in demo/
 ```
