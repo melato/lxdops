@@ -25,9 +25,6 @@ long: |
   
   Devices are attached to the container via an instance profile.
 commands:
-  addresses:
-    short: export network addresses for all containers
-    use:
   configure:
     short: configure an existing container
     use: <container> <config-file> ...
