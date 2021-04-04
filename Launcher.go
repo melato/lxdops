@@ -86,16 +86,11 @@ func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, opti
 	}
 	s := t.NewScript()
 	container := instance.Container()
-	profileName := instance.ProfileName()
 	var lxcArgs []string
 	if config.Project != "" {
 		lxcArgs = append(lxcArgs, "--project", config.Project)
 	}
-	if profileName != "" {
-		lxcArgs = append(lxcArgs, "launch")
-	} else {
-		lxcArgs = append(lxcArgs, "init")
-	}
+	lxcArgs = append(lxcArgs, "init")
 
 	osVersion := config.OS.Version
 	if osVersion == "" {
@@ -113,10 +108,7 @@ func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, opti
 	if s.HasError() {
 		return s.Error()
 	}
-	if profileName == "" {
-		return t.configureContainer(instance, server, options)
-	}
-	return nil
+	return t.configureContainer(instance, server, options)
 }
 
 func (t *Launcher) createEmptyProfile(server lxd.InstanceServer, profile string) error {
