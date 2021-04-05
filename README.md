@@ -33,9 +33,9 @@ lxdops rebuild dev-test.yaml
 # test dev-test, to make sure all is well, and then rebuild *dev*:
 lxdops rebuild dev.yaml
 ```
+rebuild preserves the container ip address (since 2021-04-05).
 
 Every container in these examples has its own /home filesystem as an attached disk device, independent from the container.
-If the /home filesystem exists, it will be reused, otherwise it will be created, or cloned and/or copied from another container.
 
 The examples are in demo/
 ```
@@ -63,7 +63,11 @@ devices:
     filesystem: main
 ```
 - specify a /home filesystem to attach to containers.
+
 The location of the filesystem is parameterized by the name of the container (instance), the LXD project (project/) and a global property (zfsroot).
+
+If the /home filesystem exists, it will be reused, otherwise it will be created, or cloned and/or copied from another container.
+
 
 ## user.yaml (included by other examples)
 ```
@@ -128,9 +132,7 @@ include:
 - user.yaml
 ```
 
-- clone alp/copy, just like dev
-- attach /home, by cloning it from *dev*'s home@test
-- add a user, just like dev
+dev-test is created the same way as dev, except that its /home filesystem is cloned from the @test snapshot of dev's /home.
 
 # Description
 

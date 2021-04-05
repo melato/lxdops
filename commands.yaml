@@ -141,7 +141,10 @@ commands:
   rebuild:
     short: stop, delete, launch
     use: <config-file> ...
-    long: Rebuild stops, deletes, and relaunches the container.
+    long: |
+      Rebuild stops, deletes, and relaunches the container.
+      It preserves the previous hwaddr from the container,
+      so the new container should have the same IP addresses as before.
   rename:
     short: rename an instance
     use: <configFile> <newname>
