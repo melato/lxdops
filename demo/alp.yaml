@@ -1,0 +1,7 @@
+os:
+  name: alpine
+  version: 3.13
+stop: true
+snapshot: copy
+include:
+- home.yaml

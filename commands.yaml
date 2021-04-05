@@ -25,9 +25,6 @@ long: |
   
   Devices are attached to the container via an instance profile.
 commands:
-  addresses:
-    short: export network addresses for all containers
-    use:
   configure:
     short: configure an existing container
     use: <container> <config-file> ...
@@ -144,7 +141,10 @@ commands:
   rebuild:
     short: stop, delete, launch
     use: <config-file> ...
-    long: Rebuild stops, deletes, and relaunches the container.
+    long: |
+      Rebuild stops, deletes, and relaunches the container.
+      It preserves the previous hwaddr from the container,
+      so the new container should have the same IP addresses as before.
   rename:
     short: rename an instance
     use: <configFile> <newname>
@@ -162,10 +162,4 @@ commands:
       set:
         short: set a global property
         use: <key> <value>
-      zfsroot:
-        short: detect an appropriate zfsroot property
-        long: | 
-          zfsroot detects the ZFS filesystem for the default LXD storage,
-          and prints the root of that filesystem.
-          It does not work if the LXD ZFS dataset is a root ZFS filesystem.
 

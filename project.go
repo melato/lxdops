@@ -63,7 +63,7 @@ func (t *ProjectCreate) Create(projects ...string) error {
 	projectPut := api.ProjectPut{Config: map[string]string{
 		"features.images": "false",
 	}}
-	projectPut.Config["features.profiles"] = "false"
+	projectPut.Config["features.profiles"] = "true"
 	profile, _, err := server.GetProfile("default")
 	if err != nil {
 		return errors.New("cannot get default profile")

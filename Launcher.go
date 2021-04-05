@@ -35,13 +35,42 @@ func (t *Launcher) NewScript() *script.Script {
 	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 }
 
+func (t *Launcher) getRebuildOptions(instance *Instance) (error, *RebuildOptions) {
+	config := instance.Config
+	container := instance.Container()
+	server, err := t.Client.ProjectServer(config.Project)
+	if err != nil {
+		return err, nil
+	}
+	options := &RebuildOptions{}
+	state, _, err := server.GetContainerState(container)
+	if err != nil {
+		// assume container doesn't exist.  ignore error, empty options
+		return nil, options
+	}
+	for network, networkState := range state.Network {
+		if networkState.Hwaddr == "" {
+			continue
+		}
+		if options.Hwaddresses == nil {
+			options.Hwaddresses = make(map[string]string)
+		}
+		options.Hwaddresses[network] = networkState.Hwaddr
+	}
+	return nil, options
+}
+
 func (t *Launcher) Rebuild(instance *Instance) error {
 	t.Trace = true
-	err := t.deleteContainer(instance, true)
+	err, options := t.getRebuildOptions(instance)
 	if err != nil {
 		return err
 	}
-	return t.LaunchContainer(instance)
+	err = t.deleteContainer(instance, true)
+	if err != nil {
+		return err
+	}
+	return t.launchContainer(instance, options)
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
@@ -49,7 +78,7 @@ func (t *Launcher) NewConfigurer() *Configurer {
 	return c
 }
 
-func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, profiles []string) error {
+func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, options *launch_options) error {
 	config := instance.Config
 	osType := config.OS.Type()
 	if osType == nil {
@@ -57,23 +86,18 @@ func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, prof
 	}
 	s := t.NewScript()
 	container := instance.Container()
-	profileName := instance.ProfileName()
 	var lxcArgs []string
 	if config.Project != "" {
 		lxcArgs = append(lxcArgs, "--project", config.Project)
 	}
-	if profileName != "" {
-		lxcArgs = append(lxcArgs, "launch")
-	} else {
-		lxcArgs = append(lxcArgs, "init")
-	}
+	lxcArgs = append(lxcArgs, "init")
 
 	osVersion := config.OS.Version
 	if osVersion == "" {
 		return errors.New("Missing version")
 	}
 	lxcArgs = append(lxcArgs, osType.ImageName(osVersion))
-	for _, profile := range profiles {
+	for _, profile := range options.Profiles {
 		lxcArgs = append(lxcArgs, "-p", profile)
 	}
 	for _, option := range config.LxcOptions {
@@ -84,10 +108,7 @@ func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, prof
 	if s.HasError() {
 		return s.Error()
 	}
-	if profileName == "" {
-		return t.configureContainer(instance, server, profiles)
-	}
-	return nil
+	return t.configureContainer(instance, server, options)
 }
 
 func (t *Launcher) createEmptyProfile(server lxd.InstanceServer, profile string) error {
@@ -117,8 +138,17 @@ func (t *Launcher) deleteProfiles(server lxd.InstanceServer, profiles []string) 
 	return nil
 }
 
+type RebuildOptions struct {
+	Hwaddresses map[string]string
+}
+
+type launch_options struct {
+	Profiles []string
+	RebuildOptions
+}
+
 // configureContainer configures the container directly, if necessary, and starts it
-func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceServer, profiles []string) error {
+func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceServer, options *launch_options) error {
 	container := instance.Container()
 	config := instance.Config
 	profileName := instance.ProfileName()
@@ -127,7 +157,7 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 		if err != nil {
 			return AnnotateLXDError(container, err)
 		}
-		c.Profiles = profiles
+		c.Profiles = options.Profiles
 		if profileName == "" {
 			// there is no lxdops profile.  configure container directly
 			devices, err := instance.NewDeviceMap()
@@ -158,6 +188,13 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 				}
 			}
 		}
+		for network, hwaddr := range options.Hwaddresses {
+			key := "volatile." + network + ".hwaddr"
+			c.ContainerPut.Config[key] = hwaddr
+			if t.Trace {
+				fmt.Printf("set config %s: %s\n", key, hwaddr)
+			}
+		}
 		op, err := server.UpdateContainer(container, c.ContainerPut, "")
 		if err != nil {
 			return err
@@ -183,7 +220,7 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 	return nil
 }
 
-func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, server lxd.InstanceServer, profiles []string) error {
+func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, server lxd.InstanceServer, options *launch_options) error {
 	s := t.NewScript()
 	container := instance.Container()
 	config := instance.Config
@@ -231,7 +268,7 @@ func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, ser
 		return s.Error()
 	}
 
-	err = t.configureContainer(instance, server, profiles)
+	err = t.configureContainer(instance, server, options)
 	err2 := t.deleteProfiles(server, missingProfiles)
 	if err != nil {
 		return err
@@ -266,6 +303,10 @@ func (t *Launcher) CreateProfile(instance *Instance) error {
 }
 
 func (t *Launcher) LaunchContainer(instance *Instance) error {
+	return t.launchContainer(instance, nil)
+}
+
+func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOptions) error {
 	fmt.Println("launch", instance.Name)
 	t.Trace = true
 	config := instance.Config
@@ -299,16 +340,20 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 			profiles = append(profiles, profileName)
 		}
 	}
+	options := &launch_options{Profiles: profiles}
+	if rebuildOptions != nil {
+		options.RebuildOptions = *rebuildOptions
+	}
 	container := instance.Container()
 	source := instance.ContainerSource()
 	fmt.Printf("source:%v\n", source)
 	if !source.IsDefined() {
-		err := t.lxcLaunch(instance, server, profiles)
+		err := t.lxcLaunch(instance, server, options)
 		if err != nil {
 			return err
 		}
 	} else {
-		err := t.copyContainer(instance, *source, server, profiles)
+		err := t.copyContainer(instance, *source, server, options)
 		if err != nil {
 			return err
 		}
@@ -441,7 +486,7 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 	dev.DryRun = t.DryRun
 
 	containerName := instance.Container()
-	newContainerName := instance.Container()
+	newContainerName := newInstance.Container()
 	var container *api.Container
 	if len(instance.Config.Devices) > 0 {
 		_, _, err := server.GetProfile(newprofile)
@@ -456,7 +501,7 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 	if !t.DryRun {
 		op, err := server.RenameContainer(containerName, api.ContainerPost{Name: newInstance.Container()})
 		if err != nil {
-			return err
+			return AnnotateLXDError(containerName, err)
 		}
 		if err := op.Wait(); err != nil {
 			return err
@@ -484,19 +529,23 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 		}
 		if t.Trace {
 			fmt.Printf("apply %s profiles: %v\n", newname, container.Profiles)
-			fmt.Printf("delete profile %s\n", oldprofile)
 		}
 		if !t.DryRun {
 			op, err := server.UpdateContainer(newContainerName, container.ContainerPut, "")
 			if err != nil {
-				return err
+				return AnnotateLXDError(newContainerName, err)
 			}
 			if err := op.Wait(); err != nil {
 				return AnnotateLXDError(newContainerName, err)
 			}
+		}
+		if t.Trace {
+			fmt.Printf("delete profile %s\n", oldprofile)
+		}
+		if !t.DryRun {
 			err = server.DeleteProfile(oldprofile)
 			if err != nil {
-				return err
+				return AnnotateLXDError(oldprofile, err)
 			}
 		}
 	}

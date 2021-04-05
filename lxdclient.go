@@ -48,22 +48,6 @@ func (t *LxdClient) ProjectServer(project string) (lxd.InstanceServer, error) {
 	return server.UseProject(project), nil
 }
 
-func (t *LxdClient) GetDefaultDataset() (string, error) {
-	server, err := t.RootServer()
-	if err != nil {
-		return "", err
-	}
-	pool, _, err := server.GetStoragePool("default")
-	if err != nil {
-		return "", err
-	}
-	name := pool.Config["zfs.pool_name"]
-	if name == "" {
-		return name, errors.New("no zfs.pool_name")
-	}
-	return name, nil
-}
-
 func (pattern Pattern) Substitute(properties *util.PatternProperties) (string, error) {
 	return properties.Substitute(string(pattern))
 }

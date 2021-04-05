@@ -69,17 +69,18 @@ func (t *ContainerOps) Network(container string) error {
 		return AnnotateLXDError(container, err)
 	}
 	writer := &table.FixedWriter{Writer: os.Stdout}
-	var network string
+	var name string
+	var net api.ContainerStateNetwork
 	var a *api.ContainerStateNetworkAddress
 	writer.Columns(
-		table.NewColumn("NETWORK", func() interface{} { return network }),
+		table.NewColumn("NETWORK", func() interface{} { return name }),
+		table.NewColumn("HWADDR", func() interface{} { return net.Hwaddr }),
 		table.NewColumn("FAMILY", func() interface{} { return a.Family }),
 		table.NewColumn("SCOPE", func() interface{} { return a.Scope }),
 		table.NewColumn("ADDRESS", func() interface{} { return a.Address }),
 		table.NewColumn("NETMASK", func() interface{} { return a.Netmask }),
 	)
-	for name, net := range state.Network {
-		network = name
+	for name, net = range state.Network {
 		for _, address := range net.Addresses {
 			a = &address
 			writer.WriteRow()
