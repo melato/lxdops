@@ -17,7 +17,7 @@ require (
 	gopkg.in/retry.v1 v1.0.3 // indirect
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	melato.org/command v0.0.0-20210323123902-e881aaa8bfa0
+	melato.org/command v0.0.0-20210406071125-bdb113588d00
 	melato.org/script v0.0.0-20210323161739-61789516984d
 	melato.org/table3 v0.0.0-20210323160754-496fca2973a8
 )
