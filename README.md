@@ -206,7 +206,6 @@ go get github.com/lxc/lxd
 Compile:
 ```
 cd $GOPATH/src/melato.org/lxdops/main
-date > version
 go install lxdops.go
 
 # check that it was built:
