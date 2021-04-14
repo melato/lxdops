@@ -53,18 +53,10 @@ func (t *ContainerSource) IsDefined() bool {
 
 func (t *Instance) newDeviceSource() (*DeviceSource, error) {
 	config := t.Config
-	if config.DeviceTemplate != "" && config.DeviceOrigin != "" {
-		return nil, errors.New("using both device-template and device-origin is not allowed")
-	}
 	source := &DeviceSource{}
 	var name string
-	if config.DeviceTemplate != "" {
-		var err error
-		name, err = config.DeviceTemplate.Substitute(t.Properties)
-		if err != nil {
-			return nil, err
-		}
-	} else if config.DeviceOrigin != "" {
+	if config.DeviceOrigin != "" {
+		// check device-origin first
 		s, err := config.DeviceOrigin.Substitute(t.Properties)
 		if err != nil {
 			return nil, err
@@ -76,6 +68,13 @@ func (t *Instance) newDeviceSource() (*DeviceSource, error) {
 		name = parts[0]
 		source.Snapshot = parts[1]
 		source.Clone = true
+	} else if config.DeviceTemplate != "" {
+		// device-template is used only if device-origin is missing
+		var err error
+		name, err = config.DeviceTemplate.Substitute(t.Properties)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		return source, nil
 	}
