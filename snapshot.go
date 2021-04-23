@@ -20,7 +20,7 @@ type Snapshot struct {
 }
 
 func (t *Snapshot) Init() error {
-	t.SnapshotParams.Snapshot = "snap" + time.Now().UTC().Format("20060102150405")
+	t.SnapshotParams.Snapshot = time.Now().UTC().Format("20060102150405")
 	return t.ConfigOptions.Init()
 }
 
