@@ -445,7 +445,7 @@ func (t *Launcher) DeleteContainer(instance *Instance) error {
 	}
 	fmt.Fprintln(os.Stderr, "remaining filesystems:")
 	if len(zfsFilesystems) > 0 {
-		cmd := exec.Command("zfs", append([]string{"list", "-o", "name,used,referenced,mountpoint"}, zfsFilesystems...)...)
+		cmd := exec.Command("zfs", append([]string{"list", "-o", "name,used,referenced,origin,mountpoint"}, zfsFilesystems...)...)
 		cmd.Stderr = io.Discard
 		cmd.Stdout = os.Stdout
 		cmd.Run()
