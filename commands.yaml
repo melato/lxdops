@@ -33,6 +33,9 @@ commands:
   container:
     short: LXD container utilities
     commands:
+      addresses:
+        short: export network addresses for all containers
+        use:
       network:
         short: print container network addresses
         use: <container>
