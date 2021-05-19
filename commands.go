@@ -5,6 +5,7 @@ import (
 
 	"melato.org/command"
 	"melato.org/command/usage"
+	"melato.org/lxdops/lxdutil"
 )
 
 //go:embed commands.yaml
@@ -19,7 +20,7 @@ type DryRun struct {
 }
 
 func RootCommand() *command.SimpleCommand {
-	client := &LxdClient{}
+	client := &lxdutil.LxdClient{}
 	var cmd command.SimpleCommand
 	cmd.Flags(client)
 	launcher := &Launcher{Client: client}
@@ -71,7 +72,7 @@ func RootCommand() *command.SimpleCommand {
 	configCmd.Command("includes").RunFunc(configOps.Includes)
 	configCmd.Command("script").RunFunc(configOps.Script)
 
-	containerOps := &ContainerOps{Client: client}
+	containerOps := &lxdutil.ContainerOps{Client: client}
 	containerCmd := cmd.Command("container")
 	containerCmd.Flags(containerOps)
 	containerCmd.Command("profiles").RunFunc(containerOps.Profiles)
@@ -79,13 +80,13 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd.Command("network").RunFunc(containerOps.Network)
 	containerCmd.Command("wait").RunFunc(containerOps.Wait)
 	containerCmd.Command("state").RunFunc(containerOps.State)
-	containerDevices := &ContainerDevicesOp{ContainerOps: containerOps}
+	containerDevices := &lxdutil.ContainerDevicesOp{ContainerOps: containerOps}
 	containerCmd.Command("devices").Flags(containerDevices).RunFunc(containerDevices.Devices)
 
 	projectCmd := cmd.Command("project")
-	createProject := &ProjectCreate{Client: client}
+	createProject := &lxdutil.ProjectCreate{Client: client}
 	projectCmd.Command("create").Flags(createProject).RunFunc(createProject.Create)
-	copyProfiles := &ProjectCopyProfiles{Client: client}
+	copyProfiles := &lxdutil.ProjectCopyProfiles{Client: client}
 	projectCmd.Command("copy-profiles").Flags(copyProfiles).RunFunc(copyProfiles.CopyProfiles)
 
 	usage.ApplyEnv(&cmd, "LXDOPS_USAGE", usageData)

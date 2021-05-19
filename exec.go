@@ -9,6 +9,7 @@ import (
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
+	"melato.org/lxdops/lxdutil"
 )
 
 // NopCloser returns a ReadCloser with a no-op Close method wrapping
@@ -87,11 +88,11 @@ func (s *execRunner) run(content string, captureOutput bool, execArgs []string) 
 	}
 	op, err := s.Server.ExecInstance(s.Container, post, &args)
 	if err != nil {
-		return nil, AnnotateLXDError(s.Container, err)
+		return nil, lxdutil.AnnotateLXDError(s.Container, err)
 	}
 	err = op.Wait()
 	if err != nil {
-		return nil, AnnotateLXDError(s.Container, err)
+		return nil, lxdutil.AnnotateLXDError(s.Container, err)
 	}
 	return buf.Bytes(), nil
 }

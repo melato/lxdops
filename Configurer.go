@@ -10,13 +10,14 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/client"
+	"melato.org/lxdops/lxdutil"
 	"melato.org/lxdops/password"
 	"melato.org/lxdops/util"
 	"melato.org/script"
 )
 
 type Configurer struct {
-	Client *LxdClient `name:"-"`
+	Client *lxdutil.LxdClient `name:"-"`
 	ConfigOptions
 	Trace      bool     `name:"trace,t" usage:"print exec arguments"`
 	DryRun     bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
@@ -90,14 +91,14 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, container string) error 
 		}
 		home := user.HomeDir()
 		guestFile := filepath.Join(home, ".ssh", "authorized_keys")
-		if !FileExists(server, container, guestFile) {
+		if !lxdutil.FileExists(server, container, guestFile) {
 			if t.Trace {
 				fmt.Printf("creating %s\n", guestFile)
 			}
 			file := lxd.ContainerFileArgs{Content: bytes.NewReader(authorizedKeys), Mode: 0600}
 			err := server.CreateContainerFile(container, guestFile, file)
 			if err != nil {
-				return AnnotateLXDError(guestFile, err)
+				return lxdutil.AnnotateLXDError(guestFile, err)
 			}
 			err = t.NewExec(config.Project, container).Run("", "chown", user.Name+":"+user.Name, guestFile)
 			if err != nil {
@@ -271,7 +272,7 @@ func (t *Configurer) runScripts(project, container string, scripts []*Script) er
 			guestFile := filepath.Join("/root", filepath.Base(string(script.File)))
 			err = server.CreateContainerFile(container, guestFile, file)
 			if err != nil {
-				return AnnotateLXDError(guestFile, err)
+				return lxdutil.AnnotateLXDError(guestFile, err)
 			}
 			err = ex.Run("", guestFile)
 			if err != nil {
@@ -286,11 +287,11 @@ func (t *Configurer) runScripts(project, container string, scripts []*Script) er
 			}
 		}
 		if script.Reboot {
-			err = (InstanceServer{server}).StopContainer(container)
+			err = (lxdutil.InstanceServer{server}).StopContainer(container)
 			if err != nil {
 				return err
 			}
-			err = (InstanceServer{server}).StartContainer(container)
+			err = (lxdutil.InstanceServer{server}).StartContainer(container)
 			if err != nil {
 				return err
 			}
@@ -360,7 +361,7 @@ func (t *Configurer) copyFiles(config *Config, container string) error {
 		}
 		err = server.CreateContainerFile(container, f.Path, args)
 		if err != nil {
-			return AnnotateLXDError(f.Path, err)
+			return lxdutil.AnnotateLXDError(f.Path, err)
 		}
 	}
 	return nil
@@ -383,7 +384,7 @@ func (t *Configurer) ConfigureContainer(instance *Instance) error {
 		return err
 	}
 	if !t.DryRun {
-		err := WaitForNetwork(server, container)
+		err := lxdutil.WaitForNetwork(server, container)
 		if err != nil {
 			return err
 		}

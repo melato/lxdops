@@ -1,11 +1,10 @@
-package lxdops
+package lxdutil
 
 import (
 	"errors"
 	"fmt"
 
 	lxd "github.com/lxc/lxd/client"
-	"melato.org/lxdops/util"
 )
 
 type LxdClient struct {
@@ -13,7 +12,7 @@ type LxdClient struct {
 	//Project        string `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
 	rootServer    lxd.InstanceServer
 	projectServer lxd.InstanceServer
-	lxc_config
+	LxcConfig
 }
 
 func (t *LxdClient) Init() error {
@@ -46,8 +45,4 @@ func (t *LxdClient) ProjectServer(project string) (lxd.InstanceServer, error) {
 		return server, nil
 	}
 	return server.UseProject(project), nil
-}
-
-func (pattern Pattern) Substitute(properties *util.PatternProperties) (string, error) {
-	return properties.Substitute(string(pattern))
 }

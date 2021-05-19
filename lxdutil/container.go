@@ -1,4 +1,4 @@
-package lxdops
+package lxdutil
 
 import (
 	"fmt"

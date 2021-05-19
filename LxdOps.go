@@ -2,11 +2,13 @@ package lxdops
 
 import (
 	"fmt"
+
+	"melato.org/lxdops/lxdutil"
 )
 
 type LxdOps struct {
-	Client *LxdClient `name:"-"`
-	Trace  bool       `name:"trace,t" usage:"print exec arguments"`
+	Client *lxdutil.LxdClient `name:"-"`
+	Trace  bool               `name:"trace,t" usage:"print exec arguments"`
 }
 
 func (t *LxdOps) AddDiskDevice(profile, source, path string) error {
@@ -17,7 +19,7 @@ func (t *LxdOps) AddDiskDevice(profile, source, path string) error {
 	}
 	p, _, err := server.GetProfile(profile)
 	if err != nil {
-		return AnnotateLXDError(profile, err)
+		return lxdutil.AnnotateLXDError(profile, err)
 	}
 
 	device := RandomDeviceName()

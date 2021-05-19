@@ -4,12 +4,6 @@ package lxdops
 // When a config file includes another config file, the base directory is the directory of the including file
 type HostPath string
 
-// Pattern is a string that is converted via property substitution, before it is used
-// Properties are denoted in the pattern via (<key>), where <key> is the property key
-// There are built-in properties like instance, project.
-// Custom properties are defined in Config.Properties, and override built-in properties
-type Pattern string
-
 // Config - Instance configuration
 // An instance is a name that is used to launch a container or create LXD disk devices, typically both.
 // The instance name, is the same as the base name of the config file, without the extension.

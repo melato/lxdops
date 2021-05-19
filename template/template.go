@@ -30,8 +30,8 @@ type Template struct {
 // ErrorHandler allows a function to report errors, without returning them directly
 // It is used for convenience in order to minimize checking error return values from function calls
 type ErrorHandler interface {
-	// Handle an error.  If err is nil, Handle should do nothing.
-	Handle(err error)
+	// Add an error.  If err is nil, Handle should do nothing.
+	Add(err error)
 	// Return true if processing should continue.  Should return true if there were no errors.
 	// May also return true if there were prior errors, but processing should continue in order to check for more errors.
 	Continue() bool
@@ -133,7 +133,7 @@ func (t KeyExpression) ApplyE(errors ErrorHandler, template string, arg ...strin
 	}
 	result, err := t.Apply(template, arg...)
 	if err != nil {
-		errors.Handle(err)
+		errors.Add(err)
 		return ""
 	}
 	return result
@@ -145,7 +145,7 @@ func (t KeyExpression) ReplaceE(errors ErrorHandler, text *string, arg ...string
 	}
 	result, err := t.Apply(*text, arg...)
 	if err != nil {
-		errors.Handle(err)
+		errors.Add(err)
 	}
 	*text = result
 }

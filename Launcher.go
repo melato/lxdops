@@ -9,12 +9,13 @@ import (
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
+	"melato.org/lxdops/lxdutil"
 	"melato.org/lxdops/util"
 	"melato.org/script"
 )
 
 type Launcher struct {
-	Client *LxdClient `name:"-"`
+	Client *lxdutil.LxdClient `name:"-"`
 	ConfigOptions
 	Trace  bool `name:"t" usage:"trace print what is happening"`
 	DryRun bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
@@ -131,7 +132,7 @@ func (t *Launcher) deleteProfiles(server lxd.InstanceServer, profiles []string) 
 		if !t.DryRun {
 			err := server.DeleteProfile(profile)
 			if err != nil {
-				return AnnotateLXDError(profile, err)
+				return lxdutil.AnnotateLXDError(profile, err)
 			}
 		}
 	}
@@ -155,7 +156,7 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 	if !t.DryRun {
 		c, _, err := server.GetContainer(container)
 		if err != nil {
-			return AnnotateLXDError(container, err)
+			return lxdutil.AnnotateLXDError(container, err)
 		}
 		c.Profiles = options.Profiles
 		if profileName == "" {
@@ -200,19 +201,19 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 			return err
 		}
 		if err := op.Wait(); err != nil {
-			return AnnotateLXDError(container, err)
+			return lxdutil.AnnotateLXDError(container, err)
 		}
 	}
 	if t.Trace {
 		fmt.Printf("start %s\n", container)
 	}
 	if !t.DryRun {
-		err := (InstanceServer{server}).StartContainer(container)
+		err := (lxdutil.InstanceServer{server}).StartContainer(container)
 		if err != nil {
 			return err
 		}
 
-		err = WaitForNetwork(server, container)
+		err = lxdutil.WaitForNetwork(server, container)
 		if err != nil {
 			return err
 		}
@@ -234,7 +235,7 @@ func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, ser
 	}
 	c, _, err := sourceServer.GetContainer(source.Container)
 	if err != nil {
-		return AnnotateLXDError(source.Container, err)
+		return lxdutil.AnnotateLXDError(source.Container, err)
 	}
 	missingProfiles := util.StringSlice(c.Profiles).Diff(allProfiles)
 	// lxc copy will fail if the source container has profiles that do not exist in the target server
@@ -364,17 +365,17 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 		if !t.DryRun {
 			op, err := server.CreateContainerSnapshot(container, api.ContainerSnapshotsPost{Name: config.Snapshot})
 			if err != nil {
-				return AnnotateLXDError(container, err)
+				return lxdutil.AnnotateLXDError(container, err)
 			}
 			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(container, err)
+				return lxdutil.AnnotateLXDError(container, err)
 			}
 		}
 	}
 	if config.Stop {
 		fmt.Printf("stop %s\n", container)
 		if !t.DryRun {
-			err = (InstanceServer{server}).StopContainer(container)
+			err = (lxdutil.InstanceServer{server}).StopContainer(container)
 			if err != nil {
 				return err
 			}
@@ -392,7 +393,7 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 	}
 	if !t.DryRun {
 		if stop {
-			err = (InstanceServer{server}).StopContainer(container)
+			err = (lxdutil.InstanceServer{server}).StopContainer(container)
 		}
 
 		op, err := server.DeleteContainer(container)
@@ -401,7 +402,7 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 				fmt.Printf("deleted container %s in project %s\n", container, config.Project)
 			}
 			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(container, err)
+				return lxdutil.AnnotateLXDError(container, err)
 			}
 		} else {
 			state, _, err := server.GetContainerState(container)
@@ -418,7 +419,7 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 			fmt.Printf("delete profile %s\n", profileName)
 		}
 	} else {
-		if (InstanceServer{server}).ProfileExists(profileName) {
+		if (lxdutil.InstanceServer{server}).ProfileExists(profileName) {
 			fmt.Printf("delete profile %s\n", profileName)
 		}
 	}
@@ -495,13 +496,13 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 		}
 		container, _, err = server.GetContainer(containerName)
 		if err != nil {
-			return AnnotateLXDError(containerName, err)
+			return lxdutil.AnnotateLXDError(containerName, err)
 		}
 	}
 	if !t.DryRun {
 		op, err := server.RenameContainer(containerName, api.ContainerPost{Name: newInstance.Container()})
 		if err != nil {
-			return AnnotateLXDError(containerName, err)
+			return lxdutil.AnnotateLXDError(containerName, err)
 		}
 		if err := op.Wait(); err != nil {
 			return err
@@ -533,10 +534,10 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 		if !t.DryRun {
 			op, err := server.UpdateContainer(newContainerName, container.ContainerPut, "")
 			if err != nil {
-				return AnnotateLXDError(newContainerName, err)
+				return lxdutil.AnnotateLXDError(newContainerName, err)
 			}
 			if err := op.Wait(); err != nil {
-				return AnnotateLXDError(newContainerName, err)
+				return lxdutil.AnnotateLXDError(newContainerName, err)
 			}
 		}
 		if t.Trace {
@@ -545,7 +546,7 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 		if !t.DryRun {
 			err = server.DeleteProfile(oldprofile)
 			if err != nil {
-				return AnnotateLXDError(oldprofile, err)
+				return lxdutil.AnnotateLXDError(oldprofile, err)
 			}
 		}
 	}

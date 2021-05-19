@@ -4,6 +4,8 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
+
+	"melato.org/lxdops/lxdutil"
 )
 
 type ConfigOptions struct {
@@ -12,7 +14,7 @@ type ConfigOptions struct {
 	Properties []string `name:"P" usage:"a command-line property in the form <key>=<value>.  Command-line properties override instance and global properties"`
 	properties map[string]string
 	PropertyOptions
-	lxc_config
+	lxdutil.LxcConfig
 }
 
 func (t *ConfigOptions) Init() error {

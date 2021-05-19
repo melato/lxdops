@@ -6,19 +6,20 @@ import (
 	"os"
 
 	"github.com/lxc/lxd/shared/api"
+	"melato.org/lxdops/lxdutil"
 	"melato.org/lxdops/util"
 	"melato.org/script"
 )
 
 type DeviceConfigurer struct {
-	Client  *LxdClient
+	Client  *lxdutil.LxdClient
 	Config  *Config
 	Trace   bool
 	DryRun  bool
 	FuncMap map[string]func() (string, error)
 }
 
-func NewDeviceConfigurer(client *LxdClient, config *Config) *DeviceConfigurer {
+func NewDeviceConfigurer(client *lxdutil.LxdClient, config *Config) *DeviceConfigurer {
 	return &DeviceConfigurer{Client: client, Config: config}
 }
 

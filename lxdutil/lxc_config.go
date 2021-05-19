@@ -1,4 +1,4 @@
-package lxdops
+package lxdutil
 
 import (
 	"os"
@@ -8,11 +8,11 @@ import (
 	"melato.org/lxdops/util"
 )
 
-type lxc_config struct {
+type LxcConfig struct {
 	currentProject string
 }
 
-func (t *lxc_config) configDir() (string, error) {
+func (t *LxcConfig) configDir() (string, error) {
 	configDir := os.Getenv("LXD_CONF")
 	if configDir != "" {
 		return configDir, nil
@@ -32,7 +32,7 @@ func (t *lxc_config) configDir() (string, error) {
 	return "", err
 }
 
-func (t *lxc_config) getCurrentProject() (string, error) {
+func (t *LxcConfig) getCurrentProject() (string, error) {
 	configDir, err := t.configDir()
 	if err != nil {
 		return "", err
@@ -50,7 +50,7 @@ func (t *lxc_config) getCurrentProject() (string, error) {
 	return "", nil
 }
 
-func (t *lxc_config) CurrentProject() string {
+func (t *LxcConfig) CurrentProject() string {
 	if t.currentProject == "" {
 		project, err := t.getCurrentProject()
 		if err != nil || project == "" {

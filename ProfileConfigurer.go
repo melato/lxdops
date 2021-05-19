@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"melato.org/lxdops/lxdutil"
 	"melato.org/lxdops/util"
 	"melato.org/script"
 )
 
 type ProfileConfigurer struct {
-	Client *LxdClient
+	Client *lxdutil.LxdClient
 	ConfigOptions
 	Trace  bool
 	DryRun bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
@@ -43,7 +44,7 @@ func (t *ProfileConfigurer) Diff(instance *Instance) error {
 	}
 	c, _, err := server.GetContainer(container)
 	if err != nil {
-		return AnnotateLXDError(container, err)
+		return lxdutil.AnnotateLXDError(container, err)
 	}
 	profiles, err := t.Profiles(instance)
 	if err != nil {
@@ -75,7 +76,7 @@ func (t *ProfileConfigurer) Reorder(instance *Instance) error {
 	}
 	c, _, err := server.GetContainer(container)
 	if err != nil {
-		return AnnotateLXDError(container, err)
+		return lxdutil.AnnotateLXDError(container, err)
 	}
 	profiles, err := t.Profiles(instance)
 	if err != nil {
@@ -94,7 +95,7 @@ func (t *ProfileConfigurer) Reorder(instance *Instance) error {
 			return err
 		}
 		if err := op.Wait(); err != nil {
-			return AnnotateLXDError(container, err)
+			return lxdutil.AnnotateLXDError(container, err)
 		}
 	}
 	fmt.Println("profiles differ: " + container)
@@ -109,7 +110,7 @@ func (t *ProfileConfigurer) Apply(instance *Instance) error {
 	}
 	c, _, err := server.GetContainer(container)
 	if err != nil {
-		return AnnotateLXDError(container, err)
+		return lxdutil.AnnotateLXDError(container, err)
 	}
 	c.Profiles, err = t.Profiles(instance)
 	if err != nil {
@@ -120,7 +121,7 @@ func (t *ProfileConfigurer) Apply(instance *Instance) error {
 		return err
 	}
 	if err := op.Wait(); err != nil {
-		return AnnotateLXDError(container, err)
+		return lxdutil.AnnotateLXDError(container, err)
 	}
 	return nil
 }
