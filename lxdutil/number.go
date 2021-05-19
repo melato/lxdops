@@ -74,7 +74,19 @@ func (t *AssignNumbers) selectContainers(names []string, f func(name string) err
 	if err != nil {
 		return err
 	}
+	selectedNames := make(map[string]bool)
+	if len(names) > 0 {
+		for _, name := range names {
+			selectedNames[name] = true
+		}
+	}
 	for _, container := range containers {
+		if !t.All && !selectedNames[container.Name] {
+			continue
+		}
+		if t.Running && container.State.Status != Running {
+			continue
+		}
 		err = f(container.Name)
 		if err != nil {
 			return err

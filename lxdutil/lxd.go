@@ -12,6 +12,8 @@ import (
 
 const DefaultProject = "default"
 
+const Running = "Running"
+
 type InstanceServer struct {
 	Server lxd.InstanceServer
 }
