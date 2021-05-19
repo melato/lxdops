@@ -9,18 +9,18 @@ import (
 	"strconv"
 )
 
-type Number struct {
+type NamedNumber struct {
 	Name  string
 	Value int
 }
 
-func ReadNumbers(file string) ([]*Number, error) {
+func ReadNumbers(file string) ([]*NamedNumber, error) {
 	content, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
 	reader := csv.NewReader(bytes.NewReader(content))
-	var result []*Number
+	var result []*NamedNumber
 	for {
 		fields, err := reader.Read()
 		if err == io.EOF {
@@ -32,7 +32,7 @@ func ReadNumbers(file string) ([]*Number, error) {
 		if len(fields) != 2 {
 			return nil, fmt.Errorf("expected 2 fields: %v", fields)
 		}
-		var num Number
+		var num NamedNumber
 		num.Name = fields[0]
 		num.Value, err = strconv.Atoi(fields[1])
 		if err != nil {
@@ -43,7 +43,7 @@ func ReadNumbers(file string) ([]*Number, error) {
 	return result, nil
 }
 
-func WriteNumbers(numbers []*Number, file string) error {
+func WriteNumbers(numbers []*NamedNumber, file string) error {
 	var buf bytes.Buffer
 	writer := csv.NewWriter(&buf)
 	for _, num := range numbers {

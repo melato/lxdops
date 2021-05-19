@@ -47,7 +47,7 @@ func (t *AssignNumbers) selectContainers(names []string, f func(name string) err
 	return nil
 }
 
-func (t *AssignNumbers) AddNumbers(numbers []*Number, names []string) ([]*Number, error) {
+func (t *AssignNumbers) AddNumbers(numbers []*NamedNumber, names []string) ([]*NamedNumber, error) {
 	usedNumbers := make(map[int]bool)
 	numberedContainers := make(map[string]bool)
 	nextNumber := t.First
@@ -62,7 +62,7 @@ func (t *AssignNumbers) AddNumbers(numbers []*Number, names []string) ([]*Number
 					return fmt.Errorf("no numbers available between %d, %d", t.First, t.Last)
 				}
 				if !usedNumbers[nextNumber] {
-					numbers = append(numbers, &Number{name, nextNumber})
+					numbers = append(numbers, &NamedNumber{name, nextNumber})
 					nextNumber++
 					break
 				}
@@ -83,7 +83,7 @@ func (t *AssignNumbers) Run(containers []string) error {
 	if t.First == 0 {
 		return fmt.Errorf("missing start")
 	}
-	var numbers []*Number
+	var numbers []*NamedNumber
 	_, err := os.Stat(t.File)
 	if err == nil {
 		numbers, err = ReadNumbers(t.File)
