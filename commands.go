@@ -86,6 +86,9 @@ func RootCommand() *command.SimpleCommand {
 	networkOp := &lxdutil.NetworkOp{Client: client}
 	containerCmd.Command("addresses").Flags(networkOp).RunFunc(networkOp.ExportAddresses)
 
+	numberOp := &lxdutil.AssignNumbers{Client: client}
+	containerCmd.Command("number").Flags(numberOp).RunFunc(numberOp.Run)
+
 	projectCmd := cmd.Command("project")
 	createProject := &lxdutil.ProjectCreate{Client: client}
 	projectCmd.Command("create").Flags(createProject).RunFunc(createProject.Create)
