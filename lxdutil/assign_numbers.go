@@ -21,9 +21,6 @@ func (t *AssignNumbers) Configured() error {
 	if t.File == "" {
 		return fmt.Errorf("missing file")
 	}
-	if t.First == 0 {
-		return fmt.Errorf("missing start")
-	}
 	if t.Running && t.Project == "" {
 		return fmt.Errorf("-r can be used only with -project")
 	}
@@ -80,6 +77,19 @@ func selectNumbers(numbers []*NamedNumber, names []string) []*NamedNumber {
 	return result
 }
 
+func MinNumber(numbers []*NamedNumber) int {
+	if len(numbers) == 0 {
+		return 0
+	}
+	min := numbers[0].Value
+	for _, num := range numbers[1:] {
+		if num.Value < min {
+			min = num.Value
+		}
+	}
+	return min
+}
+
 func (t *AssignNumbers) AddNumbers(numbers []*NamedNumber, names []string) ([]*NamedNumber, error) {
 	var containers []string
 	err := t.selectContainers(names, func(name string) error {
@@ -95,6 +105,13 @@ func (t *AssignNumbers) AddNumbers(numbers []*NamedNumber, names []string) ([]*N
 	usedNumbers := make(map[int]bool)
 	numberedContainers := make(map[string]bool)
 	nextNumber := t.First
+	if nextNumber == 0 {
+		if len(numbers) == 0 {
+			return nil, fmt.Errorf("no numbers found.  please specify -first")
+		}
+		nextNumber = MinNumber(numbers)
+	}
+
 	for _, num := range numbers {
 		usedNumbers[num.Value] = true
 		numberedContainers[num.Name] = true
