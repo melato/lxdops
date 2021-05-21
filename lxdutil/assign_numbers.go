@@ -12,37 +12,55 @@ type AssignNumbers struct {
 	File    string `name:"f" usage:"numbers CSV file (container,number)"`
 	First   int    `name:"first" usage:"first number"`
 	Last    int    `name:"last" usage:"last number (optional)"`
-	All     bool   `name:"a" usage:"assign numbers to all containers"`
-	Running bool   `name:"r" usage:"use only running containers"`
-	Project string `name:"project" usage:"LXD project to use"`
+	Project string `name:"project" usage:"add containers from LXD project"`
+	Running bool   `name:"r" usage:"use only running containers from specified project"`
 	Clean   bool   `name:"clean" usage:"remove numbers for containers that are not selected"`
 }
 
+func (t *AssignNumbers) Configured() error {
+	if t.File == "" {
+		return fmt.Errorf("missing file")
+	}
+	if t.First == 0 {
+		return fmt.Errorf("missing start")
+	}
+	if t.Running && t.Project == "" {
+		return fmt.Errorf("-r can be used only with -project")
+	}
+	return nil
+}
+
 func (t *AssignNumbers) selectContainers(names []string, f func(name string) error) error {
-	server, err := t.Client.ProjectServer(t.Project)
-	if err != nil {
-		return err
-	}
-	containers, err := server.GetContainersFull()
-	if err != nil {
-		return err
-	}
 	selectedNames := make(map[string]bool)
-	if len(names) > 0 {
-		for _, name := range names {
-			selectedNames[name] = true
-		}
-	}
-	for _, container := range containers {
-		if !t.All && !selectedNames[container.Name] {
-			continue
-		}
-		if t.Running && container.State.Status != Running {
-			continue
-		}
-		err = f(container.Name)
+	// add names from LXD project
+	if t.Project != "" {
+		server, err := t.Client.ProjectServer(t.Project)
 		if err != nil {
 			return err
+		}
+		containers, err := server.GetContainersFull()
+		if err != nil {
+			return err
+		}
+		for _, container := range containers {
+			if t.Running && container.State.Status != Running {
+				continue
+			}
+			selectedNames[container.Name] = true
+			err = f(container.Name)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	// add names from command line
+	for _, name := range names {
+		if !selectedNames[name] {
+			selectedNames[name] = true
+			err := f(name)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -57,8 +75,6 @@ func selectNumbers(numbers []*NamedNumber, names []string) []*NamedNumber {
 	for _, num := range numbers {
 		if namesMap[num.Name] {
 			result = append(result, num)
-		} else {
-			fmt.Printf("removing number for: %s\n", num.Name)
 		}
 	}
 	return result
@@ -101,12 +117,6 @@ func (t *AssignNumbers) AddNumbers(numbers []*NamedNumber, names []string) ([]*N
 }
 
 func (t *AssignNumbers) Run(containers []string) error {
-	if t.File == "" {
-		return fmt.Errorf("missing file")
-	}
-	if t.First == 0 {
-		return fmt.Errorf("missing start")
-	}
 	var numbers []*NamedNumber
 	_, err := os.Stat(t.File)
 	if err == nil {
