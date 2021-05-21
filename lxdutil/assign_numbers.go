@@ -15,6 +15,7 @@ type AssignNumbers struct {
 	All     bool   `name:"a" usage:"assign numbers to all containers"`
 	Running bool   `name:"r" usage:"use only running containers"`
 	Project string `name:"project" usage:"LXD project to use"`
+	Clean   bool   `name:"clean" usage:"remove numbers for containers that are not selected"`
 }
 
 func (t *AssignNumbers) selectContainers(names []string, f func(name string) error) error {
@@ -47,7 +48,34 @@ func (t *AssignNumbers) selectContainers(names []string, f func(name string) err
 	return nil
 }
 
+func selectNumbers(numbers []*NamedNumber, names []string) []*NamedNumber {
+	namesMap := make(map[string]bool)
+	for _, name := range names {
+		namesMap[name] = true
+	}
+	var result []*NamedNumber
+	for _, num := range numbers {
+		if namesMap[num.Name] {
+			result = append(result, num)
+		} else {
+			fmt.Printf("removing number for: %s\n", num.Name)
+		}
+	}
+	return result
+}
+
 func (t *AssignNumbers) AddNumbers(numbers []*NamedNumber, names []string) ([]*NamedNumber, error) {
+	var containers []string
+	err := t.selectContainers(names, func(name string) error {
+		containers = append(containers, name)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if t.Clean {
+		numbers = selectNumbers(numbers, containers)
+	}
 	usedNumbers := make(map[int]bool)
 	numberedContainers := make(map[string]bool)
 	nextNumber := t.First
@@ -55,11 +83,11 @@ func (t *AssignNumbers) AddNumbers(numbers []*NamedNumber, names []string) ([]*N
 		usedNumbers[num.Value] = true
 		numberedContainers[num.Name] = true
 	}
-	err := t.selectContainers(names, func(name string) error {
+	for _, name := range containers {
 		if !numberedContainers[name] {
 			for ; ; nextNumber++ {
 				if t.Last != 0 && nextNumber > t.Last {
-					return fmt.Errorf("no numbers available between %d, %d", t.First, t.Last)
+					return nil, fmt.Errorf("no numbers available between %d, %d", t.First, t.Last)
 				}
 				if !usedNumbers[nextNumber] {
 					numbers = append(numbers, &NamedNumber{name, nextNumber})
@@ -68,10 +96,6 @@ func (t *AssignNumbers) AddNumbers(numbers []*NamedNumber, names []string) ([]*N
 				}
 			}
 		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
 	return numbers, nil
 }
