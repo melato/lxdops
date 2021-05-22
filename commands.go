@@ -56,7 +56,8 @@ func RootCommand() *command.SimpleCommand {
 
 	lxdOps := &LxdOps{Client: client}
 	profile.Command("exists").RunFunc(lxdOps.ProfileExists)
-	profile.Command("add-disk").RunFunc(lxdOps.AddDiskDevice)
+	addDisk := &AddDisk{Client: client}
+	profile.Command("add-disk").Flags(addDisk).RunFunc(addDisk.Add)
 
 	propertyCmd := cmd.Command("property")
 	propertyOps := &PropertyOptions{}
