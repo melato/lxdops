@@ -171,7 +171,7 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 				for name, _ := range source.Instance.Config.Devices {
 					delete(c.Devices, name)
 					if t.Trace {
-						fmt.Println("remove source device: %s\n", name)
+						fmt.Printf("remove source device: %s\n", name)
 					}
 				}
 			}
@@ -179,13 +179,13 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 			for name, device := range devices {
 				c.Devices[name] = device
 				if t.Trace {
-					fmt.Println("add device: %s\n", name)
+					fmt.Printf("add device: %s\n", name)
 				}
 			}
 			for key, value := range config.ProfileConfig {
 				c.Config[key] = value
 				if t.Trace {
-					fmt.Println("config %s = %s\n", key, value)
+					fmt.Printf("config %s = %s\n", key, value)
 				}
 			}
 		}
@@ -297,7 +297,7 @@ func (t *Launcher) CreateProfile(instance *Instance) error {
 		fmt.Println(profileName)
 		return dev.CreateProfile(instance)
 	} else {
-		fmt.Println("skipping instance %s: no lxdops profile\n", instance.Name)
+		fmt.Printf("skipping instance %s: no lxdops profile\n", instance.Name)
 		return nil
 	}
 

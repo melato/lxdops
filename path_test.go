@@ -1,7 +1,6 @@
 package lxdops
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -17,7 +16,6 @@ func TestPathRoots(t *testing.T) {
 		"a/b/c",
 		"a/d",
 	})
-	fmt.Println(roots)
 	if len(roots) != 2 {
 		t.Fail()
 	}

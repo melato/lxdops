@@ -120,7 +120,7 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 		if r.Warn {
 			_, exists := t.Filesystems[id]
 			if exists {
-				fmt.Println("filesystem %s is overriden\n", id)
+				fmt.Printf("filesystem %s is overriden\n", id)
 			}
 		}
 		t.Filesystems[id] = fs
@@ -132,7 +132,7 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 		if r.Warn {
 			_, exists := t.Devices[id]
 			if exists {
-				fmt.Println("device %s is overriden\n", id)
+				fmt.Printf("device %s is overriden\n", id)
 			}
 		}
 		t.Devices[id] = d
