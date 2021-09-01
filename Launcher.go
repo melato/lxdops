@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"time"
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
@@ -17,11 +18,13 @@ import (
 type Launcher struct {
 	Client *lxdutil.LxdClient `name:"-"`
 	ConfigOptions
-	Trace  bool `name:"t" usage:"trace print what is happening"`
-	DryRun bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	WaitInterval int  `name:"wait" usage:"# seconds to wait before snapshot"`
+	Trace        bool `name:"t" usage:"trace print what is happening"`
+	DryRun       bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 }
 
 func (t *Launcher) Init() error {
+	t.WaitInterval = 5
 	return t.ConfigOptions.Init()
 }
 
@@ -360,6 +363,21 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 		}
 	}
 	t.NewConfigurer().ConfigureContainer(instance)
+	if config.Stop || config.Snapshot != "" {
+		if t.WaitInterval != 0 {
+			fmt.Printf("waiting %d seconds for container installation scripts to complete\n", t.WaitInterval)
+			time.Sleep(time.Duration(t.WaitInterval) * time.Second)
+		}
+	}
+	if config.Stop {
+		fmt.Printf("stop %s\n", container)
+		if !t.DryRun {
+			err = (lxdutil.InstanceServer{server}).StopContainer(container)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	if config.Snapshot != "" {
 		fmt.Printf("snapshot %s %s\n", container, config.Snapshot)
 		if !t.DryRun {
@@ -369,15 +387,6 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 			}
 			if err := op.Wait(); err != nil {
 				return lxdutil.AnnotateLXDError(container, err)
-			}
-		}
-	}
-	if config.Stop {
-		fmt.Printf("stop %s\n", container)
-		if !t.DryRun {
-			err = (lxdutil.InstanceServer{server}).StopContainer(container)
-			if err != nil {
-				return err
 			}
 		}
 	}
