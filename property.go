@@ -9,7 +9,7 @@ import (
 )
 
 type PropertyOptions struct {
-	PropertiesFile   string            `name:"properties" usage:"a file containing global config properties.  Instance properties override global properties"`
+	PropertiesFile   string            `name:"properties" usage:"a file containing global config properties"`
 	GlobalProperties map[string]string `name:"-"`
 }
 

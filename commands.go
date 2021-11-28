@@ -59,11 +59,11 @@ func RootCommand() *command.SimpleCommand {
 	addDisk := &AddDisk{Client: client}
 	profile.Command("add-disk").Flags(addDisk).RunFunc(addDisk.Add)
 
-	propertyCmd := cmd.Command("property")
 	propertyOps := &PropertyOptions{}
-	propertyCmd.Command("list").Flags(propertyOps).RunFunc(propertyOps.List)
-	propertyCmd.Command("set").Flags(propertyOps).RunFunc(propertyOps.Set)
-	propertyCmd.Command("file").Flags(propertyOps).RunFunc(propertyOps.File)
+	propertyCmd := cmd.Command("property").Flags(propertyOps)
+	propertyCmd.Command("list").RunFunc(propertyOps.List)
+	propertyCmd.Command("set").RunFunc(propertyOps.Set)
+	propertyCmd.Command("file").RunFunc(propertyOps.File)
 
 	configCmd := cmd.Command("config")
 	parse := &ParseOp{}
