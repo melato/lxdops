@@ -42,7 +42,7 @@ func (t *ProfileConfigurer) Diff(instance *Instance) error {
 	if err != nil {
 		return err
 	}
-	c, _, err := server.GetContainer(container)
+	c, _, err := server.GetInstance(container)
 	if err != nil {
 		return lxdutil.AnnotateLXDError(container, err)
 	}
