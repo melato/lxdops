@@ -96,11 +96,23 @@ func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, opti
 	}
 	lxcArgs = append(lxcArgs, "init")
 
-	osVersion := config.OS.Version
-	if osVersion == "" {
-		return errors.New("Missing version")
+	image, err := config.OS.Image.Substitute(instance.Properties)
+	if err != nil {
+		return err
 	}
-	lxcArgs = append(lxcArgs, osType.ImageName(osVersion))
+
+	if image == "" {
+		osVersion, err := config.OS.Version.Substitute(instance.Properties)
+		if err != nil {
+			return err
+		}
+		if osVersion != "" {
+			osType.ImageName(osVersion)
+		} else {
+			return errors.New("Please provide image or version")
+		}
+	}
+	lxcArgs = append(lxcArgs, image)
 	for _, profile := range options.Profiles {
 		lxcArgs = append(lxcArgs, "-p", profile)
 	}

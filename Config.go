@@ -149,11 +149,16 @@ type OS struct {
 	// Supported OS names are "alpine", "debian", "ubuntu".
 	// Support for an OS is the ability to determine the LXD image, install packages, create users, set passwords
 	Name string `yaml:"name"`
-	// Version is the image version, e.g. 3.13, 10.04.  The image name is composed of Name/Version
+
+	// Image is the image name (with optional remote), used when launching a container.
+	// If Image is missing, an image name is constructed from Version.
+	Image Pattern `yaml:"image"`
+
+	// Version is used if Image is not specified.  The image name is composed of Name/Version
 	// Version is optional in configuration files, but the final assembled configuration file should have a OS Version.
-	// It should typically be specified in one configuration file that is included by all other configuration files that use use this OS
-	Version string `yaml:"version"`
-	osType  OSType
+	Version Pattern `yaml:"version"`
+
+	osType OSType
 }
 
 // Filesystem is a ZFS filesystem or a plain directory that is created when an instance is created

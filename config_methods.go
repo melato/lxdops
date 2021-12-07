@@ -14,7 +14,7 @@ func (t *OS) String() string {
 	if t.Version == "" {
 		return t.Name
 	} else {
-		return t.Name + "/" + t.Version
+		return t.Name + "/" + string(t.Version)
 	}
 }
 
