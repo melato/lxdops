@@ -33,11 +33,11 @@ func AnnotateLXDError(name string, err error) error {
 	return errors.New(name + ": " + err.Error())
 }
 
-func WaitForNetwork(server lxd.InstanceServer, container string) error {
+func WaitForNetwork(server lxd.InstanceServer, instance string) error {
 	for i := 0; i < 30; i++ {
-		state, _, err := server.GetContainerState(container)
+		state, _, err := server.GetInstanceState(instance)
 		if err != nil {
-			return AnnotateLXDError(container, err)
+			return AnnotateLXDError(instance, err)
 		}
 		if state == nil {
 			continue
@@ -53,7 +53,7 @@ func WaitForNetwork(server lxd.InstanceServer, container string) error {
 		fmt.Printf("status: %s\n", state.Status)
 		time.Sleep(1 * time.Second)
 	}
-	return errors.New("could not get ip address for: " + container)
+	return errors.New("could not get ip address for: " + instance)
 }
 
 func FileExists(server lxd.InstanceServer, container string, file string) bool {

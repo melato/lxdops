@@ -11,12 +11,13 @@ import (
 	"melato.org/table3"
 )
 
-type ContainerOps struct {
+// InstanceOps - operations on LXD instances (formerly ContainerOps)
+type InstanceOps struct {
 	Client *LxdClient `name:"-"`
 	server lxd.InstanceServer
 }
 
-func (t *ContainerOps) Configured() error {
+func (t *InstanceOps) Configured() error {
 	project := t.Client.CurrentProject()
 	server, err := t.Client.ProjectServer(project)
 	if err != nil {
@@ -26,10 +27,10 @@ func (t *ContainerOps) Configured() error {
 	return nil
 }
 
-func (t *ContainerOps) Profiles(container string) error {
-	c, _, err := t.server.GetContainer(container)
+func (t *InstanceOps) Profiles(instance string) error {
+	c, _, err := t.server.GetInstance(instance)
 	if err != nil {
-		return AnnotateLXDError(container, err)
+		return AnnotateLXDError(instance, err)
 	}
 	for _, profile := range c.Profiles {
 		fmt.Println(profile)
@@ -37,10 +38,10 @@ func (t *ContainerOps) Profiles(container string) error {
 	return nil
 }
 
-func (t *ContainerOps) Config(container string) error {
-	c, _, err := t.server.GetContainer(container)
+func (t *InstanceOps) Config(instance string) error {
+	c, _, err := t.server.GetInstance(instance)
 	if err != nil {
-		return AnnotateLXDError(container, err)
+		return AnnotateLXDError(instance, err)
 	}
 	writer := &table.FixedWriter{Writer: os.Stdout}
 	var keys []string
@@ -62,16 +63,16 @@ func (t *ContainerOps) Config(container string) error {
 	return nil
 }
 
-func (t *ContainerOps) Network(container string) error {
+func (t *InstanceOps) Network(instance string) error {
 	server := t.server
-	state, _, err := server.GetContainerState(container)
+	state, _, err := server.GetInstanceState(instance)
 	if err != nil {
-		return AnnotateLXDError(container, err)
+		return AnnotateLXDError(instance, err)
 	}
 	writer := &table.FixedWriter{Writer: os.Stdout}
 	var name string
-	var net api.ContainerStateNetwork
-	var a *api.ContainerStateNetworkAddress
+	var net api.InstanceStateNetwork
+	var a *api.InstanceStateNetworkAddress
 	writer.Columns(
 		table.NewColumn("NETWORK", func() interface{} { return name }),
 		table.NewColumn("HWADDR", func() interface{} { return net.Hwaddr }),
@@ -90,9 +91,9 @@ func (t *ContainerOps) Network(container string) error {
 	return nil
 }
 
-func (t *ContainerOps) Wait(args []string) error {
-	for _, container := range args {
-		err := WaitForNetwork(t.server, container)
+func (t *InstanceOps) Wait(args []string) error {
+	for _, instance := range args {
+		err := WaitForNetwork(t.server, instance)
 		if err != nil {
 			return err
 		}
@@ -100,11 +101,11 @@ func (t *ContainerOps) Wait(args []string) error {
 	return nil
 }
 
-func (t *ContainerOps) State(container string, action ...string) error {
+func (t *InstanceOps) State(instance string) error {
 	server := t.server
-	state, etag, err := server.GetContainerState(container)
+	state, etag, err := server.GetInstanceState(instance)
 	if err != nil {
-		return AnnotateLXDError(container, err)
+		return AnnotateLXDError(instance, err)
 	}
 	fmt.Println(etag)
 	util.PrintYaml(state)
@@ -121,15 +122,15 @@ func (t disk_device_sorter) Len() int           { return len(t) }
 func (t disk_device_sorter) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
 func (t disk_device_sorter) Less(i, j int) bool { return t[i].Source < t[j].Source }
 
-type ContainerDevicesOp struct {
-	ContainerOps *ContainerOps `name:""`
-	Yaml         bool
+type InstanceDevicesOp struct {
+	InstanceOps *InstanceOps `name:""`
+	Yaml        bool
 }
 
-func (t *ContainerDevicesOp) Devices(container string) error {
-	c, _, err := t.ContainerOps.server.GetContainer(container)
+func (t *InstanceDevicesOp) Devices(instance string) error {
+	c, _, err := t.InstanceOps.server.GetInstance(instance)
 	if err != nil {
-		return AnnotateLXDError(container, err)
+		return AnnotateLXDError(instance, err)
 	}
 	if t.Yaml {
 		util.PrintYaml(c.ExpandedDevices)

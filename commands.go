@@ -73,7 +73,7 @@ func RootCommand() *command.SimpleCommand {
 	configCmd.Command("includes").RunFunc(configOps.Includes)
 	configCmd.Command("script").RunFunc(configOps.Script)
 
-	containerOps := &lxdutil.ContainerOps{Client: client}
+	containerOps := &lxdutil.InstanceOps{Client: client}
 	containerCmd := cmd.Command("container")
 	containerCmd.Flags(containerOps)
 	containerCmd.Command("profiles").RunFunc(containerOps.Profiles)
@@ -81,7 +81,7 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd.Command("network").RunFunc(containerOps.Network)
 	containerCmd.Command("wait").RunFunc(containerOps.Wait)
 	containerCmd.Command("state").RunFunc(containerOps.State)
-	containerDevices := &lxdutil.ContainerDevicesOp{ContainerOps: containerOps}
+	containerDevices := &lxdutil.InstanceDevicesOp{InstanceOps: containerOps}
 	containerCmd.Command("devices").Flags(containerDevices).RunFunc(containerDevices.Devices)
 
 	networkOp := &lxdutil.NetworkOp{Client: client}
