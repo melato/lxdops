@@ -131,9 +131,13 @@ type Doas struct {
 
 func (t *Doas) Configure(user string) []string {
 	var lines []string
-	lines = append(lines,
-		fmt.Sprintf(`if [ -f /etc/doas.conf ]; then  grep "^permit nopass %s$" /etc/doas.conf  || echo "permit nopass %s" >> /etc/doas.conf; fi`,
-			user, user))
+	if !t.didSudoers {
+		t.didSudoers = true
+		lines = append(lines, "mkdir -p /etc/doas.d")
+	}
+	file := fmt.Sprintf("/etc/doas.d/%s.conf", user)
+	lines = append(lines, fmt.Sprintf("echo permit nopass '%s' > %s", user, file))
+	lines = append(lines, "chmod 400 "+file)
 	return lines
 }
 
