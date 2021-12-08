@@ -1,7 +1,0 @@
-os:
-  name: alpine
-origin: alp/copy
-device-origin: dev@test
-include:
-- home.yaml
-- user.yaml

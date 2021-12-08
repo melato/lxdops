@@ -1,0 +1,9 @@
+properties:
+  section: test/
+
+description: |
+  This is meant to be included by test containers, in order to create
+  their devices at a separate zfs tree, which may have different properties
+  than the devices of production containers.
+  For example, the test devices might not be backed up.
+  This could help with avoiding backups of these devices.

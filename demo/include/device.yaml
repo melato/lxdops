@@ -1,0 +1,14 @@
+properties:
+  section: ""
+filesystems:
+  main:
+    pattern: (zfsroot)/(section)(project/)main/(instance)
+devices:
+  home:
+    path: /home
+    filesystem: main
+
+description: |
+  creates a zfs dataset and attaches it in the container as /home
+  The (section) property can be used to create the devices for certain containers
+  at a different filesystem tree.
