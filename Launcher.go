@@ -297,14 +297,20 @@ func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, ser
 
 func (t *Launcher) CreateDevices(instance *Instance) error {
 	t.Trace = true
-	dev := NewDeviceConfigurer(t.Client, instance.Config)
+	dev, err := NewDeviceConfigurer(t.Client, instance)
+	if err != nil {
+		return err
+	}
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	return dev.ConfigureDevices(instance)
 }
 
 func (t *Launcher) CreateProfile(instance *Instance) error {
-	dev := NewDeviceConfigurer(t.Client, instance.Config)
+	dev, err := NewDeviceConfigurer(t.Client, instance)
+	if err != nil {
+		return err
+	}
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	profileName := instance.ProfileName()
@@ -330,7 +336,10 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 	if err != nil {
 		return err
 	}
-	dev := NewDeviceConfigurer(t.Client, config)
+	dev, err := NewDeviceConfigurer(t.Client, instance)
+	if err != nil {
+		return err
+	}
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	err = dev.ConfigureDevices(instance)
@@ -503,7 +512,10 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 	if err != nil {
 		return err
 	}
-	dev := NewDeviceConfigurer(t.Client, instance.Config)
+	dev, err := NewDeviceConfigurer(t.Client, instance)
+	if err != nil {
+		return err
+	}
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 

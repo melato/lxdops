@@ -75,6 +75,9 @@ type ConfigInherit struct {
 	Devices map[string]*Device `yaml:"devices"`
 	// Profiles are attached to the container.  The instance profile should not be listed here.
 
+	// The owner (uid:gid) for new devices
+	DeviceOwner Pattern `yaml:"device-owner"`
+
 	Profiles []string `yaml:"profiles"`
 
 	// PreScripts are scripts that are executed early, before packages, users, files, or Scripts
