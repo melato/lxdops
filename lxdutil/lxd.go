@@ -34,7 +34,8 @@ func AnnotateLXDError(name string, err error) error {
 }
 
 func WaitForNetwork(server lxd.InstanceServer, instance string) error {
-	for i := 0; i < 30; i++ {
+	var status string
+	for i := 0; i < 300; i++ {
 		state, _, err := server.GetInstanceState(instance)
 		if err != nil {
 			return AnnotateLXDError(instance, err)
@@ -50,7 +51,11 @@ func WaitForNetwork(server lxd.InstanceServer, instance string) error {
 				}
 			}
 		}
-		fmt.Printf("status: %s\n", state.Status)
+		if state.Status != status {
+			status = state.Status
+			fmt.Printf("status: %s\n", status)
+		}
+
 		time.Sleep(1 * time.Second)
 	}
 	return errors.New("could not get ip address for: " + instance)

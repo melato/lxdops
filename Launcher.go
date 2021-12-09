@@ -417,7 +417,7 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 			err = (lxdutil.InstanceServer{server}).StopContainer(container)
 		}
 
-		op, err := server.DeleteContainer(container)
+		op, err := server.DeleteInstance(container)
 		if err == nil {
 			if t.Trace {
 				fmt.Printf("deleted container %s in project %s\n", container, config.Project)
@@ -426,7 +426,7 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 				return lxdutil.AnnotateLXDError(container, err)
 			}
 		} else {
-			state, _, err := server.GetContainerState(container)
+			state, _, err := server.GetInstanceState(container)
 			if err == nil {
 				return errors.New(fmt.Sprintf("container %s is %s", container, state.Status))
 			}
