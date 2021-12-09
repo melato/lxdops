@@ -113,7 +113,7 @@ type Sudo struct {
 }
 
 func (t *Sudo) Configure(user string) []string {
-	file := fmt.Sprintf("/etc/sudoers.d/%s.conf", user)
+	file := fmt.Sprintf("/etc/sudoers.d/%s", user)
 	return []string{
 		"if [ -d /etc/sudoers.d ]; then",
 		fmt.Sprintf("echo '%s ALL=(ALL) NOPASSWD:ALL' > %s", user, file),
