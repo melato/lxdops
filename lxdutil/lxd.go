@@ -34,6 +34,7 @@ func AnnotateLXDError(name string, err error) error {
 }
 
 func WaitForNetwork(server lxd.InstanceServer, instance string) error {
+	start := time.Now()
 	var status string
 	for i := 0; i < 300; i++ {
 		state, _, err := server.GetInstanceState(instance)
@@ -47,13 +48,16 @@ func WaitForNetwork(server lxd.InstanceServer, instance string) error {
 			for _, a := range net.Addresses {
 				if a.Family == "inet" && a.Scope == "global" {
 					fmt.Println(a.Address)
+					if i > 0 {
+						fmt.Printf("time: %v\n", time.Now().Sub(start))
+					}
 					return nil
 				}
 			}
 		}
 		if state.Status != status {
 			status = state.Status
-			fmt.Printf("status: %s\n", status)
+			fmt.Printf("status: %s time: %v\n", status, time.Now().Sub(start))
 		}
 
 		time.Sleep(1 * time.Second)
