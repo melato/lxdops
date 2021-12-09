@@ -169,7 +169,7 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 	config := instance.Config
 	profileName := instance.ProfileName()
 	if !t.DryRun {
-		c, _, err := server.GetContainer(container)
+		c, _, err := server.GetInstance(container)
 		if err != nil {
 			return lxdutil.AnnotateLXDError(container, err)
 		}
@@ -206,12 +206,12 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 		}
 		for network, hwaddr := range options.Hwaddresses {
 			key := "volatile." + network + ".hwaddr"
-			c.ContainerPut.Config[key] = hwaddr
+			c.InstancePut.Config[key] = hwaddr
 			if t.Trace {
 				fmt.Printf("set config %s: %s\n", key, hwaddr)
 			}
 		}
-		op, err := server.UpdateContainer(container, c.ContainerPut, "")
+		op, err := server.UpdateInstance(container, c.InstancePut, "")
 		if err != nil {
 			return err
 		}

@@ -66,7 +66,7 @@ func FileExists(server lxd.InstanceServer, container string, file string) bool {
 }
 
 func (t InstanceServer) updateContainerState(container string, action string) error {
-	op, err := t.Server.UpdateContainerState(container, api.ContainerStatePut{Action: action}, "")
+	op, err := t.Server.UpdateInstanceState(container, api.InstanceStatePut{Action: action}, "")
 	if err != nil {
 		return AnnotateLXDError(container, err)
 	}
