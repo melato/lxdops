@@ -1,7 +1,6 @@
 package lxdops
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,14 +33,14 @@ func (t *OS) Merge(c *OS) error {
 		return nil
 	}
 	if t.Name != c.Name {
-		return errors.New("cannot merge incompatible OSs: " + t.Name + ", " + c.Name)
+		return fmt.Errorf("cannot merge incompatible OSs: %s, %s", t.Name, c.Name)
 	} else if t.Version != c.Version {
 		if t.Version == "" {
 			t.Version = c.Version
 		} else if c.Version == "" {
 			// keep the one we have
 		} else {
-			return errors.New("cannot merge incompatible os versions: " + t.Version + ", " + c.Version)
+			return fmt.Errorf("cannot merge incompatible os versions: %s, %s", t.Version, c.Version)
 		}
 	}
 	return nil
@@ -65,7 +64,7 @@ func (r *ConfigReader) mergeMaps(a, b map[string]string) (map[string]string, err
 	for key, value := range b {
 		oldValue, _ := a[key]
 		if oldValue != value && oldValue != "" {
-			return nil, errors.New(fmt.Sprintf("%s:= \"%s\" already defined as \"%s\"\n", key, value, oldValue))
+			return nil, fmt.Errorf("%s:= \"%s\" already defined as \"%s\"\n", key, value, oldValue)
 		}
 		a[key] = value
 	}

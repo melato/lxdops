@@ -59,11 +59,11 @@ func RootCommand() *command.SimpleCommand {
 	addDisk := &AddDisk{Client: client}
 	profile.Command("add-disk").Flags(addDisk).RunFunc(addDisk.Add)
 
-	propertyCmd := cmd.Command("property")
 	propertyOps := &PropertyOptions{}
-	propertyCmd.Command("list").Flags(propertyOps).RunFunc(propertyOps.List)
-	propertyCmd.Command("set").Flags(propertyOps).RunFunc(propertyOps.Set)
-	propertyCmd.Command("file").Flags(propertyOps).RunFunc(propertyOps.File)
+	propertyCmd := cmd.Command("property").Flags(propertyOps)
+	propertyCmd.Command("list").RunFunc(propertyOps.List)
+	propertyCmd.Command("set").RunFunc(propertyOps.Set)
+	propertyCmd.Command("file").RunFunc(propertyOps.File)
 
 	configCmd := cmd.Command("config")
 	parse := &ParseOp{}
@@ -73,7 +73,7 @@ func RootCommand() *command.SimpleCommand {
 	configCmd.Command("includes").RunFunc(configOps.Includes)
 	configCmd.Command("script").RunFunc(configOps.Script)
 
-	containerOps := &lxdutil.ContainerOps{Client: client}
+	containerOps := &lxdutil.InstanceOps{Client: client}
 	containerCmd := cmd.Command("container")
 	containerCmd.Flags(containerOps)
 	containerCmd.Command("profiles").RunFunc(containerOps.Profiles)
@@ -81,7 +81,7 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd.Command("network").RunFunc(containerOps.Network)
 	containerCmd.Command("wait").RunFunc(containerOps.Wait)
 	containerCmd.Command("state").RunFunc(containerOps.State)
-	containerDevices := &lxdutil.ContainerDevicesOp{ContainerOps: containerOps}
+	containerDevices := &lxdutil.InstanceDevicesOp{InstanceOps: containerOps}
 	containerCmd.Command("devices").Flags(containerDevices).RunFunc(containerDevices.Devices)
 
 	networkOp := &lxdutil.NetworkOp{Client: client}

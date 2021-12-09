@@ -96,11 +96,23 @@ func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, opti
 	}
 	lxcArgs = append(lxcArgs, "init")
 
-	osVersion := config.OS.Version
-	if osVersion == "" {
-		return errors.New("Missing version")
+	image, err := config.OS.Image.Substitute(instance.Properties)
+	if err != nil {
+		return err
 	}
-	lxcArgs = append(lxcArgs, osType.ImageName(osVersion))
+
+	if image == "" {
+		osVersion, err := config.OS.Version.Substitute(instance.Properties)
+		if err != nil {
+			return err
+		}
+		if osVersion != "" {
+			osType.ImageName(osVersion)
+		} else {
+			return errors.New("Please provide image or version")
+		}
+	}
+	lxcArgs = append(lxcArgs, image)
 	for _, profile := range options.Profiles {
 		lxcArgs = append(lxcArgs, "-p", profile)
 	}
@@ -157,7 +169,7 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 	config := instance.Config
 	profileName := instance.ProfileName()
 	if !t.DryRun {
-		c, _, err := server.GetContainer(container)
+		c, _, err := server.GetInstance(container)
 		if err != nil {
 			return lxdutil.AnnotateLXDError(container, err)
 		}
@@ -194,12 +206,12 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 		}
 		for network, hwaddr := range options.Hwaddresses {
 			key := "volatile." + network + ".hwaddr"
-			c.ContainerPut.Config[key] = hwaddr
+			c.InstancePut.Config[key] = hwaddr
 			if t.Trace {
 				fmt.Printf("set config %s: %s\n", key, hwaddr)
 			}
 		}
-		op, err := server.UpdateContainer(container, c.ContainerPut, "")
+		op, err := server.UpdateInstance(container, c.InstancePut, "")
 		if err != nil {
 			return err
 		}
@@ -285,14 +297,20 @@ func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, ser
 
 func (t *Launcher) CreateDevices(instance *Instance) error {
 	t.Trace = true
-	dev := NewDeviceConfigurer(t.Client, instance.Config)
+	dev, err := NewDeviceConfigurer(t.Client, instance)
+	if err != nil {
+		return err
+	}
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	return dev.ConfigureDevices(instance)
 }
 
 func (t *Launcher) CreateProfile(instance *Instance) error {
-	dev := NewDeviceConfigurer(t.Client, instance.Config)
+	dev, err := NewDeviceConfigurer(t.Client, instance)
+	if err != nil {
+		return err
+	}
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	profileName := instance.ProfileName()
@@ -318,7 +336,10 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 	if err != nil {
 		return err
 	}
-	dev := NewDeviceConfigurer(t.Client, config)
+	dev, err := NewDeviceConfigurer(t.Client, instance)
+	if err != nil {
+		return err
+	}
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 	err = dev.ConfigureDevices(instance)
@@ -405,7 +426,7 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 			err = (lxdutil.InstanceServer{server}).StopContainer(container)
 		}
 
-		op, err := server.DeleteContainer(container)
+		op, err := server.DeleteInstance(container)
 		if err == nil {
 			if t.Trace {
 				fmt.Printf("deleted container %s in project %s\n", container, config.Project)
@@ -414,7 +435,7 @@ func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
 				return lxdutil.AnnotateLXDError(container, err)
 			}
 		} else {
-			state, _, err := server.GetContainerState(container)
+			state, _, err := server.GetInstanceState(container)
 			if err == nil {
 				return errors.New(fmt.Sprintf("container %s is %s", container, state.Status))
 			}
@@ -491,7 +512,10 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 	if err != nil {
 		return err
 	}
-	dev := NewDeviceConfigurer(t.Client, instance.Config)
+	dev, err := NewDeviceConfigurer(t.Client, instance)
+	if err != nil {
+		return err
+	}
 	dev.Trace = t.Trace
 	dev.DryRun = t.DryRun
 

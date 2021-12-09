@@ -110,31 +110,29 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, container string) error 
 }
 
 type Sudo struct {
-	didSudoers bool
 }
 
 func (t *Sudo) Configure(user string) []string {
-	var lines []string
-	if !t.didSudoers {
-		t.didSudoers = true
-		lines = append(lines, "mkdir -p /etc/sudoers.d")
+	file := fmt.Sprintf("/etc/sudoers.d/%s.conf", user)
+	return []string{
+		"if [ -d /etc/sudoers.d ]; then",
+		fmt.Sprintf("echo '%s ALL=(ALL) NOPASSWD:ALL' > %s", user, file),
+		fmt.Sprintf("chmod 440 %s", file),
+		"fi",
 	}
-	sudoerFile := "/etc/sudoers.d/" + user
-	lines = append(lines, "echo '"+user+" ALL=(ALL) NOPASSWD:ALL' > "+sudoerFile)
-	lines = append(lines, "chmod 440 "+sudoerFile)
-	return lines
 }
 
 type Doas struct {
-	didSudoers bool
 }
 
 func (t *Doas) Configure(user string) []string {
-	var lines []string
-	lines = append(lines,
-		fmt.Sprintf(`if [ -f /etc/doas.conf ]; then  grep "^permit nopass %s$" /etc/doas.conf  || echo "permit nopass %s" >> /etc/doas.conf; fi`,
-			user, user))
-	return lines
+	file := fmt.Sprintf("/etc/doas.d/%s.conf", user)
+	return []string{
+		"if [ -d /etc/doas.d ]; then",
+		fmt.Sprintf("echo permit nopass '%s' > %s", user, file),
+		fmt.Sprintf("chmod 400 %s", file),
+		"fi",
+	}
 }
 
 func (t *Configurer) createUsers(config *Config, name string) error {

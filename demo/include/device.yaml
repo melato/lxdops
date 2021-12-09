@@ -1,0 +1,17 @@
+profile-pattern: (instance).demo
+properties:
+  section: ""
+filesystems:
+  main:
+    pattern: (zfsroot)/(section)(project/)main/(instance)
+devices:
+  home:
+    path: /home
+    filesystem: main
+
+description: |
+  creates a zfs dataset and attaches it in the container as /home
+  The (section) property can be used to create the devices for certain containers
+  at a different filesystem tree.
+  The devices will be attached to the container via a profile
+  whose name is composed from the name of the container and the .lxdops suffix.

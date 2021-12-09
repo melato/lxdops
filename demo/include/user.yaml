@@ -1,0 +1,17 @@
+packages:
+- doas
+users:
+  - name:
+    sudo: true
+    ssh: true
+    groups:
+      - wheel
+      - adm
+
+description: |
+  creates a user in the container with the same name and uid as the user
+  who runs the command on the host.
+  It copies ~/.ssh/authorized_keys from the host to the container.
+  It adds the user to groups wheel, adm.
+  It also gives sudo or doas capabilities to the user, if sudo and/or doas is installed.
+  In this case, it makes sure that doas is installed, before creating the user.

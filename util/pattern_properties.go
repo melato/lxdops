@@ -83,6 +83,9 @@ func (t *PatternProperties) Get(key string) (string, error) {
 }
 
 func (t *PatternProperties) Substitute(pattern string) (string, error) {
+	if pattern == "" {
+		return "", nil
+	}
 	tpl, err := template.Paren.NewTemplate(pattern)
 	if err != nil {
 		return "", err

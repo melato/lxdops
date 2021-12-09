@@ -42,7 +42,7 @@ func (t *ProfileConfigurer) Diff(instance *Instance) error {
 	if err != nil {
 		return err
 	}
-	c, _, err := server.GetContainer(container)
+	c, _, err := server.GetInstance(container)
 	if err != nil {
 		return lxdutil.AnnotateLXDError(container, err)
 	}
@@ -74,7 +74,7 @@ func (t *ProfileConfigurer) Reorder(instance *Instance) error {
 	if err != nil {
 		return err
 	}
-	c, _, err := server.GetContainer(container)
+	c, _, err := server.GetInstance(container)
 	if err != nil {
 		return lxdutil.AnnotateLXDError(container, err)
 	}
@@ -90,7 +90,7 @@ func (t *ProfileConfigurer) Reorder(instance *Instance) error {
 	sortedContainer := util.StringSlice(c.Profiles).Sorted()
 	if util.StringSlice(sortedProfiles).Equals(sortedContainer) {
 		c.Profiles = sortedProfiles
-		op, err := server.UpdateContainer(container, c.ContainerPut, "")
+		op, err := server.UpdateInstance(container, c.InstancePut, "")
 		if err != nil {
 			return err
 		}
@@ -108,7 +108,7 @@ func (t *ProfileConfigurer) Apply(instance *Instance) error {
 	if err != nil {
 		return err
 	}
-	c, _, err := server.GetContainer(container)
+	c, _, err := server.GetInstance(container)
 	if err != nil {
 		return lxdutil.AnnotateLXDError(container, err)
 	}
@@ -116,7 +116,7 @@ func (t *ProfileConfigurer) Apply(instance *Instance) error {
 	if err != nil {
 		return err
 	}
-	op, err := server.UpdateContainer(container, c.ContainerPut, "")
+	op, err := server.UpdateInstance(container, c.InstancePut, "")
 	if err != nil {
 		return err
 	}

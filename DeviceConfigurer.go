@@ -14,13 +14,20 @@ import (
 type DeviceConfigurer struct {
 	Client  *lxdutil.LxdClient
 	Config  *Config
+	Owner   string
 	Trace   bool
 	DryRun  bool
 	FuncMap map[string]func() (string, error)
 }
 
-func NewDeviceConfigurer(client *lxdutil.LxdClient, config *Config) *DeviceConfigurer {
-	return &DeviceConfigurer{Client: client, Config: config}
+func NewDeviceConfigurer(client *lxdutil.LxdClient, instance *Instance) (*DeviceConfigurer, error) {
+	t := &DeviceConfigurer{Client: client, Config: instance.Config}
+	var err error
+	t.Owner, err = instance.Config.DeviceOwner.Substitute(instance.Properties)
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
 }
 
 func (t *DeviceConfigurer) NewScript() *script.Script {
@@ -28,7 +35,10 @@ func (t *DeviceConfigurer) NewScript() *script.Script {
 }
 
 func (t *DeviceConfigurer) chownDir(scr *script.Script, dir string) {
-	scr.Run("sudo", "chown", "1000000:1000000", dir)
+	//scr.Run("sudo", "chown", "1000000:1000000", dir)
+	if t.Owner != "" {
+		scr.Run("sudo", "chown", t.Owner, dir)
+	}
 }
 
 func (t *DeviceConfigurer) CreateDir(dir string, chown bool) error {

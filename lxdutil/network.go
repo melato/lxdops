@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/client"
+	"github.com/lxc/lxd/shared/api"
 )
 
 func QualifiedContainerName(project string, container string) string {
@@ -33,8 +34,8 @@ func (t *NetworkManager) ParseAddress(addr string) string {
 	return ""
 }
 
-func (t *NetworkManager) GetProjectAddresses(server lxd.ContainerServer, project string, family string) ([]*HostAddress, error) {
-	containers, err := server.UseProject(project).GetContainersFull()
+func (t *NetworkManager) GetProjectAddresses(server lxd.InstanceServer, instanceType api.InstanceType, project string, family string) ([]*HostAddress, error) {
+	containers, err := server.UseProject(project).GetInstancesFull(instanceType)
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +67,13 @@ func (t *NetworkManager) GetAddresses(family string) ([]*HostAddress, error) {
 	}
 	var addresses []*HostAddress
 	for _, project := range projects {
-		paddresses, err := t.GetProjectAddresses(server, project.Name, family)
-		if err != nil {
-			return nil, err
+		for _, itype := range []api.InstanceType{api.InstanceTypeContainer, api.InstanceTypeVM} {
+			paddresses, err := t.GetProjectAddresses(server, itype, project.Name, family)
+			if err != nil {
+				return nil, err
+			}
+			addresses = append(addresses, paddresses...)
 		}
-		addresses = append(addresses, paddresses...)
 	}
 	return addresses, nil
 }

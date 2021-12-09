@@ -160,6 +160,13 @@ commands:
     use: '@<snapshot> <config-file>...'
   property:
     short: manage global properties
+    long: |
+      Properties can be located in:
+      - Global Properties File
+      - Instance Properties, inside the config .yaml file
+      - Command Line
+      Command line properties override instance and global properties.
+      Instance properties override global properties.
     commands:
       list:
         short: list global property value
