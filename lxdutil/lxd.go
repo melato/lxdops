@@ -49,7 +49,7 @@ func WaitForNetwork(server lxd.InstanceServer, instance string) error {
 				if a.Family == "inet" && a.Scope == "global" {
 					fmt.Println(a.Address)
 					if i > 0 {
-						fmt.Printf("time: %v\n", time.Now().Sub(start))
+						fmt.Printf("time: %0.3fs\n", time.Now().Sub(start).Seconds())
 					}
 					return nil
 				}
@@ -57,7 +57,7 @@ func WaitForNetwork(server lxd.InstanceServer, instance string) error {
 		}
 		if state.Status != status {
 			status = state.Status
-			fmt.Printf("status: %s time: %v\n", status, time.Now().Sub(start))
+			fmt.Printf("status: %s time: %0.3fs\n", status, time.Now().Sub(start).Seconds())
 		}
 
 		time.Sleep(1 * time.Second)
