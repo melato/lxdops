@@ -107,7 +107,7 @@ func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, opti
 			return err
 		}
 		if osVersion != "" {
-			osType.ImageName(osVersion)
+			image = osType.ImageName(osVersion)
 		} else {
 			return errors.New("Please provide image or version")
 		}
