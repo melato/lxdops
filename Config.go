@@ -129,7 +129,7 @@ type Source struct {
 	// The devices are copied from the filesystems specified in SourceConfig, or this config.
 	DeviceTemplate Pattern `yaml:"device-template"`
 
-	// device-origin is the name an instance and s short snapshot name.
+	// device-origin is the name an instance and a short snapshot name.
 	// It has the form <instance>@<snapshot> where <instance> is an instance name,
 	// and @<snapshot> is a the short snapshot name of the instance filesystems.
 	// Each device zfs filesystem is cloned from @<snapshot>

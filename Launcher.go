@@ -250,7 +250,7 @@ func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, ser
 	}
 	c, _, err := sourceServer.GetContainer(source.Container)
 	if err != nil {
-		return lxdutil.AnnotateLXDError(source.Container, err)
+		return fmt.Errorf("%s_%s: %v", source.Project, source.Container, err)
 	}
 	missingProfiles := util.StringSlice(c.Profiles).Diff(allProfiles)
 	// lxc copy will fail if the source container has profiles that do not exist in the target server
