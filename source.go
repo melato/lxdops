@@ -101,6 +101,13 @@ func (t *Instance) newContainerSource() (*ContainerSource, error) {
 	if s != "" {
 		source.parse(s)
 		if source.Project == "" {
+			sourceConfig, err := t.GetSourceConfig()
+			if err != nil {
+				return nil, err
+			}
+			source.Project = sourceConfig.Project
+		}
+		if source.Project == "" {
 			source.Project = t.Config.Project
 		}
 	}
