@@ -96,6 +96,9 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 	if t.Profile == "" {
 		t.Profile = c.Profile
 	}
+	if t.DeviceOwner == "" {
+		t.DeviceOwner = c.DeviceOwner
+	}
 	var err error
 	t.Properties, err = r.mergeMaps(t.Properties, c.Properties)
 	if err != nil {
