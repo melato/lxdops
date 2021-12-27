@@ -21,6 +21,10 @@ func (t *LxcConfig) configDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	configDir = filepath.Join(home, "snap", "lxd", "common", "config")
+	if _, err = os.Stat(configDir); err == nil {
+		return configDir, nil
+	}
 	configDir = filepath.Join(home, "snap", "lxd", "current", ".config", "lxc")
 	if _, err = os.Stat(configDir); err == nil {
 		return configDir, nil
