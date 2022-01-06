@@ -37,7 +37,7 @@ commands:
         short: export network addresses for all containers
         use:
       number:
-        short: assig numbers to containers
+        short: assign numbers to containers
         use: -first <number> [-a] [-r] [-project <project>] <container>...]
       network:
         short: print container network addresses
