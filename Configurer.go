@@ -11,7 +11,6 @@ import (
 
 	lxd "github.com/lxc/lxd/client"
 	"melato.org/lxdops/lxdutil"
-	"melato.org/lxdops/password"
 	"melato.org/lxdops/util"
 	"melato.org/script"
 )
@@ -212,24 +211,9 @@ func (t *Configurer) changePasswords(config *Config, name string, users []string
 		return nil
 	}
 
-	length := 20
-	pass, err := password.Generate(length)
-	if err != nil {
-		return err
-	}
-	content := t.chpasswdInput(pass, users)
+	content := t.chpasswdInput("*", users)
 	ex := t.NewExec(config.Project, name)
-	if t.Trace {
-		ex.Trace = false // don't display passwords
-		ppass := make([]byte, length)
-		for i := 0; i < length; i++ {
-			ppass[i] = '*'
-		}
-		fmt.Println("chpasswd < --- (password hidden)")
-		fmt.Println(t.chpasswdInput(string(ppass), users))
-		fmt.Println("---")
-	}
-	return ex.Run(content, "chpasswd")
+	return ex.Run(content, "chpasswd", "-e")
 }
 
 func (t *Configurer) changeUserPasswords(config *Config, name string) error {
