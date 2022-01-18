@@ -1,0 +1,44 @@
+os:
+  name: alpine
+  image: images:alpine/3.15
+
+packages:
+- doas
+- logrotate
+- openssh
+- bash
+
+profiles:
+- default
+
+users:
+  - name:
+    sudo: true
+    ssh: true
+    shell: /bin/bash
+    groups:
+      - wheel
+      - adm
+
+files:
+- source: basic.yaml
+  path: /etc/opt/basic.yaml
+  mode: 0444
+
+scripts:
+- name: sudo
+  body: |
+    if [ -f /usr/bin/doas -a ! -e /sbin/sudo ]; then
+        ln -s /usr/bin/doas /sbin/sudo;
+    fi
+- name: ssh
+  body: |
+    if grep 'PasswordAuthentication yes' /etc/ssh/sshd_config > /dev/null
+    then
+      sed -i 's/.*PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+    fi
+
+    rc-update add sshd
+    rc-service sshd start
+
+snapshot: start
