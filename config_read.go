@@ -64,7 +64,8 @@ func (r *ConfigReader) mergeMaps(a, b map[string]string) (map[string]string, err
 	for key, value := range b {
 		oldValue, _ := a[key]
 		if oldValue != value && oldValue != "" {
-			return nil, fmt.Errorf("%s:= \"%s\" already defined as \"%s\"\n", key, value, oldValue)
+			fmt.Fprintf(os.Stderr, "%s: \"%s\" already defined as \"%s\"\n", key, value, oldValue)
+			continue
 		}
 		a[key] = value
 	}
@@ -167,8 +168,12 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 	config.ResolvePaths(dir)
 	if len(r.included) == 0 {
 		t.ConfigTop = config.ConfigTop
-
 	}
+	err = r.mergeInherit(&t.ConfigInherit, &config.ConfigInherit)
+	if err != nil {
+		return err
+	}
+
 	r.addIncluded(file)
 	if t.OS == nil {
 		t.OS = config.OS
@@ -184,7 +189,7 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 			return err
 		}
 	}
-	return r.mergeInherit(&t.ConfigInherit, &config.ConfigInherit)
+	return nil
 }
 
 func (t *ConfigInherit) removeDuplicates() {
