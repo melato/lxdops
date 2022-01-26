@@ -1,4 +1,4 @@
-package lxdutil
+package util
 
 import (
 	"bytes"

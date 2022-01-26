@@ -3,6 +3,8 @@ package lxdutil
 import (
 	"fmt"
 	"os"
+
+	"melato.org/lxdops/util"
 )
 
 // Assign persistent number to containers.
@@ -63,12 +65,12 @@ func (t *AssignNumbers) selectContainers(names []string, f func(name string) err
 	return nil
 }
 
-func selectNumbers(numbers []*NamedNumber, names []string) []*NamedNumber {
+func selectNumbers(numbers []*util.NamedNumber, names []string) []*util.NamedNumber {
 	namesMap := make(map[string]bool)
 	for _, name := range names {
 		namesMap[name] = true
 	}
-	var result []*NamedNumber
+	var result []*util.NamedNumber
 	for _, num := range numbers {
 		if namesMap[num.Name] {
 			result = append(result, num)
@@ -77,7 +79,7 @@ func selectNumbers(numbers []*NamedNumber, names []string) []*NamedNumber {
 	return result
 }
 
-func MinNumber(numbers []*NamedNumber) int {
+func MinNumber(numbers []*util.NamedNumber) int {
 	if len(numbers) == 0 {
 		return 0
 	}
@@ -90,7 +92,7 @@ func MinNumber(numbers []*NamedNumber) int {
 	return min
 }
 
-func (t *AssignNumbers) AddNumbers(numbers []*NamedNumber, names []string) ([]*NamedNumber, error) {
+func (t *AssignNumbers) AddNumbers(numbers []*util.NamedNumber, names []string) ([]*util.NamedNumber, error) {
 	var containers []string
 	err := t.selectContainers(names, func(name string) error {
 		containers = append(containers, name)
@@ -123,7 +125,7 @@ func (t *AssignNumbers) AddNumbers(numbers []*NamedNumber, names []string) ([]*N
 					return nil, fmt.Errorf("no numbers available between %d, %d", t.First, t.Last)
 				}
 				if !usedNumbers[nextNumber] {
-					numbers = append(numbers, &NamedNumber{name, nextNumber})
+					numbers = append(numbers, &util.NamedNumber{name, nextNumber})
 					nextNumber++
 					break
 				}
@@ -134,10 +136,10 @@ func (t *AssignNumbers) AddNumbers(numbers []*NamedNumber, names []string) ([]*N
 }
 
 func (t *AssignNumbers) Run(containers []string) error {
-	var numbers []*NamedNumber
+	var numbers []*util.NamedNumber
 	_, err := os.Stat(t.File)
 	if err == nil {
-		numbers, err = ReadNumbers(t.File)
+		numbers, err = util.ReadNumbers(t.File)
 	} else if os.IsNotExist(err) {
 		err = nil
 		// the file does not exist, start with empty list
@@ -150,5 +152,5 @@ func (t *AssignNumbers) Run(containers []string) error {
 	if err != nil {
 		return err
 	}
-	return WriteNumbers(numbers, t.File)
+	return util.WriteNumbers(numbers, t.File)
 }
