@@ -87,7 +87,7 @@ func (r *ConfigReader) mergeSource(t, c *Source) {
 	}
 }
 
-func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
+func (r *ConfigReader) mergeInherit1(t, c *ConfigInherit) error {
 	if t.Project == "" {
 		t.Project = c.Project
 	}
@@ -116,6 +116,10 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 		t.LxcOptions = c.LxcOptions
 	}
 
+	return nil
+}
+
+func (r *ConfigReader) mergeInherit2(t, c *ConfigInherit) error {
 	if t.Filesystems == nil {
 		t.Filesystems = make(map[string]*Filesystem)
 	}
@@ -140,6 +144,7 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 		}
 		t.Devices[id] = d
 	}
+
 	t.PreScripts = append(t.PreScripts, c.PreScripts...)
 	t.Packages = append(t.Packages, c.Packages...)
 	t.Profiles = append(t.Profiles, c.Profiles...)
@@ -147,7 +152,6 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 	t.Files = append(t.Files, c.Files...)
 	t.Scripts = append(t.Scripts, c.Scripts...)
 	t.Passwords = append(t.Passwords, c.Passwords...)
-
 	t.removeDuplicates()
 	return nil
 }
@@ -169,7 +173,7 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 	if len(r.included) == 0 {
 		t.ConfigTop = config.ConfigTop
 	}
-	err = r.mergeInherit(&t.ConfigInherit, &config.ConfigInherit)
+	err = r.mergeInherit1(&t.ConfigInherit, &config.ConfigInherit)
 	if err != nil {
 		return err
 	}
@@ -189,7 +193,7 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 			return err
 		}
 	}
-	return nil
+	return r.mergeInherit2(&t.ConfigInherit, &config.ConfigInherit)
 }
 
 func (t *ConfigInherit) removeDuplicates() {
