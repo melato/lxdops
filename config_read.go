@@ -54,6 +54,7 @@ func (r *ConfigReader) warn(format string, arg ...interface{}) {
 	fmt.Printf(format, arg...)
 }
 
+// mergeMaps add map entries from b to a.  b overrides a
 func (r *ConfigReader) mergeMaps(a, b map[string]string) (map[string]string, error) {
 	if a == nil && b == nil {
 		return nil, nil
@@ -62,10 +63,11 @@ func (r *ConfigReader) mergeMaps(a, b map[string]string) (map[string]string, err
 		a = make(map[string]string)
 	}
 	for key, value := range b {
-		oldValue, _ := a[key]
-		if oldValue != value && oldValue != "" {
-			fmt.Fprintf(os.Stderr, "%s: \"%s\" already defined as \"%s\"\n", key, value, oldValue)
-			continue
+		if r.Warn {
+			oldValue, _ := a[key]
+			if oldValue != value && oldValue != "" {
+				fmt.Fprintf(os.Stderr, "%s: \"%s\" overrides \"%s\"\n", key, value, oldValue)
+			}
 		}
 		a[key] = value
 	}
@@ -73,31 +75,31 @@ func (r *ConfigReader) mergeMaps(a, b map[string]string) (map[string]string, err
 }
 
 func (r *ConfigReader) mergeSource(t, c *Source) {
-	if t.Origin == "" {
+	if c.Origin != "" {
 		t.Origin = c.Origin
 	}
-	if t.DeviceTemplate == "" {
+	if c.DeviceTemplate != "" {
 		t.DeviceTemplate = c.DeviceTemplate
 	}
-	if t.DeviceOrigin == "" {
+	if c.DeviceOrigin != "" {
 		t.DeviceOrigin = c.DeviceOrigin
 	}
-	if t.SourceConfig == "" {
+	if c.SourceConfig != "" {
 		t.SourceConfig = c.SourceConfig
 	}
 }
 
-func (r *ConfigReader) mergeInherit1(t, c *ConfigInherit) error {
-	if t.Project == "" {
+func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
+	if c.Project != "" {
 		t.Project = c.Project
 	}
-	if t.Container == "" {
+	if c.Container != "" {
 		t.Container = c.Container
 	}
-	if t.Profile == "" {
+	if c.Profile != "" {
 		t.Profile = c.Profile
 	}
-	if t.DeviceOwner == "" {
+	if c.DeviceOwner != "" {
 		t.DeviceOwner = c.DeviceOwner
 	}
 	var err error
@@ -112,14 +114,10 @@ func (r *ConfigReader) mergeInherit1(t, c *ConfigInherit) error {
 
 	r.mergeSource(&t.Source, &c.Source)
 
-	if len(t.LxcOptions) == 0 {
+	if len(c.LxcOptions) != 0 {
 		t.LxcOptions = c.LxcOptions
 	}
 
-	return nil
-}
-
-func (r *ConfigReader) mergeInherit2(t, c *ConfigInherit) error {
 	if t.Filesystems == nil {
 		t.Filesystems = make(map[string]*Filesystem)
 	}
@@ -173,11 +171,6 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 	if len(r.included) == 0 {
 		t.ConfigTop = config.ConfigTop
 	}
-	err = r.mergeInherit1(&t.ConfigInherit, &config.ConfigInherit)
-	if err != nil {
-		return err
-	}
-
 	r.addIncluded(file)
 	if t.OS == nil {
 		t.OS = config.OS
@@ -193,7 +186,7 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 			return err
 		}
 	}
-	return r.mergeInherit2(&t.ConfigInherit, &config.ConfigInherit)
+	return r.mergeInherit(&t.ConfigInherit, &config.ConfigInherit)
 }
 
 func (t *ConfigInherit) removeDuplicates() {
