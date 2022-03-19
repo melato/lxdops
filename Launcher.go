@@ -383,7 +383,8 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 			return err
 		}
 	}
-	t.NewConfigurer().ConfigureContainer(instance)
+	configurer := t.NewConfigurer()
+	configurer.ConfigureContainer(instance)
 	if config.Stop || config.Snapshot != "" {
 		if t.WaitInterval != 0 {
 			fmt.Printf("waiting %d seconds for container installation scripts to complete\n", t.WaitInterval)
@@ -411,7 +412,7 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 			}
 		}
 	}
-	return nil
+	return configurer.PullFiles(instance)
 }
 
 func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {

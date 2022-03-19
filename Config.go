@@ -94,6 +94,8 @@ type ConfigInherit struct {
 	Scripts []*Script `yaml:"scripts"`
 	// Passwords are a list of OS accounts, whose password is set to a random password
 	Passwords []string `yaml:"passwords"`
+	// Pull files are pulled from the container to the host (as with lxc file pull).
+	PullFiles []*PullFile `yaml:"pull"`
 }
 
 // Source specifies how to copy or clone the instance container, filesystem, and device directories.
@@ -214,6 +216,18 @@ type File struct {
 
 	// Group is the file's group owner name in the container.  It is an error if both gid and group are set.
 	Group string
+}
+
+// PullFile specifies a file that is copied from the host to the container
+type PullFile struct {
+	// Path is the file path in the container
+	Path string
+
+	// Target is the file path on the host
+	Target Pattern `yaml:"target"`
+
+	// The file's mode as an octal string, e.g. 0644
+	Mode string
 }
 
 // Script specifies a sh script that is run in the container
