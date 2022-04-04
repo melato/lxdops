@@ -2,7 +2,11 @@ package lxdops
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"sort"
+
+	"melato.org/table3"
 )
 
 type ParseOp struct {
@@ -48,6 +52,30 @@ func (t *ConfigOps) printScript(scripts []*Script, script string) {
 			fmt.Println(s.Body)
 		}
 	}
+}
+
+func (t *ConfigOps) PrintProperties(file string) error {
+	config, err := ReadConfig(file)
+	if err != nil {
+		return err
+	}
+	keys := make([]string, 0, len(config.Properties))
+	for key, _ := range config.Properties {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	w := &table.FixedWriter{Writer: os.Stdout, NoHeaders: true}
+	var key, value string
+	w.Columns(
+		table.NewColumn("property", func() interface{} { return key }),
+		table.NewColumn("value", func() interface{} { return value }),
+	)
+	for _, key = range keys {
+		value = config.Properties[key]
+		w.WriteRow()
+	}
+	w.End()
+	return nil
 }
 
 func (t *ConfigOps) Script(file string, script string) error {

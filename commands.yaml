@@ -73,6 +73,9 @@ commands:
       print:
         short: parse and print a config file
         use: <config-file>
+      properties:
+        short: print config file properties
+        use: <config-file>
       script:
         short: print the body of a script
         use: <config-file> <script-name>
