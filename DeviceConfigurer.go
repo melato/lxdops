@@ -144,14 +144,15 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 	}
 
 	script := t.NewScript()
-	for deviceName, device := range t.Config.Devices {
-		dir, err := instance.DeviceDir(deviceName, device)
+	devices := SortDevices(t.Config.Devices)
+	for _, d := range devices {
+		dir, err := instance.DeviceDir(d.Name, d.Device)
 		if err != nil {
 			return err
 		}
-		fs, found := filesystems[device.Filesystem]
+		fs, found := filesystems[d.Device.Filesystem]
 		if !found {
-			fmt.Fprintf(os.Stderr, "missing filesystem: %s\n", device.Filesystem)
+			fmt.Fprintf(os.Stderr, "missing filesystem: %s\n", d.Device.Filesystem)
 			continue
 		}
 		if !fs.IsNew && util.DirExists(dir) {
@@ -162,7 +163,7 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 			return err
 		}
 		if source.IsDefined() && !source.Clone {
-			templateDir, err := source.Instance.DeviceDir(deviceName, device)
+			templateDir, err := source.Instance.DeviceDir(d.Name, d.Device)
 			if err != nil {
 				return err
 			}
@@ -171,7 +172,7 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 					script.Run("sudo", "rsync", "-a", templateDir+"/", dir+"/")
 				}
 			} else {
-				fmt.Println("skipping missing template Device: " + deviceName)
+				fmt.Println("skipping missing template Device: " + d.Name)
 			}
 		}
 		if script.Error() != nil {
