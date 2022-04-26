@@ -169,7 +169,7 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 	config := instance.Config
 	profileName := instance.ProfileName()
 	if !t.DryRun {
-		c, _, err := server.GetInstance(container)
+		c, etag, err := server.GetInstance(container)
 		if err != nil {
 			return lxdutil.AnnotateLXDError(container, err)
 		}
@@ -211,7 +211,7 @@ func (t *Launcher) configureContainer(instance *Instance, server lxd.InstanceSer
 				fmt.Printf("set config %s: %s\n", key, hwaddr)
 			}
 		}
-		op, err := server.UpdateInstance(container, c.InstancePut, "")
+		op, err := server.UpdateInstance(container, c.InstancePut, etag)
 		if err != nil {
 			return err
 		}
