@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/lxc/lxd v0.0.0-20211125155617-9a436fff8069
 	gopkg.in/yaml.v2 v2.4.0
-	melato.org/command v0.0.0-20210627071257-639249bb2eb4
+	melato.org/command v0.0.0-20220222082143-ca56ccecf080
 	melato.org/script v0.0.0-20210516045003-28d1a464fea5
 	melato.org/table3 v0.0.0-20210412105118-d2834489865c
 )
