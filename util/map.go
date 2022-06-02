@@ -7,8 +7,8 @@ import (
 	"melato.org/table3"
 )
 
-func MapKeys(m map[string]string) []string {
-	var keys []string
+func MapKeys[T any](m map[string]T) []string {
+	keys := make([]string, 0, len(m))
 	for key, _ := range m {
 		keys = append(keys, key)
 	}
