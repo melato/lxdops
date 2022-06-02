@@ -266,8 +266,12 @@ type User struct {
 	Uid string `yaml:"uid"`
 	// Sudo gives full passwordless sudo privileges to the user
 	Sudo bool `yaml:"sudo"`
-	// Ssh specifies that the current user's ~.ssh/authorized_keys should be copied from the host to this user
+	// Ssh specifies that AuthorizedKeys shoudl be copied to the user's ~.ssh/authorized_keys
 	Ssh bool `yaml:"ssh"`
+	// Specifies the host file to copy to this user's ~/.ssh/authorized_keys.
+	// Used only if Ssh is true
+	// If not specified, use the current host user's ~.ssh/authorized_keys
+	AuthorizedKeys string `yaml:"authorized_keys"`
 	// Shell is the user shell
 	Shell string `yaml:"shell"`
 	// Home is the user home directory, optional

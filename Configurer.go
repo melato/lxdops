@@ -72,15 +72,8 @@ func (t *Configurer) installPackages(config *Config, name string) error {
 }
 
 func (t *Configurer) pushAuthorizedKeys(config *Config, container string) error {
-	hostHome, homeExists := os.LookupEnv("HOME")
-	if !homeExists {
-		return errors.New("host $HOME doesn't exist")
-	}
-	hostFile := filepath.Join(hostHome, ".ssh", "authorized_keys")
-	authorizedKeys, err := os.ReadFile(hostFile)
-	if err != nil {
-		return err
-	}
+	authorizedKeysMap := make(map[string][]byte)
+
 	server, err := t.Client.ProjectServer(config.Project)
 	if err != nil {
 		return err
@@ -89,6 +82,25 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, container string) error 
 		user = user.EffectiveUser()
 		if !user.Ssh {
 			continue
+		}
+		authorizedKeys, haveKeys := authorizedKeysMap[user.AuthorizedKeys]
+		if !haveKeys {
+			var hostFile string
+			var err error
+			if user.AuthorizedKeys != "" {
+				hostFile = user.AuthorizedKeys
+			} else {
+				hostHome, homeExists := os.LookupEnv("HOME")
+				if !homeExists {
+					return errors.New("host $HOME doesn't exist")
+				}
+				hostFile = filepath.Join(hostHome, ".ssh", "authorized_keys")
+			}
+			authorizedKeys, err = os.ReadFile(hostFile)
+			if err != nil {
+				return err
+			}
+			authorizedKeysMap[user.AuthorizedKeys] = authorizedKeys
 		}
 		home := user.HomeDir()
 		guestFile := filepath.Join(home, ".ssh", "authorized_keys")
