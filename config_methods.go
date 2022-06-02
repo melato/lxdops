@@ -47,6 +47,10 @@ func (u *User) EffectiveUser() *User {
 	return u
 }
 
+func (u *User) HasAuthorizedKeys() bool {
+	return u.AuthorizedKeys != "" || u.Ssh
+}
+
 func (user *User) HomeDir() string {
 	if user.Name == "root" {
 		return "/root"

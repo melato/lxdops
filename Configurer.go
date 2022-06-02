@@ -80,7 +80,7 @@ func (t *Configurer) pushAuthorizedKeys(config *Config, container string) error 
 	}
 	for _, user := range config.Users {
 		user = user.EffectiveUser()
-		if !user.Ssh {
+		if !user.HasAuthorizedKeys() {
 			continue
 		}
 		authorizedKeys, haveKeys := authorizedKeysMap[user.AuthorizedKeys]
@@ -187,7 +187,7 @@ func (t *Configurer) createUsers(config *Config, name string) error {
 				}
 			}
 		}
-		if user.Ssh {
+		if user.HasAuthorizedKeys() {
 			hasSsh = true
 			sshDir := homeDir + "/.ssh"
 			lines = append(lines, "mkdir -p "+sshDir)
