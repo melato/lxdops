@@ -384,7 +384,10 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 		}
 	}
 	configurer := t.NewConfigurer()
-	configurer.ConfigureContainer(instance)
+	err = configurer.ConfigureContainer(instance)
+	if err != nil {
+		return err
+	}
 	if config.Stop || config.Snapshot != "" {
 		if t.WaitInterval != 0 {
 			fmt.Printf("waiting %d seconds for container installation scripts to complete\n", t.WaitInterval)
