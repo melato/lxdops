@@ -80,7 +80,7 @@ func (t *LxdClient) connectHttp() (lxd.InstanceServer, error) {
 		return nil, err
 	}
 	args := &lxd.ConnectionArgs{
-		AuthType:      "TLS",
+		AuthType:      remote.AuthType,
 		TLSServerCert: string(serverCrt),
 		TLSClientCert: string(crt),
 		TLSClientKey:  string(key)}
