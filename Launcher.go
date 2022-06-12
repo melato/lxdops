@@ -21,6 +21,7 @@ type Launcher struct {
 	WaitInterval int  `name:"wait" usage:"# seconds to wait before snapshot"`
 	Trace        bool `name:"t" usage:"trace print what is happening"`
 	DryRun       bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	Test         bool
 }
 
 func (t *Launcher) Init() error {
@@ -262,28 +263,50 @@ func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, ser
 		}
 	}
 
-	var copyArgs []string
-	if source.Project != "" {
-		copyArgs = append(copyArgs, "--project", source.Project)
-	}
+	if t.Test && source.Snapshot != "" {
+		entry, _, err := sourceServer.GetInstanceSnapshot(source.Container, source.Snapshot)
+		if err != nil {
+			return err
+		}
 
-	copyArgs = append(copyArgs, "copy")
+		// Prepare the instance creation request
+		args := lxd.InstanceSnapshotCopyArgs{
+			Name: container,
+			Mode: "pull",
+		}
 
-	if config.Project != "" {
-		copyArgs = append(copyArgs, "--target-project", config.Project)
-	}
-	if source.Snapshot == "" {
-		copyArgs = append(copyArgs, "--instance-only", source.Container)
+		op, err := server.CopyInstanceSnapshot(sourceServer, source.Container, *entry, &args)
+		if err != nil {
+			return err
+		}
+		err = op.Wait()
+		if err != nil {
+			return err
+		}
 	} else {
-		copyArgs = append(copyArgs, source.Container+"/"+source.Snapshot)
-	}
-	copyArgs = append(copyArgs, container)
-	s.Run("lxc", copyArgs...)
-	if s.HasError() {
-		t.deleteProfiles(server, missingProfiles)
-		return s.Error()
-	}
+		var copyArgs []string
+		if source.Project != "" {
+			copyArgs = append(copyArgs, "--project", source.Project)
+		}
 
+		copyArgs = append(copyArgs, "copy")
+
+		if config.Project != "" {
+			copyArgs = append(copyArgs, "--target-project", config.Project)
+		}
+		if source.Snapshot == "" {
+			copyArgs = append(copyArgs, "--instance-only", source.Container)
+		} else {
+			copyArgs = append(copyArgs, source.Container+"/"+source.Snapshot)
+		}
+		copyArgs = append(copyArgs, container)
+		s.Run("lxc", copyArgs...)
+		if s.HasError() {
+			t.deleteProfiles(server, missingProfiles)
+			return s.Error()
+		}
+
+	}
 	err = t.configureContainer(instance, server, options)
 	err2 := t.deleteProfiles(server, missingProfiles)
 	if err != nil {
