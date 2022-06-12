@@ -12,7 +12,7 @@ type LxcConfig struct {
 	currentProject string
 }
 
-func (t *LxcConfig) configDir() (string, error) {
+func ConfigDir() (string, error) {
 	configDir := os.Getenv("LXD_CONF")
 	if configDir != "" {
 		return configDir, nil
@@ -37,7 +37,7 @@ func (t *LxcConfig) configDir() (string, error) {
 }
 
 func (t *LxcConfig) getCurrentProject() (string, error) {
-	configDir, err := t.configDir()
+	configDir, err := ConfigDir()
 	if err != nil {
 		return "", err
 	}
