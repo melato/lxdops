@@ -13,7 +13,8 @@ import (
 
 type LxdClient struct {
 	Socket string
-	Http   bool
+	Http   bool `usage:"connect to LXD using http"`
+	Unix   bool `usage:"connect to LXD using unix socket"`
 	//Project        string `name:"project" usage:"the LXD project to use.  Overrides Config.Project"`
 	rootServer    lxd.InstanceServer
 	projectServer lxd.InstanceServer
@@ -97,8 +98,13 @@ func (t *LxdClient) RootServer() (lxd.InstanceServer, error) {
 		var err error
 		if t.Http {
 			server, err = t.connectHttp()
-		} else {
+		} else if t.Unix {
 			server, err = t.connectUnix()
+		} else {
+			server, err = t.connectHttp()
+			if err != nil {
+				server, err = t.connectUnix()
+			}
 		}
 		if err != nil {
 			return nil, err
