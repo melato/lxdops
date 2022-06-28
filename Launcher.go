@@ -21,7 +21,6 @@ type Launcher struct {
 	WaitInterval int  `name:"wait" usage:"# seconds to wait before snapshot"`
 	Trace        bool `name:"t" usage:"trace print what is happening"`
 	DryRun       bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	Test         bool
 }
 
 func (t *Launcher) Init() error {
@@ -263,7 +262,7 @@ func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, ser
 		}
 	}
 
-	if t.Test && source.Snapshot != "" {
+	if source.Snapshot != "" {
 		entry, _, err := sourceServer.GetInstanceSnapshot(source.Container, source.Snapshot)
 		if err != nil {
 			return err
