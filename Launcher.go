@@ -541,7 +541,7 @@ func (t *Launcher) DestroyContainer(instance *Instance) error {
 		lines := s.Cmd("zfs", append([]string{"list", "-H", "-o", "name"}, zfsFilesystems...)...).ToLines()
 		s.Errors.Clear()
 		for _, line := range lines {
-			s.Run("sudo", "zfs", "destroy", line)
+			s.Run("sudo", "zfs", "destroy", "-r", line)
 		}
 		if s.HasError() {
 			return s.Error()
