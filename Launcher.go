@@ -516,6 +516,47 @@ func (t *Launcher) DeleteContainer(instance *Instance) error {
 	return nil
 }
 
+func (t *Launcher) DestroyContainer(instance *Instance) error {
+	err := t.deleteContainer(instance, false)
+	if err != nil {
+		return err
+	}
+	filesystems, err := instance.FilesystemList()
+	if err != nil {
+		return err
+	}
+	var zfsFilesystems []string
+	var dirFilesystems []string
+	for _, fs := range filesystems {
+		if fs.Filesystem.Destroy {
+			if fs.IsZfs() {
+				zfsFilesystems = append(zfsFilesystems, fs.Path)
+			} else {
+				dirFilesystems = append(dirFilesystems, fs.Path)
+			}
+		}
+	}
+	if len(zfsFilesystems) > 0 {
+		s := script.Script{DryRun: t.DryRun, Trace: t.Trace}
+		lines := s.Cmd("zfs", append([]string{"list", "-H", "-o", "name"}, zfsFilesystems...)...).ToLines()
+		s.Errors.Clear()
+		for _, line := range lines {
+			s.Run("sudo", "zfs", "destroy", line)
+		}
+		if s.HasError() {
+			return s.Error()
+		}
+	}
+	var firstError error
+	for _, dir := range dirFilesystems {
+		err := os.RemoveAll(dir)
+		if err != nil && firstError == nil {
+			firstError = err
+		}
+	}
+	return firstError
+}
+
 func (t *Launcher) Rename(configFile string, newname string) error {
 	instance, err := t.ConfigOptions.Instance(configFile)
 	if err != nil {

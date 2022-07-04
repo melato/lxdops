@@ -64,6 +64,12 @@ commands:
   delete:
     short: delete a stopped container and its profile
     use: <configfile>...
+  destroy:
+    short: delete a stopped container and destroy its filesystems
+    use: <configfile>...
+    long: |
+      destroy is like delete, but it also destroys container filesystems.
+      Only filesystems that have the destroy flag set are destroyed.
   config:
     short: config .yaml utilities
     commands:

@@ -175,6 +175,8 @@ type Filesystem struct {
 	Pattern Pattern
 	// Zfsproperties is a list of properties that are set when a zfs filesystem is created or cloned
 	Zfsproperties map[string]string `yaml:""`
+	// Destroy allows lxdops destroy the filesystem when requested.
+	Destroy bool
 }
 
 // A Device is an LXD disk device that is attached to the instance profile, which in turn is attached to a container
