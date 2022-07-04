@@ -62,14 +62,16 @@ commands:
   create-profile:
     short: create lxdops profile for instance
   delete:
-    short: delete a stopped container and its profile
-    use: <configfile>...
-  destroy:
-    short: delete a stopped container and destroy its filesystems
+    short: delete a container
     use: <configfile>...
     long: |
-      destroy is like delete, but it also destroys container filesystems.
-      Only filesystems that have the destroy flag set are destroyed.
+      delete a stopped container and its profile.
+  destroy:
+    short: delete a container and its filesystems
+    use: <configfile>...
+    long: |
+      destroy is like delete, but it also destroys container filesystems
+      that have the destroy flag set.  Other filesystems are left alone.
   config:
     short: config .yaml utilities
     commands:
