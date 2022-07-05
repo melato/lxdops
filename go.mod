@@ -2,6 +2,8 @@ module melato.org/lxdops
 
 go 1.18
 
+replace melato.org/yaml => ../yaml
+
 require (
 	github.com/lxc/lxd v0.0.0-20211125155617-9a436fff8069
 	gopkg.in/yaml.v2 v2.4.0
@@ -39,4 +41,5 @@ require (
 	gopkg.in/macaroon-bakery.v2 v2.3.0 // indirect
 	gopkg.in/macaroon.v2 v2.1.0 // indirect
 	gopkg.in/retry.v1 v1.0.3 // indirect
+	melato.org/yaml v0.0.0-00010101000000-000000000000 // indirect
 )

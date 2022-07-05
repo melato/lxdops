@@ -2,6 +2,7 @@ package lxdutil
 
 import (
 	"encoding/csv"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -110,12 +111,14 @@ func (t *NetworkManager) WriteAddresses(addresses []*HostAddress, file string, h
 type NetworkOp struct {
 	Client     *LxdClient `name:"-"`
 	OutputFile string     `name:"o" usage:"output file"`
+	Format     string     `name:"format" usage:"include format: csv | yaml"`
 	Headers    bool       `name:"headers" usage:"include headers"`
 	Family     string     `name:"family" usage:"network family: inet | inet6"`
 }
 
 func (t *NetworkOp) Init() error {
 	t.Family = "inet"
+	t.Format = "csv"
 	return t.Client.Init()
 }
 
@@ -127,14 +130,25 @@ func (t *NetworkOp) ExportAddresses() error {
 		return err
 	}
 
+	var printer AddressPrinter
+	switch t.Format {
+	case "csv":
+		printer = &CsvAddressPrinter{Headers: t.Headers}
+	case "yaml":
+		printer = &YamlAddressPrinter{}
+	default:
+		return fmt.Errorf("unrecognized format: %s", t.Format)
+	}
+
+	var out io.WriteCloser
 	if t.OutputFile == "" {
-		return net.printAddresses(containers, t.Headers, os.Stdout)
+		out = os.Stdout
 	} else {
-		f, err := os.Create(t.OutputFile)
+		out, err = os.Create(t.OutputFile)
 		if err != nil {
 			return err
 		}
-		defer f.Close()
-		return net.printAddresses(containers, t.Headers, f)
+		defer out.Close()
 	}
+	return printer.Print(containers, out)
 }
