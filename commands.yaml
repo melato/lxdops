@@ -48,6 +48,8 @@ commands:
       devices:
         short: print container disk devices
         use: <container>
+      statistics:
+        short: print statistics about containers, devices
       config:
         short: print container configuration
         use: <container>

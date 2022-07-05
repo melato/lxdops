@@ -85,6 +85,7 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd.Command("state").RunFunc(containerOps.State)
 	containerDevices := &lxdutil.InstanceDevicesOp{InstanceOps: containerOps}
 	containerCmd.Command("devices").Flags(containerDevices).RunFunc(containerDevices.Devices)
+	containerCmd.Command("statistics").RunFunc(containerOps.Statistics)
 
 	networkOp := &lxdutil.NetworkOp{Client: client}
 	containerCmd.Command("addresses").Flags(networkOp).RunFunc(networkOp.ExportAddresses)

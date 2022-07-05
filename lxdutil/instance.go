@@ -112,6 +112,31 @@ func (t *InstanceOps) State(instance string) error {
 	return nil
 }
 
+type Statistics struct {
+	Containers int
+	Devices    int
+}
+
+func (t *InstanceOps) Statistics() error {
+	server := t.server
+	containers, err := server.GetContainers()
+	if err != nil {
+		return err
+	}
+	var st Statistics
+	for _, c := range containers {
+		st.Containers++
+		for _, d := range c.ExpandedDevices {
+			if d["type"] == "disk" {
+				st.Devices++
+			}
+		}
+	}
+	fmt.Printf("Containers: %d\n", st.Containers)
+	fmt.Printf("Devices:    %d\n", st.Devices)
+	return nil
+}
+
 type disk_device struct {
 	Name, Source, Path string
 	Readonly           string
