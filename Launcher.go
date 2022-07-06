@@ -20,6 +20,7 @@ type Launcher struct {
 	ConfigOptions
 	WaitInterval int  `name:"wait" usage:"# seconds to wait before snapshot"`
 	Trace        bool `name:"t" usage:"trace print what is happening"`
+	Api          bool `name:"api" usage:"use LXD API to copy containers"`
 	DryRun       bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 }
 
@@ -262,7 +263,7 @@ func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, ser
 		}
 	}
 
-	if source.Snapshot != "" {
+	if t.Api && source.Snapshot != "" {
 		entry, _, err := sourceServer.GetInstanceSnapshot(source.Container, source.Snapshot)
 		if err != nil {
 			return err
