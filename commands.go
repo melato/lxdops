@@ -54,6 +54,9 @@ func RootCommand() *command.SimpleCommand {
 	profile.Command("diff").Flags(profileConfigurer).RunFunc(profileConfigurer.InstanceFunc(profileConfigurer.Diff, true))
 	profile.Command("apply").Flags(profileConfigurer).RunFunc(profileConfigurer.InstanceFunc(profileConfigurer.Apply, true))
 	profile.Command("reorder").Flags(profileConfigurer).RunFunc(profileConfigurer.InstanceFunc(profileConfigurer.Reorder, true))
+	profileOps := &lxdutil.ProfileOps{Client: client}
+	profile.Command("export").Flags(profileOps).RunFunc(profileOps.Export)
+	profile.Command("import").Flags(profileOps).RunFunc(profileOps.Import)
 
 	lxdOps := &LxdOps{Client: client}
 	profile.Command("exists").RunFunc(lxdOps.ProfileExists)

@@ -139,6 +139,12 @@ commands:
       exists:
         short: check if a profile exists
         use: <profile>
+      export:
+        short: export profiles to yaml files
+        use: <profile> ...
+      import:
+        short: import profiles from yaml files
+        use: <file> ...
       list:
         short: list config profiles
         use: <config-file>

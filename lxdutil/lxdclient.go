@@ -128,3 +128,7 @@ func (t *LxdClient) ProjectServer(project string) (lxd.InstanceServer, error) {
 	}
 	return server.UseProject(project), nil
 }
+
+func (t *LxdClient) CurrentServer() (lxd.InstanceServer, error) {
+	return t.ProjectServer("")
+}
