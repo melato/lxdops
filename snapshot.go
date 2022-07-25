@@ -10,6 +10,7 @@ import (
 type SnapshotParams struct {
 	DryRun    bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 	Snapshot  string `name:"s" usage:"short snapshot name"`
+	Container bool   `name:"c" usage:"also create container snapshot"`
 	Destroy   bool   `name:"d" usage:"destroy snapshots"`
 	Recursive bool   `name:"R" usage:"zfs destroy -R: Recursively destroy all dependents, including cloned datasets"`
 }
@@ -57,6 +58,13 @@ func (t *Snapshot) Run(instance *Instance) error {
 	if t.Destroy {
 		return t.DestroySnapshot(instance)
 	} else {
+		if t.Container {
+			s := &script.Script{Trace: true}
+			s.Run("lxc", "snapshot", instance.Container(), t.Snapshot)
+			if s.HasError() {
+				return s.Error()
+			}
+		}
 		return instance.Snapshot(t.Snapshot)
 	}
 }
