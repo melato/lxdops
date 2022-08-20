@@ -167,7 +167,6 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 			if err != nil {
 				return err
 			}
-			//fmt.Printf("templateDir=%s source=%v\n", templateDir, source)
 			if templateDir != "" && util.DirExists(templateDir) {
 				script.Run("sudo", "rsync", "-a", templateDir+"/", dir+"/")
 			} else {
