@@ -35,6 +35,9 @@ func RootCommand() *command.SimpleCommand {
 	snapshot := &Snapshot{}
 	cmd.Command("snapshot").Flags(snapshot).RunFunc(snapshot.InstanceFunc(snapshot.Run, true))
 
+	rollback := &Rollback{}
+	cmd.Command("rollback").Flags(rollback).RunFunc(rollback.InstanceFunc(rollback.Run, true))
+
 	configurer := &Configurer{Client: client}
 	cmd.Command("configure").Flags(configurer).RunFunc(configurer.InstanceFunc(configurer.ConfigureContainer, true))
 

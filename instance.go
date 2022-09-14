@@ -194,6 +194,19 @@ func (instance *Instance) Snapshot(name string) error {
 	return s.Error()
 }
 
+// Rollback calls zfs rollback -r on all ZFS filesystems of the instance
+func (instance *Instance) Rollback(name string) error {
+	filesystems, err := instance.FilesystemList()
+	if err != nil {
+		return err
+	}
+	s := &script.Script{Trace: true}
+	for _, fs := range filesystems {
+		s.Run("sudo", "zfs", "rollback", "-r", fs.Path+"@"+name)
+	}
+	return s.Error()
+}
+
 // GetSourceConfig returns the parsed configuration specified by Config.SourceConfig
 // If there is no Config.SourceConfig, it returns this instance's config
 // It returns a non nil *Config or an error.

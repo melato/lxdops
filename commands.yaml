@@ -176,7 +176,8 @@ commands:
     long: Renames the container, its filesystems, and its devices profile
   snapshot:
     short: snapshot instance filesystems
-    use: '@<snapshot> <config-file>...'
+  rollback:
+    short: rollback instance filesystems
   property:
     short: manage global properties
     long: |
