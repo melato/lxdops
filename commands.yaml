@@ -27,9 +27,9 @@ long: |
 commands:
   configure:
     short: configure an existing container
-    use: <container> <config-file> ...
+    use: <config-file> ...
     examples:
-    - configure c1 demo.yaml
+    - configure -name c1 demo.yaml
   container:
     short: LXD container utilities
     commands:
