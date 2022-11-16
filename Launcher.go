@@ -18,10 +18,11 @@ import (
 type Launcher struct {
 	Client *lxdutil.LxdClient `name:"-"`
 	ConfigOptions
-	WaitInterval int  `name:"wait" usage:"# seconds to wait before snapshot"`
-	Trace        bool `name:"t" usage:"trace print what is happening"`
-	Api          bool `name:"api" usage:"use LXD API to copy containers"`
-	DryRun       bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	RebuildProfiles bool `name:"rebuild-profiles" usage:"if true, rebuild profiles according to config, otherwise keep existing profiles"`
+	WaitInterval    int  `name:"wait" usage:"# seconds to wait before snapshot"`
+	Trace           bool `name:"t" usage:"trace print what is happening"`
+	Api             bool `name:"api" usage:"use LXD API to copy containers"`
+	DryRun          bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 }
 
 func (t *Launcher) Init() error {
@@ -48,6 +49,14 @@ func (t *Launcher) getRebuildOptions(instance *Instance) (error, *RebuildOptions
 		return err, nil
 	}
 	options := &RebuildOptions{}
+	if !t.RebuildProfiles {
+		c, _, err := server.GetInstance(container)
+		if err != nil {
+			// assume container doesn't exist.  ignore error, empty options
+			return nil, options
+		}
+		options.Profiles = c.Profiles
+	}
 	state, _, err := server.GetContainerState(container)
 	if err != nil {
 		// assume container doesn't exist.  ignore error, empty options
@@ -157,6 +166,7 @@ func (t *Launcher) deleteProfiles(server lxd.InstanceServer, profiles []string) 
 
 type RebuildOptions struct {
 	Hwaddresses map[string]string
+	Profiles    []string
 }
 
 type launch_options struct {
@@ -379,13 +389,20 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 	}
 
 	var profiles []string
-	profiles = append(profiles, config.Profiles...)
-	if config.Devices != nil {
-		if len(profiles) == 0 {
-			profiles = append(profiles, "default")
+	if len(rebuildOptions.Profiles) > 0 {
+		profiles = make([]string, len(rebuildOptions.Profiles))
+		for i, profile := range rebuildOptions.Profiles {
+			profiles[i] = profile
 		}
-		if profileName != "" {
-			profiles = append(profiles, profileName)
+	} else {
+		profiles = append(profiles, config.Profiles...)
+		if config.Devices != nil {
+			if len(profiles) == 0 {
+				profiles = append(profiles, "default")
+			}
+			if profileName != "" {
+				profiles = append(profiles, profileName)
+			}
 		}
 	}
 	options := &launch_options{Profiles: profiles}
