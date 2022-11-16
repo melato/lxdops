@@ -389,7 +389,7 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 	}
 
 	var profiles []string
-	if len(rebuildOptions.Profiles) > 0 {
+	if rebuildOptions != nil && len(rebuildOptions.Profiles) > 0 {
 		profiles = make([]string, len(rebuildOptions.Profiles))
 		for i, profile := range rebuildOptions.Profiles {
 			profiles[i] = profile
