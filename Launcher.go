@@ -361,6 +361,30 @@ func (t *Launcher) LaunchContainer(instance *Instance) error {
 	return t.launchContainer(instance, nil)
 }
 
+func (t *Launcher) verifyProfiles(server lxd.InstanceServer, profiles []string) error {
+	if len(profiles) == 0 {
+		return nil
+	}
+	serverProfiles, err := server.GetProfileNames()
+	if err != nil {
+		return err
+	}
+	serverProfilesSet := make(util.Set[string])
+	for _, profile := range serverProfiles {
+		serverProfilesSet.Put(profile)
+	}
+	var missing []string
+	for _, profile := range profiles {
+		if !serverProfilesSet.Contains(profile) {
+			missing = append(missing, profile)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("missing profiles: %v", missing)
+	}
+	return nil
+}
+
 func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOptions) error {
 	fmt.Println("launch", instance.Name)
 	t.Trace = true
@@ -369,6 +393,14 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 	if err != nil {
 		return err
 	}
+
+	if rebuildOptions == nil || len(rebuildOptions.Profiles) == 0 {
+		err = t.verifyProfiles(server, config.Profiles)
+		if err != nil {
+			return err
+		}
+	}
+
 	dev, err := NewDeviceConfigurer(t.Client, instance)
 	if err != nil {
 		return err
