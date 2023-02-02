@@ -148,7 +148,6 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 	t.Profiles = append(t.Profiles, c.Profiles...)
 	t.Users = append(t.Users, c.Users...)
 	t.Files = append(t.Files, c.Files...)
-	t.PullFiles = append(t.PullFiles, c.PullFiles...)
 	t.Scripts = append(t.Scripts, c.Scripts...)
 	t.Passwords = append(t.Passwords, c.Passwords...)
 	t.removeDuplicates()

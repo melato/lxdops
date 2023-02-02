@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -26,7 +25,6 @@ type Configurer struct {
 	Packages   bool     `name:"packages" usage:"whether to install packages"`
 	Scripts    bool     `name:"scripts" usage:"whether to run scripts"`
 	Files      bool     `name:"files" usage:"whether to push files"`
-	Pull       bool     `name:"pull" usage:"whether to pull files"`
 	Users      bool     `name:"users" usage:"whether to create users and change passwords"`
 }
 
@@ -358,63 +356,6 @@ func (t *Configurer) pushFiles(config *Config, container string) error {
 		err = server.CreateContainerFile(container, f.Path, args)
 		if err != nil {
 			return lxdutil.AnnotateLXDError(f.Path, err)
-		}
-	}
-	return nil
-}
-
-func (t *Configurer) PullFiles(instance *Instance) error {
-	config := instance.Config
-	if len(config.PullFiles) == 0 {
-		return nil
-	}
-	container := instance.Container()
-
-	// copy any files from the container to the host
-	server, err := t.Client.ProjectServer(config.Project)
-	if err != nil {
-		return err
-	}
-	for _, f := range config.PullFiles {
-		if t.Trace {
-			fmt.Printf("pull file: %s\n", f.Path)
-		}
-		content, resp, err := server.GetContainerFile(container, f.Path)
-		if err != nil {
-			return lxdutil.AnnotateLXDError(f.Path, err)
-		}
-		defer content.Close()
-		err = nil
-		hostPath := instance.substitute(&err, f.Target, Pattern(""))
-		if err != nil {
-			return err
-		}
-		err = os.MkdirAll(filepath.Dir(hostPath), os.FileMode(0755))
-		if err != nil {
-			return err
-		}
-		out, err := os.Create(hostPath)
-		if err != nil {
-			return err
-		}
-		defer out.Close()
-		_, err = io.Copy(out, content)
-		if err != nil {
-			return err
-		}
-		out.Close()
-		content.Close()
-		mode := resp.Mode
-		if f.Mode != "" {
-			m, err := strconv.ParseInt(f.Mode, 8, 32)
-			if err != nil {
-				return errors.New("cannot parse mode: " + f.Mode)
-			}
-			mode = int(m)
-		}
-		err = os.Chmod(hostPath, os.FileMode(mode))
-		if err != nil {
-			return err
 		}
 	}
 	return nil

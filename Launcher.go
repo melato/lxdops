@@ -487,7 +487,7 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 			}
 		}
 	}
-	return configurer.PullFiles(instance)
+	return nil
 }
 
 func (t *Launcher) deleteContainer(instance *Instance, stop bool) error {
