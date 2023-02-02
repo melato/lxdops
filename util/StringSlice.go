@@ -21,10 +21,9 @@ func (t StringSlice) Equals(b []string) bool {
 /** Return the elements of this slice that are not in the b slice */
 func (t StringSlice) Diff(b []string) []string {
 	var result []string
-	m := StringSlice(b).ToMap()
+	set := StringSlice(b).ToSet()
 	for _, s := range t {
-		_, inB := m[s]
-		if !inB {
+		if !set.Contains(s) {
 			result = append(result, s)
 		}
 	}
@@ -41,15 +40,7 @@ func (t StringSlice) Sorted() []string {
 }
 
 func (t StringSlice) RemoveDuplicates() []string {
-	var result []string
-	set := make(map[string]bool)
-	for _, s := range t {
-		if _, exists := set[s]; !exists {
-			set[s] = true
-			result = append(result, s)
-		}
-	}
-	return result
+	return t.Union()
 }
 
 func (t StringSlice) Remove(remove string) []string {
@@ -73,10 +64,28 @@ func (t StringSlice) Remove(remove string) []string {
 	}
 }
 
-func (t StringSlice) ToMap() map[string]bool {
-	result := make(map[string]bool)
+func (t StringSlice) ToSet() Set[string] {
+	result := make(Set[string])
 	for _, s := range t {
-		result[s] = true
+		result.Put(s)
+	}
+	return result
+}
+
+func (t StringSlice) Union(lists ...[]string) []string {
+	set := make(Set[string])
+	var result []string
+	add := func(list []string) {
+		for _, s := range list {
+			if !set.Contains(s) {
+				set.Put(s)
+				result = append(result, s)
+			}
+		}
+	}
+	add(t)
+	for _, list := range lists {
+		add(list)
 	}
 	return result
 }

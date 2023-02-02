@@ -109,17 +109,20 @@ type ConfigInherit struct {
 //
 // Example:
 // suppose test-a.yaml has:
-//   origin: a/copy
-//   filesystems: "default": "z/test/(instance)"
-//   device-origin: a@copy
-//   source-filesystems "default": "z/prod/(instance)"
-//   devices: home, path=/home, filesystem=default
+//
+//	origin: a/copy
+//	filesystems: "default": "z/test/(instance)"
+//	device-origin: a@copy
+//	source-filesystems "default": "z/prod/(instance)"
+//	devices: home, path=/home, filesystem=default
+//
 // This would do something like:
-//    zfs clone z/prod/a@copy z/test/test-a
-//    lxc copy --container-only a/copy test-a
-//    lxc profile create test-a.lxdops
-//    lxc profile device add test-a.lxdops home disk path=/home source=/z/test/test-a/home
-//    lxc profile add test-a test-a.lxdops
+//
+//	zfs clone z/prod/a@copy z/test/test-a
+//	lxc copy --container-only a/copy test-a
+//	lxc profile create test-a.lxdops
+//	lxc profile device add test-a.lxdops home disk path=/home source=/z/test/test-a/home
+//	lxc profile add test-a test-a.lxdops
 type Source struct {
 	// origin is the name of a container and a snapshot to clone from.
 	// It has the form [<project>_]<container>[/<snapshot>]

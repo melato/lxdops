@@ -14,8 +14,17 @@ func TestEqualArrays(t *testing.T) {
 func TestStringSliceDiff(t *testing.T) {
 	a := []string{"a", "b"}
 	b := []string{"b", "c"}
-	ab := StringSlice(a).Diff(b)
-	if len(ab) != 1 || ab[0] != "a" {
-		t.Fail()
+	c := StringSlice(a).Diff(b)
+	if !StringSlice(c).Equals([]string{"a"}) {
+		t.Fatalf("union: %v", c)
+	}
+}
+
+func TestStringSliceUnion(t *testing.T) {
+	a := []string{"a", "b"}
+	b := []string{"b", "c"}
+	c := StringSlice(a).Union(b)
+	if !StringSlice(c).Equals([]string{"a", "b", "c"}) {
+		t.Fatalf("union: %v", c)
 	}
 }

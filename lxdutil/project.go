@@ -31,13 +31,13 @@ func (t *ProjectCopyProfiles) CopyProfiles(profiles []string) error {
 	if err != nil {
 		return err
 	}
-	targetProfiles := util.StringSlice(targetProfileNames).ToMap()
+	targetProfiles := util.StringSlice(targetProfileNames).ToSet()
 	for _, name := range profiles {
 		source, _, err := sourceServer.GetProfile(name)
 		if err != nil {
 			return AnnotateLXDError(t.SourceProject+" "+name, err)
 		}
-		if !targetProfiles[name] {
+		if !targetProfiles.Contains(name) {
 			err = targetServer.CreateProfile(api.ProfilesPost{Name: name, ProfilePut: source.ProfilePut})
 		} else {
 			err = targetServer.UpdateProfile(name, source.ProfilePut, "")
@@ -59,7 +59,7 @@ func (t *ProjectCreate) Create(projects ...string) error {
 	if err != nil {
 		return err
 	}
-	projectSet := util.StringSlice(projectNames).ToMap()
+	projectSet := util.StringSlice(projectNames).ToSet()
 	projectPut := api.ProjectPut{Config: map[string]string{
 		"features.images": "false",
 	}}
@@ -70,7 +70,7 @@ func (t *ProjectCreate) Create(projects ...string) error {
 	}
 
 	for _, project := range projects {
-		if !projectSet[project] {
+		if !projectSet.Contains(project) {
 			fmt.Printf("create project %s: %v\n", project, projectPut.Config)
 			err := server.CreateProject(api.ProjectsPost{Name: project, ProjectPut: projectPut})
 			if err != nil {
