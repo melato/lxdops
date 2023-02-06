@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"melato.org/lxdops/util"
+	//"melato.org/lxdops/util"
 )
 
 type ConfigReader struct {
@@ -143,13 +142,14 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 		t.Devices[id] = d
 	}
 
-	t.PreScripts = append(t.PreScripts, c.PreScripts...)
-	t.Packages = append(t.Packages, c.Packages...)
+	//t.PreScripts = append(t.PreScripts, c.PreScripts...)
 	t.Profiles = append(t.Profiles, c.Profiles...)
-	t.Users = append(t.Users, c.Users...)
-	t.Files = append(t.Files, c.Files...)
-	t.Scripts = append(t.Scripts, c.Scripts...)
-	t.Passwords = append(t.Passwords, c.Passwords...)
+	//t.Packages = append(t.Packages, c.Packages...)
+	t.CloudConfigFiles = append(t.CloudConfigFiles, c.CloudConfigFiles...)
+	//t.Users = append(t.Users, c.Users...)
+	//t.Files = append(t.Files, c.Files...)
+	//t.Scripts = append(t.Scripts, c.Scripts...)
+	//t.Passwords = append(t.Passwords, c.Passwords...)
 	t.removeDuplicates()
 	return nil
 }
@@ -191,8 +191,8 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 
 func (t *ConfigInherit) removeDuplicates() {
 	// remove duplicate strings
-	t.Packages = util.StringSlice(t.Packages).RemoveDuplicates()
-	t.Passwords = util.StringSlice(t.Passwords).RemoveDuplicates()
+	// t.Packages = util.StringSlice(t.Packages).RemoveDuplicates()
+	//t.Passwords = util.StringSlice(t.Passwords).RemoveDuplicates()
 	// how about Require, Devices, Users, Scripts?
 }
 

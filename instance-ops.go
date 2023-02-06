@@ -43,9 +43,11 @@ func (t *InstanceOps) Properties(instance *Instance) error {
 
 // Packages prints the packages installed by the instance
 func (t *InstanceOps) Packages(instance *Instance) error {
-	for _, pkg := range instance.Config.Packages {
-		fmt.Println(pkg)
-	}
+	/*
+		for _, pkg := range instance.Config.Packages {
+			fmt.Println(pkg)
+		}
+	*/
 	return nil
 }
 

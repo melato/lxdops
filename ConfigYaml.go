@@ -13,7 +13,6 @@ func ReadConfigYaml(file string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var x Config
 	err = yaml.Unmarshal(data, &x)
 	if err != nil {

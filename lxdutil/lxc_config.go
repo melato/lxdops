@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/lxc/lxd/lxc/config"
-	"melato.org/lxdops/util"
+	"melato.org/yaml"
 )
 
 type LxcConfig struct {
@@ -43,7 +43,7 @@ func (t *LxcConfig) getCurrentProject() (string, error) {
 	}
 
 	var cfg config.Config
-	err = util.ReadYaml(filepath.Join(configDir, "config.yml"), &cfg)
+	err = yaml.ReadFile(filepath.Join(configDir, "config.yml"), &cfg)
 	if err != nil {
 		return "", err
 	}

@@ -8,7 +8,7 @@ import (
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/lxc/config"
-	"melato.org/lxdops/util"
+	"melato.org/yaml"
 )
 
 type LxdClient struct {
@@ -57,7 +57,7 @@ func (t *LxdClient) connectHttp() (lxd.InstanceServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = util.ReadYaml(cfgPath, &cfg)
+	err = yaml.ReadFile(cfgPath, &cfg)
 	if err != nil {
 		return nil, err
 	}

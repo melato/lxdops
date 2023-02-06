@@ -7,8 +7,8 @@ import (
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
-	"melato.org/lxdops/util"
 	"melato.org/table3"
+	"melato.org/yaml"
 )
 
 // InstanceOps - operations on LXD instances (formerly ContainerOps)
@@ -108,7 +108,7 @@ func (t *InstanceOps) State(instance string) error {
 		return AnnotateLXDError(instance, err)
 	}
 	fmt.Println(etag)
-	util.PrintYaml(state)
+	yaml.Print(state)
 	return nil
 }
 
@@ -158,7 +158,7 @@ func (t *InstanceDevicesOp) Devices(instance string) error {
 		return AnnotateLXDError(instance, err)
 	}
 	if t.Yaml {
-		util.PrintYaml(c.ExpandedDevices)
+		yaml.Print(c.ExpandedDevices)
 		return nil
 	}
 	writer := &table.FixedWriter{Writer: os.Stdout}

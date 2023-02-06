@@ -80,20 +80,24 @@ type ConfigInherit struct {
 
 	Profiles []string `yaml:"profiles"`
 
-	// PreScripts are scripts that are executed early, before packages, users, files, or Scripts
-	PreScripts []*Script `yaml:"pre-scripts"`
+	CloudConfigFiles []HostPath `yaml:"cloud-config-files"`
 
-	// Packages are OS packages that are installed when the instance is launched
-	Packages []string `yaml:"packages"`
+	/*
+		// PreScripts are scripts that are executed early, before packages, users, files, or Scripts
+		PreScripts []*Script `yaml:"pre-scripts,omitempty"`
 
-	// Users are OS users that are created when the instance is launched
-	Users []*User `yaml:"users"`
-	// Files are files that are copied from the host to the container when the instance is launched (as with lxc file push).
-	Files []*File `yaml:"files"`
-	// Scripts are scripts that are executed in the container (as with lxc exec)
-	Scripts []*Script `yaml:"scripts"`
-	// Passwords are a list of OS accounts, whose password is set to a random password
-	Passwords []string `yaml:"passwords"`
+		// Packages are OS packages that are installed when the instance is launched
+		//Packages []string `yaml:"packages,omitempty"`
+
+		// Users are OS users that are created when the instance is launched
+		Users []*User `yaml:"users,omitempty"`
+		// Files are files that are copied from the host to the container when the instance is launched (as with lxc file push).
+		Files []*File `yaml:"files,omitempty"`
+		// Scripts are scripts that are executed in the container (as with lxc exec)
+		Scripts []*Script `yaml:"scripts,omitempty"`
+		// Passwords are a list of OS accounts, whose password is set to a random password
+		Passwords []string `yaml:"passwords,omitempty"`
+	*/
 }
 
 // Source specifies how to copy or clone the instance container, filesystem, and device directories.
@@ -163,8 +167,6 @@ type OS struct {
 	// Version is used if Image is not specified.  The image name is composed of Name/Version
 	// Version is optional in configuration files, but the final assembled configuration file should have a OS Version.
 	Version Pattern `yaml:"version"`
-
-	osType OSType
 }
 
 // Filesystem is a ZFS filesystem or a plain directory that is created when an instance is created

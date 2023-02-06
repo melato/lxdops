@@ -81,21 +81,28 @@ func (config *Config) verifyDevices() bool {
 
 func (config *Config) Verify() bool {
 	valid := true
-	users := make(map[string]bool)
-	for _, u := range config.Users {
-		if !u.IsValidName() {
-			valid = false
-			fmt.Fprintf(os.Stderr, "invalid user name: %s\n", u.Name)
+	/*
+		users := make(map[string]bool)
+		for _, u := range config.Users {
+			if !u.IsValidName() {
+				valid = false
+				fmt.Fprintf(os.Stderr, "invalid user name: %s\n", u.Name)
+			}
+			u = u.EffectiveUser()
+			if users[u.Name] {
+				valid = false
+				fmt.Fprintf(os.Stderr, "duplicate user: %s\n", u.Name)
+			}
+			users[u.Name] = true
 		}
-		u = u.EffectiveUser()
-		if users[u.Name] {
-			valid = false
-			fmt.Fprintf(os.Stderr, "duplicate user: %s\n", u.Name)
+		for _, file := range config.Files {
+			if !config.VerifyFileExists(file.Source) {
+				valid = false
+			}
 		}
-		users[u.Name] = true
-	}
-	for _, file := range config.Files {
-		if !config.VerifyFileExists(file.Source) {
+	*/
+	for _, file := range config.CloudConfigFiles {
+		if !config.VerifyFileExists(file) {
 			valid = false
 		}
 	}
@@ -144,13 +151,19 @@ func (t *Config) ResolvePaths(dir string) {
 	for i, f := range t.Include {
 		t.Include[i] = f.Resolve(dir)
 	}
-	for _, f := range t.Files {
-		f.Source = f.Source.Resolve(dir)
-	}
-	for _, s := range t.Scripts {
-		s.File = s.File.Resolve(dir)
-	}
+	/*
+		for _, f := range t.Files {
+			f.Source = f.Source.Resolve(dir)
+		}
+		for _, s := range t.Scripts {
+			s.File = s.File.Resolve(dir)
+		}
+	*/
 	t.SourceConfig = t.SourceConfig.Resolve(dir)
+	for i, path := range t.CloudConfigFiles {
+		t.CloudConfigFiles[i] = path.Resolve(dir)
+
+	}
 }
 
 // Return the filesystem for the given id, or nil if it doesn't exist.

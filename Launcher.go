@@ -112,15 +112,7 @@ func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, opti
 	}
 
 	if image == "" {
-		osVersion, err := config.OS.Version.Substitute(instance.Properties)
-		if err != nil {
-			return err
-		}
-		if osVersion != "" {
-			image = osType.ImageName(osVersion)
-		} else {
-			return errors.New("Please provide image or version")
-		}
+		return errors.New("Please provide image or version")
 	}
 	lxcArgs = append(lxcArgs, image)
 	for _, profile := range options.Profiles {

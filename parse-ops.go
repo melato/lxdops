@@ -79,12 +79,14 @@ func (t *ConfigOps) PrintProperties(file string) error {
 }
 
 func (t *ConfigOps) Script(file string, script string) error {
-	config, err := ReadConfig(file)
-	if err != nil {
-		return err
-	}
-	t.printScript(config.PreScripts, script)
-	t.printScript(config.Scripts, script)
+	/*
+		config, err := ReadConfig(file)
+		if err != nil {
+			return err
+		}
+		t.printScript(config.PreScripts, script)
+		t.printScript(config.Scripts, script)
+	*/
 	return nil
 }
 

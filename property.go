@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"melato.org/lxdops/util"
+	"melato.org/yaml"
 )
 
 type PropertyOptions struct {
@@ -26,7 +27,7 @@ func (t *PropertyOptions) Configured() error {
 	if t.PropertiesFile != "" {
 		_, err := os.Stat(t.PropertiesFile)
 		if err == nil {
-			return util.ReadYaml(t.PropertiesFile, &t.GlobalProperties)
+			return yaml.ReadFile(t.PropertiesFile, &t.GlobalProperties)
 		}
 	}
 	return nil
@@ -51,7 +52,7 @@ func (t *PropertyOptions) Set(key, value string) error {
 		if err != nil {
 			return err
 		}
-		return util.WriteYaml(t.PropertiesFile, t.GlobalProperties)
+		return yaml.WriteFile(t.GlobalProperties, t.PropertiesFile)
 	}
 	return nil
 }
