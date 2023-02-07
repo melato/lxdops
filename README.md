@@ -1,6 +1,7 @@
-# lxdops
-Go program that launches and configures LXD containers and manages ZFS filesystems attached to these containers as disk devices.
+lxdops is a go program that launches and configures LXD containers
+and manages ZFS filesystems attached to these containers as disk devices.
 It reads container and filesystem configuration from YAML files.
+Configuration is done via yaml files in the cloud-init format (#cloud-config).
 
 # Examples
 - Create and configure a stopped container that we'll use to clone other containers from:

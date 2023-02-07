@@ -56,3 +56,9 @@ func (t *PropertyOptions) Set(key, value string) error {
 	}
 	return nil
 }
+
+func (t *PropertyOptions) Get(key string) error {
+	value := t.GlobalProperties[key]
+	fmt.Printf("%s\n", value)
+	return nil
+}

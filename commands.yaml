@@ -195,4 +195,7 @@ commands:
       set:
         short: set a global property
         use: <key> <value>
+      get:
+        short: get a global property
+        use: <key>
 

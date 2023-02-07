@@ -70,6 +70,7 @@ func RootCommand() *command.SimpleCommand {
 	propertyCmd := cmd.Command("property").Flags(propertyOps)
 	propertyCmd.Command("list").RunFunc(propertyOps.List)
 	propertyCmd.Command("set").RunFunc(propertyOps.Set)
+	propertyCmd.Command("get").RunFunc(propertyOps.Get)
 	propertyCmd.Command("file").RunFunc(propertyOps.File)
 
 	configCmd := cmd.Command("config")
