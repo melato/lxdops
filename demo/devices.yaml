@@ -1,6 +1,5 @@
 os:
   name: alpine
-  image: images:alpine/3.15
+  image: images:alpine/3.17
 include:
 - include/device.yaml
-snapshot: copy

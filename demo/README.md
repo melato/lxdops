@@ -8,7 +8,7 @@ You can run these examples in a separate "demo" LXD project:
 # standalone.yaml
 Create and configure a standalone container.
 
-	lxdops launch basic.yaml
+	lxdops launch standalone.yaml
 
 - create a container from an image
 - attach profiles (just the default in this example)
