@@ -145,6 +145,8 @@ commands:
       import:
         short: import profiles from yaml files
         use: <file> ...
+        long: |
+          the name of the profile is the last element of the file path
       list:
         short: list config profiles
         use: <config-file>
