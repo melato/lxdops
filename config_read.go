@@ -142,14 +142,8 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 		t.Devices[id] = d
 	}
 
-	//t.PreScripts = append(t.PreScripts, c.PreScripts...)
 	t.Profiles = append(t.Profiles, c.Profiles...)
-	//t.Packages = append(t.Packages, c.Packages...)
 	t.CloudConfigFiles = append(t.CloudConfigFiles, c.CloudConfigFiles...)
-	//t.Users = append(t.Users, c.Users...)
-	//t.Files = append(t.Files, c.Files...)
-	//t.Scripts = append(t.Scripts, c.Scripts...)
-	//t.Passwords = append(t.Passwords, c.Passwords...)
 	t.removeDuplicates()
 	return nil
 }
