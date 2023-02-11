@@ -12,6 +12,7 @@ import (
 type ProfileConfigurer struct {
 	Client *lxdutil.LxdClient
 	ConfigOptions
+	Config bool `name:"config" usage:"use config profiles"`
 	Trace  bool
 	DryRun bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 }
@@ -33,7 +34,11 @@ func (t *ProfileConfigurer) NewScript() *script.Script {
 
 func (t *ProfileConfigurer) Profiles(instance *Instance) ([]string, error) {
 	profile := instance.ProfileName()
-	return append(instance.Config.Profiles, profile), nil
+	profiles := instance.Config.Profiles
+	if t.Config {
+		profiles = instance.Config.GetProfilesConfig(profiles)
+	}
+	return append(profiles, profile), nil
 }
 
 func (t *ProfileConfigurer) Diff(instance *Instance) error {

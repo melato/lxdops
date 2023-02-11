@@ -12,14 +12,8 @@ import (
 type Configurer struct {
 	Client *lxdutil.LxdClient `name:"-"`
 	ConfigOptions
-	Trace      bool     `name:"trace,t" usage:"print exec arguments"`
-	DryRun     bool     `name:"dry-run" usage:"show the commands to run, but do not change anything"`
-	Components []string `name:"components" usage:"which components to configure: packages, scripts, users"`
-	All        bool     `name:"all" usage:"If true, configure all parts, except those that are mentioned explicitly, otherwise configure only parts that are mentioned"`
-	Packages   bool     `name:"packages" usage:"whether to install packages"`
-	Scripts    bool     `name:"scripts" usage:"whether to run scripts"`
-	Files      bool     `name:"files" usage:"whether to push files"`
-	Users      bool     `name:"users" usage:"whether to create users and change passwords"`
+	Trace  bool `name:"trace,t" usage:"print exec arguments"`
+	DryRun bool `name:"dry-run" usage:"show the commands to run, but do not change anything"`
 }
 
 func (t *Configurer) Init() error {
@@ -28,14 +22,6 @@ func (t *Configurer) Init() error {
 
 func (t *Configurer) Configured() error {
 	return t.ConfigOptions.Configured()
-}
-
-func (t *Configurer) includes(flag bool) bool {
-	if t.All {
-		return !flag
-	} else {
-		return flag
-	}
 }
 
 /** run things inside the container:  install packages, create users, run scripts */

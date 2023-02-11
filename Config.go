@@ -78,7 +78,18 @@ type ConfigInherit struct {
 	// The owner (uid:gid) for new devices
 	DeviceOwner Pattern `yaml:"device-owner"`
 
+	// Profiles are the profiles of an instance.
+	// After an instance is created and configured, it is left with these profiles
+	// plus the lxdops profile.
+	// While the instance is being created and configured it has these profiles
+	// minus ProfilesRun plus ProfilesConfig
 	Profiles []string `yaml:"profiles"`
+
+	// ProfilesConfig are profiles that excluded from Profiles when running the instance.
+	ProfilesConfig []string `yaml:"profiles-config"`
+
+	// ProfilesRun are profiles that are excluded from Profiles when configuring the instance.
+	ProfilesRun []string `yaml:"profiles-run"`
 
 	CloudConfigFiles []HostPath `yaml:"cloud-config-files"`
 

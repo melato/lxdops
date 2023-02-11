@@ -92,14 +92,13 @@ func (config *Config) Verify() bool {
 	if !config.verifyDevices() {
 		valid = false
 	}
-	profiles := make(util.Set[string])
-	for _, profile := range config.Profiles {
-		if profiles.Contains(profile) {
-			valid = false
-			fmt.Fprintf(os.Stderr, "duplicate profile: %s\n", profile)
-		}
-		profiles.Put(profile)
+
+	duplicates := config.getDuplicates(config.Profiles)
+	if len(duplicates) > 0 {
+		valid = false
+		fmt.Fprintf(os.Stderr, "duplicate profiles: %v\n", duplicates)
 	}
+
 	return valid
 }
 
@@ -141,4 +140,31 @@ func (t *Config) ResolvePaths(dir string) {
 // Return the filesystem for the given id, or nil if it doesn't exist.
 func (t *Config) Filesystem(id string) *Filesystem {
 	return t.Filesystems[id]
+}
+
+func (t *Config) getDuplicates(lists ...[]string) []string {
+	var duplicates []string
+	set := make(util.Set[string])
+	for _, list := range lists {
+		for _, s := range list {
+			if set.Contains(s) {
+				duplicates = append(duplicates, s)
+			}
+			set.Put(s)
+		}
+	}
+	return duplicates
+}
+
+func (t *Config) HasProfilesConfig() bool {
+	return len(t.ProfilesConfig)+len(t.ProfilesRun) > 0
+}
+
+func (t *Config) GetProfilesConfig(profiles []string) []string {
+	if !t.HasProfilesConfig() {
+		return profiles
+	}
+	profiles = util.StringSlice(profiles).Diff(t.ProfilesRun)
+	profiles = util.StringSlice(t.ProfilesConfig).Union(profiles)
+	return profiles
 }

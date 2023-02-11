@@ -88,7 +88,7 @@ func (t *Launcher) Rebuild(instance *Instance) error {
 }
 
 func (t *Launcher) NewConfigurer() *Configurer {
-	var c = &Configurer{Client: t.Client, Trace: t.Trace, DryRun: t.DryRun, All: true}
+	var c = &Configurer{Client: t.Client, Trace: t.Trace, DryRun: t.DryRun}
 	return c
 }
 
@@ -429,7 +429,11 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 			}
 		}
 	}
-	options := &launch_options{Profiles: profiles}
+	configProfiles := profiles
+	if config.HasProfilesConfig() {
+		configProfiles = config.GetProfilesConfig(profiles)
+	}
+	options := &launch_options{Profiles: configProfiles}
 	if rebuildOptions != nil {
 		options.RebuildOptions = *rebuildOptions
 	}
@@ -465,6 +469,20 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 			if err != nil {
 				return err
 			}
+		}
+	}
+	if config.HasProfilesConfig() {
+		c, etag, err := server.GetInstance(container)
+		if err != nil {
+			return lxdutil.AnnotateLXDError(container, err)
+		}
+		c.Profiles = profiles
+		op, err := server.UpdateInstance(container, c.InstancePut, etag)
+		if err != nil {
+			return err
+		}
+		if err := op.Wait(); err != nil {
+			return lxdutil.AnnotateLXDError(container, err)
 		}
 	}
 	if config.Snapshot != "" {
