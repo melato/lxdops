@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	//"melato.org/lxdops/util"
 )
 
 type ConfigReader struct {
@@ -146,7 +145,6 @@ func (r *ConfigReader) mergeInherit(t, c *ConfigInherit) error {
 	t.ProfilesConfig = append(t.ProfilesConfig, c.ProfilesConfig...)
 	t.ProfilesRun = append(t.ProfilesRun, c.ProfilesRun...)
 	t.CloudConfigFiles = append(t.CloudConfigFiles, c.CloudConfigFiles...)
-	t.removeDuplicates()
 	return nil
 }
 
@@ -183,13 +181,6 @@ func (r *ConfigReader) mergeFile(t *Config, file string) error {
 		}
 	}
 	return r.mergeInherit(&t.ConfigInherit, &config.ConfigInherit)
-}
-
-func (t *ConfigInherit) removeDuplicates() {
-	// remove duplicate strings
-	// t.Packages = util.StringSlice(t.Packages).RemoveDuplicates()
-	//t.Passwords = util.StringSlice(t.Passwords).RemoveDuplicates()
-	// how about Require, Devices, Users, Scripts?
 }
 
 func (r *ConfigReader) Read(file string) (*Config, error) {
