@@ -1,6 +1,7 @@
 package lxdutil
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -18,7 +19,7 @@ type ProfileOps struct {
 func (t *ProfileOps) ExportProfile(server lxd.InstanceServer, name string) error {
 	profile, _, err := server.GetProfile(name)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %s", err, name)
 	}
 
 	data, err := yaml.Marshal(&profile.ProfilePut)
