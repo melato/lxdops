@@ -18,7 +18,7 @@ import (
 type Launcher struct {
 	Client *lxdutil.LxdClient `name:"-"`
 	ConfigOptions
-	RebuildProfiles bool `name:"rebuild-profiles" usage:"if true, rebuild profiles according to config, otherwise keep existing profiles"`
+	RebuildProfiles bool `name:"profiles" usage:"if true, rebuild profiles according to config, otherwise keep existing profiles"`
 	WaitInterval    int  `name:"wait" usage:"# seconds to wait before snapshot"`
 	Trace           bool `name:"t" usage:"trace print what is happening"`
 	Api             bool `name:"api" usage:"use LXD API to copy containers"`
