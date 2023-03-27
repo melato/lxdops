@@ -111,16 +111,10 @@ func (t *DeviceConfigurer) CreateFilesystems(instance, origin *Instance, snapsho
 	}
 	InstanceFSList(pathList).Sort()
 
-	if t.Trace {
-		fmt.Printf("originPaths: %v\n", originPaths)
-	}
 	for _, path := range pathList {
 		var originDataset string
 		if path.IsZfs() {
 			originPath, exists := originPaths[path.Id]
-			if t.Trace {
-				fmt.Printf("originPath[%v]=%v\n", path.Id, originPath)
-			}
 			if exists {
 				originDataset = originPath.Path + "@" + snapshot
 			}
