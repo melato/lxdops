@@ -13,7 +13,7 @@ require (
 	melato.org/cloudconfig v0.0.0-00010101000000-000000000000
 	melato.org/cloudconfiglxd v0.0.0-00010101000000-000000000000
 	melato.org/command v0.0.0-20220222082143-ca56ccecf080
-	melato.org/script v0.0.0-20210516045003-28d1a464fea5
+	melato.org/script v1.0.0
 	melato.org/table3 v0.0.0-20210412105118-d2834489865c
 	melato.org/yaml v0.0.0-00010101000000-000000000000
 )
