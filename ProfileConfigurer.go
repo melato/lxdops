@@ -6,7 +6,6 @@ import (
 
 	"melato.org/lxdops/lxdutil"
 	"melato.org/lxdops/util"
-	"melato.org/script"
 )
 
 type ProfileConfigurer struct {
@@ -26,10 +25,6 @@ func (t *ProfileConfigurer) Configured() error {
 		t.Trace = true
 	}
 	return t.ConfigOptions.Configured()
-}
-
-func (t *ProfileConfigurer) NewScript() *script.Script {
-	return &script.Script{Trace: t.Trace, DryRun: t.DryRun}
 }
 
 func (t *ProfileConfigurer) Profiles(instance *Instance) ([]string, error) {
