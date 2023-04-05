@@ -98,7 +98,6 @@ func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, opti
 	if osType == nil {
 		return errors.New("unsupported OS type: " + config.OS.Name)
 	}
-	s := t.NewScript()
 	container := instance.Container()
 	var lxcArgs []string
 	if config.Project != "" {
@@ -122,6 +121,7 @@ func (t *Launcher) lxcLaunch(instance *Instance, server lxd.InstanceServer, opti
 		lxcArgs = append(lxcArgs, option)
 	}
 	lxcArgs = append(lxcArgs, container)
+	s := t.NewScript()
 	s.Run("lxc", lxcArgs...)
 	if s.HasError() {
 		return s.Error()
