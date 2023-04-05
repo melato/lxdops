@@ -198,7 +198,7 @@ honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWh
 honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 melato.org/command v0.0.0-20220222082143-ca56ccecf080 h1:TImzAggDZhf6d5vU5xoYkTfnCjlX46DnyZbgLZbarNc=
 melato.org/command v0.0.0-20220222082143-ca56ccecf080/go.mod h1:1f8kdvW0OvX8TOUr4M7Wyad2geJMfBGbs+bN3sBx3eg=
-melato.org/script v0.0.0-20210516045003-28d1a464fea5 h1:31yLUnCJ+FrZOv0FsWan69ZTSaHTEqZaniA/vOg+dyA=
-melato.org/script v0.0.0-20210516045003-28d1a464fea5/go.mod h1:vO7ex/iDKE5xa5LtElJ5H7EDpSHxef/IgwnAWreec2Q=
+melato.org/script v1.0.0 h1:ytNRMPI5u6JyCVX7AZSTuqOOb5QPcA6Cyioos3XBVKg=
+melato.org/script v1.0.0/go.mod h1:vO7ex/iDKE5xa5LtElJ5H7EDpSHxef/IgwnAWreec2Q=
 melato.org/table3 v0.0.0-20210412105118-d2834489865c h1:02HNQQxAyCU2X7UgrxTq6x7JoBT/uJGcXkyUvY/Kkg4=
 melato.org/table3 v0.0.0-20210412105118-d2834489865c/go.mod h1:BzbDE0raDonQ15jDjVZVBxb5VkTE+DoxjvABBvgETRI=

@@ -10,11 +10,10 @@ replace (
 
 require (
 	github.com/lxc/lxd v0.0.0-20230203092445-70b38dec97c2
-	gopkg.in/yaml.v2 v2.4.0
 	melato.org/cloudconfig v0.0.0-00010101000000-000000000000
 	melato.org/cloudconfiglxd v0.0.0-00010101000000-000000000000
 	melato.org/command v0.0.0-20220222082143-ca56ccecf080
-	melato.org/script v0.0.0-20210516045003-28d1a464fea5
+	melato.org/script v1.0.0
 	melato.org/table3 v0.0.0-20210412105118-d2834489865c
 	melato.org/yaml v0.0.0-00010101000000-000000000000
 )
@@ -49,4 +48,5 @@ require (
 	gopkg.in/juju/environschema.v1 v1.0.1 // indirect
 	gopkg.in/macaroon.v2 v2.1.0 // indirect
 	gopkg.in/retry.v1 v1.0.3 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
