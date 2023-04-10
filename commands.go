@@ -106,7 +106,12 @@ func RootCommand() *command.SimpleCommand {
 	copyProfiles := &lxdutil.ProjectCopyProfiles{Client: client}
 	projectCmd.Command("copy-profiles").Flags(copyProfiles).RunFunc(copyProfiles.CopyProfiles)
 
-	usage.ApplyEnv(&cmd, "LXDOPS_USAGE", usageData)
+	imageOps := &ImageOps{Client: client}
+	imageCmd := cmd.Command("image")
+	imageCmd.Command("export").Flags(imageOps).RunFunc(imageOps.Export)
+	imageCmd.Command("import").Flags(imageOps).RunFunc(imageOps.Import)
+
+	usage.Apply(&cmd, usageData)
 
 	return &cmd
 }
