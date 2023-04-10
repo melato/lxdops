@@ -322,7 +322,7 @@ func (t *Launcher) copyContainer(instance *Instance, source ContainerSource, ser
 
 func (t *Launcher) CreateDevices(instance *Instance) error {
 	t.Trace = true
-	dev, err := NewDeviceConfigurer(t.Client, instance)
+	dev, err := NewDeviceConfigurer(instance)
 	if err != nil {
 		return err
 	}
@@ -332,7 +332,7 @@ func (t *Launcher) CreateDevices(instance *Instance) error {
 }
 
 func (t *Launcher) CreateProfile(instance *Instance) error {
-	dev, err := NewDeviceConfigurer(t.Client, instance)
+	dev, err := NewDeviceConfigurer(instance)
 	if err != nil {
 		return err
 	}
@@ -341,7 +341,7 @@ func (t *Launcher) CreateProfile(instance *Instance) error {
 	profileName := instance.ProfileName()
 	if profileName != "" {
 		fmt.Println(profileName)
-		return dev.CreateProfile(instance)
+		return dev.CreateProfile(t.Client, instance)
 	} else {
 		fmt.Printf("skipping instance %s: no lxdops profile\n", instance.Name)
 		return nil
@@ -393,7 +393,7 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 		}
 	}
 
-	dev, err := NewDeviceConfigurer(t.Client, instance)
+	dev, err := NewDeviceConfigurer(instance)
 	if err != nil {
 		return err
 	}
@@ -406,7 +406,7 @@ func (t *Launcher) launchContainer(instance *Instance, rebuildOptions *RebuildOp
 
 	profileName := instance.ProfileName()
 	if profileName != "" {
-		err = dev.CreateProfile(instance)
+		err = dev.CreateProfile(t.Client, instance)
 		if err != nil {
 			return err
 		}
@@ -639,7 +639,7 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 	if err != nil {
 		return err
 	}
-	dev, err := NewDeviceConfigurer(t.Client, instance)
+	dev, err := NewDeviceConfigurer(instance)
 	if err != nil {
 		return err
 	}
@@ -673,7 +673,7 @@ func (t *Launcher) Rename(configFile string, newname string) error {
 		if err != nil {
 			return err
 		}
-		err = dev.CreateProfile(newInstance)
+		err = dev.CreateProfile(t.Client, newInstance)
 		if err != nil {
 			return err
 		}

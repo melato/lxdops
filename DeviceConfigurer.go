@@ -12,7 +12,6 @@ import (
 )
 
 type DeviceConfigurer struct {
-	Client  *lxdutil.LxdClient
 	Config  *Config
 	Owner   string
 	Trace   bool
@@ -20,8 +19,8 @@ type DeviceConfigurer struct {
 	FuncMap map[string]func() (string, error)
 }
 
-func NewDeviceConfigurer(client *lxdutil.LxdClient, instance *Instance) (*DeviceConfigurer, error) {
-	t := &DeviceConfigurer{Client: client, Config: instance.Config}
+func NewDeviceConfigurer(instance *Instance) (*DeviceConfigurer, error) {
+	t := &DeviceConfigurer{Config: instance.Config}
 	var err error
 	t.Owner, err = instance.Config.DeviceOwner.Substitute(instance.Properties)
 	if err != nil {
@@ -180,7 +179,7 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 	return nil
 }
 
-func (t *DeviceConfigurer) CreateProfile(instance *Instance) error {
+func (t *DeviceConfigurer) CreateProfile(client *lxdutil.LxdClient, instance *Instance) error {
 	profileName := instance.ProfileName()
 	if profileName == "" {
 		return nil
@@ -190,7 +189,7 @@ func (t *DeviceConfigurer) CreateProfile(instance *Instance) error {
 		return err
 	}
 
-	server, err := t.Client.ProjectServer(t.Config.Project)
+	server, err := client.ProjectServer(t.Config.Project)
 	if err != nil {
 		return err
 	}

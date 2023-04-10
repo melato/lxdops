@@ -3,12 +3,10 @@ package lxdops
 import (
 	"path/filepath"
 
-	"melato.org/lxdops/lxdutil"
 	"melato.org/script"
 )
 
 type ImageOps struct {
-	Client *lxdutil.LxdClient `name:"-"`
 	ConfigOptions
 	Dir    string
 	FS     bool `name:"fs" usage:"import/export filesystems only"`
@@ -48,7 +46,7 @@ func (t *ImageOps) Import(configFile string) error {
 	if !t.FS {
 		s.Cmd("lxc", "image", "import", filepath.Join(t.Dir, instance.Name)+".tar.gz", "--alias="+instance.Name).Run()
 	}
-	dev, err := NewDeviceConfigurer(t.Client, instance)
+	dev, err := NewDeviceConfigurer(instance)
 	if err != nil {
 		return err
 	}
