@@ -46,7 +46,6 @@ func RootCommand() *command.SimpleCommand {
 	instanceCmd.Command("verify").RunFunc(instanceOps.InstanceFunc(instanceOps.Verify, true))
 	instanceCmd.Command("description").RunFunc(instanceOps.InstanceFunc(instanceOps.Description, false))
 	instanceCmd.Command("properties").RunFunc(instanceOps.InstanceFunc(instanceOps.Properties, false))
-	instanceCmd.Command("packages").RunFunc(instanceOps.InstanceFunc(instanceOps.Packages, false))
 	instanceCmd.Command("filesystems").RunFunc(instanceOps.InstanceFunc(instanceOps.Filesystems, false))
 	instanceCmd.Command("devices").RunFunc(instanceOps.InstanceFunc(instanceOps.Devices, false))
 	instanceCmd.Command("project").RunFunc(instanceOps.InstanceFunc(instanceOps.Project, false))
