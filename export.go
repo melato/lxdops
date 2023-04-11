@@ -18,7 +18,7 @@ func (t *ExportOps) Export(configFile string) error {
 	if err != nil {
 		return err
 	}
-	dir := filepath.Join(t.Dir, instance.Name)
+	dir := t.Dir
 	filesystems, err := instance.FilesystemList()
 	if err != nil {
 		return err
@@ -43,7 +43,7 @@ func (t *ExportOps) Import(configFile string) error {
 	if err != nil {
 		return err
 	}
-	dir := filepath.Join(t.Dir, instance.Name)
+	dir := t.Dir
 	filesystems, err := instance.FilesystemList()
 	if err != nil {
 		return err
