@@ -6,45 +6,49 @@ import (
 	"melato.org/script"
 )
 
-type ImageOps struct {
+type ExportOps struct {
 	ConfigOptions
-	Dir    string
-	FS     bool `name:"fs" usage:"import/export filesystems only"`
+	Dir    string `name:"d" usage:"import/export directory"`
+	Image  bool   `name:"image" usage:"image too"`
 	DryRun bool
 }
 
-func (t *ImageOps) Export(configFile string) error {
+func (t *ExportOps) Export(configFile string) error {
 	instance, err := t.Instance(configFile)
 	if err != nil {
 		return err
 	}
+	dir := filepath.Join(t.Dir, instance.Name)
 	filesystems, err := instance.Filesystems()
 	if err != nil {
 		return err
 	}
 	s := &script.Script{Trace: true, DryRun: t.DryRun}
-	if !t.FS {
-		s.Cmd("lxc", "image", "export", instance.Name, filepath.Join(t.Dir, instance.Name)).Run()
+	if t.Image {
+		s.Cmd("lxc", "image", "export", instance.Name, filepath.Join(dir, instance.Name)).Run()
 	}
+	s.Cmd("sudo", "mkdir", "-p", dir).Run()
+
 	for key, fs := range filesystems {
-		tarFile := filepath.Join(t.Dir, key+".tar.gz")
+		tarFile := filepath.Join(dir, key+".tar.gz")
 		s.Cmd("sudo", "tar", "cfz", tarFile, "-C", fs.Dir(), ".").Run()
 	}
 	return s.Error()
 }
 
-func (t *ImageOps) Import(configFile string) error {
+func (t *ExportOps) Import(configFile string) error {
 	instance, err := t.Instance(configFile)
 	if err != nil {
 		return err
 	}
+	dir := filepath.Join(t.Dir, instance.Name)
 	filesystems, err := instance.Filesystems()
 	if err != nil {
 		return err
 	}
 	s := &script.Script{Trace: true, DryRun: t.DryRun}
-	if !t.FS {
-		s.Cmd("lxc", "image", "import", filepath.Join(t.Dir, instance.Name)+".tar.gz", "--alias="+instance.Name).Run()
+	if t.Image {
+		s.Cmd("lxc", "image", "import", filepath.Join(dir, instance.Name+".tar.gz"), "--alias="+instance.Name).Run()
 	}
 	dev, err := NewDeviceConfigurer(instance)
 	if err != nil {
@@ -58,7 +62,7 @@ func (t *ImageOps) Import(configFile string) error {
 	}
 
 	for key, fs := range filesystems {
-		tarFile := filepath.Join(t.Dir, key+".tar.gz")
+		tarFile := filepath.Join(dir, key+".tar.gz")
 		s.Cmd("sudo", "tar", "xfz", tarFile, "-C", fs.Dir(), ".").Run()
 	}
 	return s.Error()
