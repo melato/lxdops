@@ -13,7 +13,7 @@ type InstanceFS struct {
 }
 
 func (t *InstanceFS) IsDir() bool {
-	return strings.HasPrefix(string(t.Path), "/")
+	return strings.HasPrefix(t.Path, "/")
 }
 
 func (t *InstanceFS) IsZfs() bool {
