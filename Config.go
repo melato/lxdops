@@ -191,6 +191,8 @@ type Filesystem struct {
 	Zfsproperties map[string]string `yaml:""`
 	// Destroy allows lxdops destroy the filesystem when requested.
 	Destroy bool
+	// Transient filesystems are not backed-up, exported, or imported.
+	Transient bool `yaml:"transient"`
 }
 
 // A Device is an LXD disk device that is attached to the instance profile, which in turn is attached to a container

@@ -19,7 +19,7 @@ func (t *ExportOps) Export(configFile string) error {
 		return err
 	}
 	dir := filepath.Join(t.Dir, instance.Name)
-	filesystems, err := instance.Filesystems()
+	filesystems, err := instance.FilesystemList()
 	if err != nil {
 		return err
 	}
@@ -29,9 +29,11 @@ func (t *ExportOps) Export(configFile string) error {
 	}
 	s.Cmd("sudo", "mkdir", "-p", dir).Run()
 
-	for key, fs := range filesystems {
-		tarFile := filepath.Join(dir, key+".tar.gz")
-		s.Cmd("sudo", "tar", "cfz", tarFile, "-C", fs.Dir(), ".").Run()
+	for _, fs := range filesystems {
+		if !fs.Filesystem.Transient {
+			tarFile := filepath.Join(dir, fs.Id+".tar.gz")
+			s.Cmd("sudo", "tar", "cfz", tarFile, "-C", fs.Dir(), ".").Run()
+		}
 	}
 	return s.Error()
 }
@@ -42,7 +44,7 @@ func (t *ExportOps) Import(configFile string) error {
 		return err
 	}
 	dir := filepath.Join(t.Dir, instance.Name)
-	filesystems, err := instance.Filesystems()
+	filesystems, err := instance.FilesystemList()
 	if err != nil {
 		return err
 	}
@@ -61,9 +63,11 @@ func (t *ExportOps) Import(configFile string) error {
 		return err
 	}
 
-	for key, fs := range filesystems {
-		tarFile := filepath.Join(dir, key+".tar.gz")
-		s.Cmd("sudo", "tar", "xfz", tarFile, "-C", fs.Dir(), ".").Run()
+	for _, fs := range filesystems {
+		if !fs.Filesystem.Transient {
+			tarFile := filepath.Join(dir, fs.Id+".tar.gz")
+			s.Cmd("sudo", "tar", "xfz", tarFile, "-C", fs.Dir(), ".").Run()
+		}
 	}
 	return s.Error()
 }
