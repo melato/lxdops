@@ -85,6 +85,7 @@ func RootCommand() *command.SimpleCommand {
 	containerCmd := cmd.Command("container")
 	containerCmd.Flags(containerOps)
 	containerCmd.Command("profiles").RunFunc(containerOps.Profiles)
+	containerCmd.Command("info").RunFunc(containerOps.Info)
 	containerCmd.Command("config").RunFunc(containerOps.Config)
 	containerCmd.Command("network").RunFunc(containerOps.Network)
 	containerCmd.Command("wait").RunFunc(containerOps.Wait)
@@ -92,6 +93,9 @@ func RootCommand() *command.SimpleCommand {
 	containerDevices := &lxdutil.InstanceDevicesOp{InstanceOps: containerOps}
 	containerCmd.Command("devices").Flags(containerDevices).RunFunc(containerDevices.Devices)
 	containerCmd.Command("statistics").RunFunc(containerOps.Statistics)
+
+	templateOps := &lxdutil.TemplateOps{Client: client}
+	cmd.Command("template").Flags(templateOps).RunFunc(templateOps.Apply)
 
 	networkOp := &lxdutil.NetworkOp{Client: client}
 	containerCmd.Command("addresses").Flags(networkOp).RunFunc(networkOp.ExportAddresses)

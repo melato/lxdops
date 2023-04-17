@@ -53,6 +53,8 @@ commands:
       config:
         short: print container configuration
         use: <container>
+      info:
+        short: print container information in yaml
       state:
         short: print container state, in yaml
         use: <container>
@@ -208,3 +210,10 @@ commands:
         short: import image and filesystems
         long: |
           import an LXD image and corresponding instance filesystems
+  template:
+    short: evaluate a template
+    long: |
+      Evaluates a Go template, using key/values specified on the command line.
+      The templates have these custom functions:
+        Host - An instance of HostFunctions
+        Instance(name string) - *api.Instance

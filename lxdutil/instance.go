@@ -184,3 +184,11 @@ func (t *InstanceDevicesOp) Devices(instance string) error {
 	writer.End()
 	return nil
 }
+
+func (t *InstanceOps) Info(instance string) error {
+	c, _, err := t.server.GetInstance(instance)
+	if err != nil {
+		return AnnotateLXDError(instance, err)
+	}
+	return yaml.Print(c)
+}
