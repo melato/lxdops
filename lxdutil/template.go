@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"text/template"
 
+	"encoding/json"
+
 	"melato.org/lxdops/util/network"
 	"melato.org/lxdops/util/templatecmd"
 )
@@ -11,6 +13,17 @@ import (
 type TemplateOps struct {
 	Client *LxdClient `name:"-"`
 	templatecmd.TemplateOp
+}
+
+type Functions struct {
+}
+
+func (t *Functions) Json(v any) (string, error) {
+	data, err := json.MarshalIndent(v, "", " ")
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 type HostFunctions struct {
@@ -40,6 +53,7 @@ func (h *HostFunctions) Ipv6() (string, error) {
 
 func (t *TemplateOps) Apply() error {
 	funcs := make(template.FuncMap)
+	funcs["F"] = func() any { return &Functions{} }
 	funcs["Host"] = func() any { return &HostFunctions{} }
 	funcs["Instance"] = func(name string) (any, error) {
 		server, err := t.Client.CurrentServer()
