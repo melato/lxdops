@@ -161,7 +161,7 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 		if err != nil {
 			return err
 		}
-		if source.IsDefined() && !source.Clone {
+		if !fs.Filesystem.Transient && source.IsDefined() && !source.Clone {
 			templateDir, err := source.Instance.DeviceDir(d.Name, d.Device)
 			if err != nil {
 				return err
