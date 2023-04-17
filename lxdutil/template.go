@@ -66,6 +66,17 @@ func (t *TemplateOps) Apply() error {
 		}
 		return c, nil
 	}
+	funcs["InstanceState"] = func(name string) (any, error) {
+		server, err := t.Client.CurrentServer()
+		if err != nil {
+			return nil, err
+		}
+		c, _, err := server.GetInstanceState(name)
+		if err != nil {
+			return nil, err
+		}
+		return c, nil
+	}
 	t.TemplateOp.Funcs = funcs
 	return t.TemplateOp.Run()
 }
