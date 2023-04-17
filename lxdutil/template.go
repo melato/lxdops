@@ -55,6 +55,9 @@ func (t *TemplateOps) Apply() error {
 	funcs := make(template.FuncMap)
 	funcs["F"] = func() any { return &Functions{} }
 	funcs["Host"] = func() any { return &HostFunctions{} }
+	funcs["InstanceServer"] = func() (any, error) {
+		return t.Client.CurrentServer()
+	}
 	funcs["Instance"] = func(name string) (any, error) {
 		server, err := t.Client.CurrentServer()
 		if err != nil {
