@@ -199,17 +199,16 @@ commands:
       get:
         short: get a global property
         use: <key>
-  image:
-    short: image utilities
-    commands:
-      export:
-        short: export image and filesystems
-        long: |
-          export an LXD image and corresponding instance filesystems
-      import:
-        short: import image and filesystems
-        long: |
-          import an LXD image and corresponding instance filesystems
+  export:
+    short: export instance filesystems
+    use: <config.yaml>
+    long: |
+      export the filesystems of an instance to tar.gz files
+  import:
+    short: import instance filesystems
+    use: <config.yaml>
+    long: |
+      import the filesystems of an instance from tar.gz files
   template:
     short: evaluate a template
     long: |
