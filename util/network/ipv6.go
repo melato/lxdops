@@ -37,6 +37,13 @@ func (ip Ipv6) SetLast(d uint16) Ipv6 {
 	return ip
 }
 
+func (dd Ipv6) WithLast(d uint8) Ipv6 {
+	var result Ipv6
+	result = dd
+	result.SetLast(uint16(d))
+	return result
+}
+
 func (ip Ipv6) Next() Ipv6 {
 	for i := len(ip) - 1; i >= 0; i-- {
 		d := ip[i]

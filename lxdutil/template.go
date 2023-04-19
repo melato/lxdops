@@ -2,6 +2,7 @@ package lxdutil
 
 import (
 	"fmt"
+	"strconv"
 	"text/template"
 
 	"encoding/json"
@@ -29,6 +30,14 @@ func (t *Functions) Json(v any) (string, error) {
 type HostFunctions struct {
 }
 
+func (h *Functions) Uint8(s string) (uint8, error) {
+	d, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint8(d), nil
+}
+
 func (h *HostFunctions) Ipv4() (string, error) {
 	addresses, err := network.DetectIpv4Addresses(true)
 	if err != nil {
@@ -49,6 +58,32 @@ func (h *HostFunctions) Ipv6() (string, error) {
 		return "", fmt.Errorf("got %d public addresses", len(addresses))
 	}
 	return addresses[0].String(), nil
+}
+
+func (h *HostFunctions) PrivateIpv4() (network.Ipv4, error) {
+	addresses, err := network.DetectIpv4Addresses(false)
+	if err != nil {
+		return nil, err
+	}
+	if len(addresses) != 1 {
+		for _, a := range addresses {
+			fmt.Printf("%v\n", a)
+		}
+		return nil, fmt.Errorf("got %d private addresses", len(addresses))
+	}
+	return addresses[0], nil
+}
+
+func (h *HostFunctions) PrivateIpv6() (network.Ipv6, error) {
+	var zero network.Ipv6
+	addresses, err := network.DetectIpv6Addresses(false)
+	if err != nil {
+		return zero, err
+	}
+	if len(addresses) != 1 {
+		return zero, fmt.Errorf("got %d private addresses", len(addresses))
+	}
+	return addresses[0], nil
 }
 
 func (t *TemplateOps) Apply() error {

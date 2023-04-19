@@ -33,6 +33,13 @@ func (dd Ipv4) SetLast(d uint8) {
 	dd[len(dd)-1] = d
 }
 
+func (dd Ipv4) WithLast(d uint8) Ipv4 {
+	result := make(Ipv4, len(dd))
+	copy(result, dd)
+	result.SetLast(d)
+	return result
+}
+
 func (dd Ipv4) Next() {
 	for i := len(dd) - 1; i >= 0; i-- {
 		d := dd[i]
