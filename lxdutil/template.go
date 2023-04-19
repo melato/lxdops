@@ -30,6 +30,14 @@ func (t *Functions) Json(v any) (string, error) {
 type HostFunctions struct {
 }
 
+func (h *Functions) Uint16(s string) (uint16, error) {
+	d, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint16(d), nil
+}
+
 func (h *Functions) Uint8(s string) (uint8, error) {
 	d, err := strconv.ParseUint(s, 10, 32)
 	if err != nil {
