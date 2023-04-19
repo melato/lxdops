@@ -32,16 +32,13 @@ func (ip Ipv6) IsPublic() bool {
 	return !ip.IsLocalUnicast() && !ip.IsLinkLocal()
 }
 
-func (ip Ipv6) SetLast(d uint16) Ipv6 {
+func (ip Ipv6) WithLast(d uint16) Ipv6 {
 	ip[len(ip)-1] = d
 	return ip
 }
 
-func (dd Ipv6) WithLast(d uint8) Ipv6 {
-	var result Ipv6
-	result = dd
-	result.SetLast(uint16(d))
-	return result
+func (ip Ipv6) SetLast(d uint16) Ipv6 {
+	return ip.WithLast(d)
 }
 
 func (ip Ipv6) Next() Ipv6 {

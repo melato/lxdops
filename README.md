@@ -1,5 +1,65 @@
 lxdops is a go program that launches and configures LXD containers
 and manages ZFS filesystems attached to these containers as disk devices.
+
+# Use Case
+You want to have a set of containers that have the same guest OS, packages, users, etc.
+in order to run websites, for example a container that has a web server, PHP, and several libraries.
+You want to have one container per website, but avoid installing and upgrading packages for each container.
+
+You can create a template container with the packages that you want, snapshot it, and then clone it for each website.
+You can do this, using lxc copy:
+	lxc copy <template-container>/<snapshot> <working-container>
+Assuming that you use ZFS or another copy-on-write filesystem, the root filesystem of each working container is a clone of the template container root filesystem, so it uses very little disk space.  Creating the working containers is a relatively fast operation, that does not download and install packages.
+
+But what do you do to upgrade the containers?  If you upgrade each one separately, the working container root filesystems start to diverge from their template.  In addition, you will be downloading and installing the same upgrades multiple times (possibly tens or hundreds of times per LXD host).
+
+lxdops facilitates the following strategy:
+- You structure each working container so that application data is not on the root filesystem, but on external disk devices.  Therefore you can replace the root filesystem with a new one, without losing the application data.
+- To upgrade, you first create a new template container with the upgrade you want.  Alternately, you can upgrade the existing template container and create a new template snapshot.
+
+Then, for each working container:
+- Delete the container
+- Clone the container from the template
+- re-attach the existing external disk devices
+- start the container.  The container should now run with its new OS and the old application data.
+This process takes a few seconds per container, during which the container will be offline.
+
+# Operation
+## lxdops config file
+An lxdops config file is a yaml file that provides instructions about how to build
+a template container or a working container.  It can include other config files.
+Detailed documentation is in the Go docs:
+	cd lxdops
+	go doc Config
+	
+It provides:
+- The image or container/snapshot to create the container from.
+- A list of cloud-config files to use for configuring the container.
+- LXD profiles to attach to the container
+- Filesystems and external disk devices to create or use for the container.
+
+# Filesystems/Disk Devices
+lxdops can create 0 or more zfs filesystems for each container.
+Each filesystem is parameterized by container name, so each container is automatically assigned its own private external filesystems.
+If they do not exist, they are created.  If they exist, they are used as is.
+
+The external disk devices that lxdops manages are subdirectories of these filesystems. 
+I typically use one filesystem for /var/log, one filesystem for /tmp,
+and one filesystem for /var/opt, /etc/opt, /opt, /home, /usr/local/bin.
+If they do not already exist, they can be copied from the corresponding devices of a template container.
+
+## cloud-config files
+lxdops uses a subset of the cloud-config file format to configure containers internally.
+The cloud-config files are applied directly using the LXD API,
+without requiring that the container supports cloud-init.
+It supports the cloud-init sections: packages, write_files, users, runcmd.
+
+# Goals
+- Separate container OS from application data, so that application data
+is not on the container root filesystem.
+- Create containers by cloning the root filesystem of a template container
+(using lxc copy of a snapshot), and creating/copying, or cloninig additional filesystems.
+
 It reads container and filesystem configuration from YAML files.
 Configuration is done via yaml files in the cloud-init format (#cloud-config).
 

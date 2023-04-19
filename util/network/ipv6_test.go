@@ -58,3 +58,14 @@ func TestIpv6LocalUnicast(t *testing.T) {
 		}
 	}
 }
+
+func TestIpv6Last(t *testing.T) {
+	ip, err := ParseIpv6("100::1")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	ip = ip.WithLast(7)
+	if ip.String() != "100:0:0:0:0:0:0:7" {
+		t.Fatalf("%s", ip.String())
+	}
+}
