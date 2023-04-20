@@ -189,6 +189,9 @@ func (instance *Instance) Snapshot(name string) error {
 	}
 	s := &script.Script{Trace: true}
 	for _, fs := range filesystems {
+		if fs.Filesystem.Transient {
+			continue
+		}
 		s.Run("sudo", "zfs", "snapshot", fs.Path+"@"+name)
 	}
 	return s.Error()
