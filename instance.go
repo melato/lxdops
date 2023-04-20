@@ -189,15 +189,14 @@ func (instance *Instance) Snapshot(name string) error {
 	}
 	s := &script.Script{Trace: true}
 	for _, fs := range filesystems {
-		if fs.Filesystem.Transient {
-			continue
+		if fs.IsZfs() && !fs.Filesystem.Transient {
+			s.Run("sudo", "zfs", "snapshot", fs.Path+"@"+name)
 		}
-		s.Run("sudo", "zfs", "snapshot", fs.Path+"@"+name)
 	}
 	return s.Error()
 }
 
-// Rollback calls zfs rollback -r on all ZFS filesystems of the instance
+// Rollback calls zfs rollback -r on the non-transient ZFS filesystems of the instance
 func (instance *Instance) Rollback(name string) error {
 	filesystems, err := instance.FilesystemList()
 	if err != nil {
@@ -205,7 +204,9 @@ func (instance *Instance) Rollback(name string) error {
 	}
 	s := &script.Script{Trace: true}
 	for _, fs := range filesystems {
-		s.Run("sudo", "zfs", "rollback", "-r", fs.Path+"@"+name)
+		if fs.IsZfs() && !fs.Filesystem.Transient {
+			s.Run("sudo", "zfs", "rollback", "-r", fs.Path+"@"+name)
+		}
 	}
 	return s.Error()
 }
