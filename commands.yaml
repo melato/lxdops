@@ -216,3 +216,10 @@ commands:
       The templates have these custom functions:
         Host - An instance of HostFunctions
         Instance(name string) - *api.Instance
+  copy-filesystems:
+    short: copy instance filesystems from another host
+    long: |
+      Uses ssh to ssh to the other host.
+      Uses sudo zfs send/receive.
+      Assumes that the config file is at the same path on the other host,
+      and has the same filesystems.

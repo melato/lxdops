@@ -113,6 +113,9 @@ func RootCommand() *command.SimpleCommand {
 	cmd.Command("export").Flags(exportOps).RunFunc(exportOps.Export)
 	cmd.Command("import").Flags(exportOps).RunFunc(exportOps.Import)
 
+	var migrate Migrate
+	cmd.Command("copy-filesystems").Flags(&migrate).RunFunc(migrate.CopyFilesystems)
+
 	usage.Apply(&cmd, usageData)
 
 	return &cmd
