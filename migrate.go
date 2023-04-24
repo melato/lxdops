@@ -12,6 +12,7 @@ import (
 type Migrate struct {
 	PropertyOptions
 	FromHost      string
+	ToHost        string
 	ConfigFile    string `name:"c" usage:"configFile"`
 	FromContainer string
 	Container     string
@@ -28,8 +29,8 @@ func (t *Migrate) Configured() error {
 	if len(t.Snapshot) == 0 {
 		return errors.New("empty snapshot name")
 	}
-	if t.FromHost == "" {
-		return errors.New("missing -from host")
+	if (t.FromHost == "") == (t.ToHost == "") {
+		return errors.New("need to provide either -from-host or -to-host")
 	}
 	if t.ConfigFile == "" {
 		return errors.New("missing config file")
@@ -44,6 +45,14 @@ func (t *Migrate) Configured() error {
 		return errors.New("config file should be absolute")
 	}
 	return t.PropertyOptions.Configured()
+}
+
+func (t *Migrate) hostCommand(host, command string, args ...string) *exec.Cmd {
+	if host != "" {
+		return exec.Command("ssh", append([]string{host, command}, args...)...)
+	} else {
+		return exec.Command(command, args...)
+	}
 }
 
 func (t *Migrate) CopyFilesystems() error {
@@ -73,15 +82,15 @@ func (t *Migrate) CopyFilesystems() error {
 		return err
 	}
 	s := script.Script{Trace: true, DryRun: t.DryRun}
-	s.Run("ssh", t.FromHost, "lxdops", "snapshot", "-s", t.Snapshot, "--name", t.FromContainer, t.ConfigFile)
+	s.RunCmd(t.hostCommand(t.FromHost, "lxdops", "snapshot", "-s", t.Snapshot, "--name", t.FromContainer, t.ConfigFile))
 	for _, fs := range filesystems {
 		if fs.IsZfs() && !fs.Filesystem.Transient {
 			fromFS, ok := fromFilesystems[fs.Id]
 			if !ok {
 				continue
 			}
-			send := exec.Command("ssh", t.FromHost, "sudo", "zfs", "send", fromFS.Path+"@"+t.Snapshot)
-			receive := exec.Command("sudo", "zfs", "receive", fs.Path)
+			send := t.hostCommand(t.FromHost, "sudo", "zfs", "send", fromFS.Path+"@"+t.Snapshot)
+			receive := t.hostCommand(t.ToHost, "sudo", "zfs", "receive", fs.Path)
 			s.RunCmd(send, receive)
 		}
 	}
