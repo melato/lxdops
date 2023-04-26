@@ -1,6 +1,0 @@
-os:
-  name: alpine
-  image: images:alpine/3.17
-cloud-config-files:
-- demo.cfg
-snapshot: start

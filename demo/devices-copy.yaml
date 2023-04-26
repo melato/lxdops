@@ -1,6 +1,0 @@
-device-origin: devices@t1
-source-config: devices.yaml
-properties:
-    section: copy
-include:
-- devices.yaml

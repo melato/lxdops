@@ -1,5 +1,0 @@
-os:
-  name: alpine
-  image: images:alpine/3.17
-include:
-- include/device.yaml
