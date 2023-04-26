@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/lxc/lxd/lxc/config"
-	"melato.org/yaml"
+	"melato.org/lxdops/yaml"
 )
 
 type LxcConfig struct {

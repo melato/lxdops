@@ -7,8 +7,8 @@ import (
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
+	"melato.org/lxdops/yaml"
 	"melato.org/table3"
-	"melato.org/yaml"
 )
 
 // InstanceOps - operations on LXD instances (formerly ContainerOps)

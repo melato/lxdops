@@ -8,7 +8,7 @@ import (
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/lxc/config"
-	"melato.org/yaml"
+	"melato.org/lxdops/yaml"
 )
 
 type LxdClient struct {

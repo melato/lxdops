@@ -196,6 +196,10 @@ gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
+melato.org/cloudconfig v0.0.0-20230211145042-0e3439c6008c h1:M5FAkjzIT0QBY0T87+6QzsfFnVIuLziBBKf6x7+SrUw=
+melato.org/cloudconfig v0.0.0-20230211145042-0e3439c6008c/go.mod h1:McnpS5JJEheQbkSijEwNWJRgE1bVSlfcAyR2HqUCsXk=
+melato.org/cloudconfiglxd v0.0.0-20230426080302-902ca9966c05 h1:IsCBXCgDmc92BWialP6m81uhG8deH1kwMPTH8TmUGz4=
+melato.org/cloudconfiglxd v0.0.0-20230426080302-902ca9966c05/go.mod h1:FRNvb+f8EnYtubqANSO4x/oh/0ESUrDno6U6vUNpggo=
 melato.org/command v0.0.0-20220222082143-ca56ccecf080 h1:TImzAggDZhf6d5vU5xoYkTfnCjlX46DnyZbgLZbarNc=
 melato.org/command v0.0.0-20220222082143-ca56ccecf080/go.mod h1:1f8kdvW0OvX8TOUr4M7Wyad2geJMfBGbs+bN3sBx3eg=
 melato.org/script v1.0.0 h1:ytNRMPI5u6JyCVX7AZSTuqOOb5QPcA6Cyioos3XBVKg=

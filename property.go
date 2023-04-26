@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"melato.org/lxdops/util"
-	"melato.org/yaml"
+	"melato.org/lxdops/yaml"
 )
 
 type PropertyOptions struct {

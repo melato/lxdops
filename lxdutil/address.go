@@ -4,7 +4,7 @@ import (
 	"encoding/csv"
 	"io"
 
-	"melato.org/yaml"
+	"melato.org/lxdops/yaml"
 )
 
 type AddressPrinter interface {

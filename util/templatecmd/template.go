@@ -11,7 +11,7 @@ import (
 	"text/template"
 
 	"melato.org/lxdops/util/templatecmd/property"
-	"melato.org/yaml"
+	"melato.org/lxdops/yaml"
 )
 
 type TemplateOp struct {

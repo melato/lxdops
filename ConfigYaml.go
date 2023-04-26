@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"melato.org/yaml"
+	"melato.org/lxdops/yaml"
 )
 
 const Comment = "#lxdops"

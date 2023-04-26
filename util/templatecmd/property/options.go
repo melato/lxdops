@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"melato.org/yaml"
+	"melato.org/lxdops/yaml"
 )
 
 type Options struct {

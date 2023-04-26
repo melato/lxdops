@@ -8,7 +8,7 @@ import (
 
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
-	"melato.org/yaml"
+	"melato.org/lxdops/yaml"
 )
 
 type ProfileOps struct {
