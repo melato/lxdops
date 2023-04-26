@@ -9,7 +9,7 @@ For examples, see the separate [lxdops.demo](https://github.com/lxdops.demo) rep
 
 # branch v2 changes
 In branch v2, all internal container configuration, such as installing packages, creating files and users,
-happens via separate #cloud-config files, that are support a subset of the cloud-init configuration.
+happens via separate #cloud-config files, that support a subset of the cloud-init configuration.
 The previous lxdops-specific configuration for the same purpose has been removed.
 
 All lxdops configuration files must have "#lxdops" as the first line and all cloud-init files must have "#cloud-config",
@@ -22,7 +22,9 @@ You want to have one container per website, but avoid installing and upgrading p
 
 You can create a template container with the packages that you want, snapshot it, and then clone it for each website.
 You can do this, using lxc copy:
-	lxc copy <template-container>/<snapshot> <working-container>
+```
+lxc copy <template-container>/<snapshot> <working-container>
+```
 Assuming that you use ZFS or another copy-on-write filesystem, the root filesystem of each working container is a clone of the template container root filesystem, so it uses very little disk space.  Creating the working containers is a relatively fast operation, that does not download and install packages.
 
 But what do you do to upgrade the containers?  If you upgrade each one separately, the working container root filesystems start to diverge from their template.  In addition, you will be downloading and installing the same upgrades multiple times (possibly tens or hundreds of times per LXD host).
