@@ -1,11 +1,23 @@
 lxdops is a go program that launches and configures LXD containers
 and manages ZFS filesystems attached to these containers as disk devices.
+When you launch a container with lxdops, you also create additional zfs filesystems for this container,
+aside from the root filesystem that is managed by LXD.
+Similarly, there are lxdops commands to snapshot, rollback, clone/copy, and destroy these filesystems along with their container.
+You can also specify profiles and cloud-config files to be applied to the container. 
+
+All these instructions are contained in an lxdops config file, which can be used to launch/rebuild/delete multiple containers with the same configuration.
 
 The goal is to be able to replace the root directory of a container with an updated one, without disrupting the applications in the container, except for a reboot.  To do this correctly requires knowledge of the files that the applications of interest use, so that
-any changes to these files are placed in external filesystems or they are reconfigured when the root application is updated.
+any changes to these files are placed in external filesystems or they are reconfigured when the container is launched or rebuilt.
 
 # Examples
-For examples, see the separate [lxdops.demo](https://github.com/lxdops.demo) repository.
+For detailed examples, see the separate [lxdops.demo](https://github.com/lxdops.demo) repository.
+
+# Compile
+	cd main
+	date > version
+	# or: git log -1 --format=%cd > version
+	go install lxdops.go
 
 # branch v2 changes
 In branch v2, all internal container configuration, such as installing packages, creating files and users,
@@ -40,14 +52,15 @@ Then, for each working container:
 - start the container.  The container should now run with its new OS and the old application data.
 This process takes a few seconds per container, during which the container will be offline.
 
-# Operation
-## lxdops config file
+This is what lxdops is for.
+
+# lxdops config file
 An lxdops config file is a yaml file that provides instructions about how to build
 a template container or a working container.  It can include other config files.
 Detailed documentation is in the Go docs:
 	cd lxdops
 	go doc Config
-	
+
 It provides:
 - The image or container/snapshot to create the container from.
 - Filesystems and external disk devices to create or use for the container.
@@ -64,18 +77,19 @@ I typically use one filesystem for /var/log, one filesystem for /tmp,
 and one filesystem for /var/opt, /etc/opt, /opt, /home, /usr/local/bin.
 If they do not already exist, they can be copied from the corresponding devices of a template container.
 
-## cloud-config files
+# cloud-config files
 lxdops uses a subset of the cloud-config file format to configure containers internally.
 The cloud-config files are applied directly using the LXD API,
 without requiring that the container supports cloud-init.
 
-The cloud-config sections that are supported are:
+The cloud-config modules (sections) that are supported are:
 - packages
 - write_files
 - users
 - runcmd
 
 For more details, see:
+- https://cloudinit.readthedocs.io/en/latest/reference/examples.html
 - https://github.com/melato/cloudconfig
 - https://github.com/melato/cloudconfiglxd
 
@@ -86,7 +100,7 @@ is not on the container root filesystem.
 (using lxc copy of a snapshot), and creating/copying, or cloninig additional filesystems.
 
 It reads container and filesystem configuration from YAML files.
-Configuration is done via yaml files in the cloud-init format (#cloud-config).
+Configuration inside the container is done via yaml files in the cloud-init format (#cloud-config).
 
 # Description
 
@@ -94,41 +108,30 @@ lxdops launches, copies, and deletes *lxdops instances*.
 
 An lxdops **instance** is:
 - An LXD container
-- A set of ZFS filesystems
+- A set of ZFS filesystems specific to this container
 - A set of disk devices that are in these filesystems and are attached to the container (via a profile)
 - An LXD profile that specifies the attached disk devices
 
 A Yaml instance configuration file specifies how to launch and configure an instance.  It specifies:
+- How to launch the container, from an image, or by copying a snapshot of another container
 - ZFS Filesystems to create and zfs properties for these filesystems
+- How to create these filesystems:  create them from scratch, or copy them (rsync) or clone them from another instance.
 - Disk Devices in these filesystems that are attached to the container
 - An LXD profile to create with the instance devices
-- LXD profiles to attach to the container
+- Additional LXD profiles to attach to the container
 - cloud-config files to apply to the container
 
 Several configuration elements can be parameterized with properties such as the instance name, project, and user-defined properties.
-This allows test instances to have their devices under a separate test filesystem, etc.
 
 More detailed documentation of configuration elements is in the file Config.go
 
-## LXD Project Support
+# LXD Project Support
 
-lxdops has support for LXD projects and can clone instances across projects.
+lxdops has support for LXD projects and can clone instances across projects,
+but I have no good use case for it and I don't use it.
 I find it simpler to keep all my instances in a single project.
-I haven't found a good use case for using projects.
 
-
-If an instance does not specify a specific project, lxdops will use the current LXD project, as specified in ~/snap/lxd/current/.config/lxc/config.yml or ~/.config/lxc/config.yml
-
-To create a new clean LXD project, *t1*, you can use an lxdops convenience command:
-```
-lxdops project create t1
-lxc project switch t1
-```
-This creates a new project with:
-- Its own profiles.  lxdops creates a profile for each container
-- Shared images.  lxdops does not create, modify, or delete any images
-- The default profile copied from the default project
-
+By default, lxdops will use the current LXD project, as detected by looking at the lxc user config files.
 
 # External Programs
 
