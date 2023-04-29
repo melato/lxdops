@@ -18,16 +18,17 @@ type Migrate struct {
 	Container     string
 	Snapshot      string `name:"s" usage:"snapshot name"`
 	DryRun        bool   `name:"dry-run" usage:"show the commands to run, but do not change anything"`
+	makeSnapshot  bool
 }
 
 func (t *Migrate) Init() error {
-	t.Snapshot = time.Now().UTC().Format("20060102150405")
 	return t.PropertyOptions.Init()
 }
 
 func (t *Migrate) Configured() error {
 	if len(t.Snapshot) == 0 {
-		return errors.New("empty snapshot name")
+		t.Snapshot = time.Now().UTC().Format("20060102150405")
+		t.makeSnapshot = true
 	}
 	if (t.FromHost == "") == (t.ToHost == "") {
 		return errors.New("need to provide either -from-host or -to-host")
@@ -82,7 +83,9 @@ func (t *Migrate) CopyFilesystems() error {
 		return err
 	}
 	s := script.Script{Trace: true, DryRun: t.DryRun}
-	s.RunCmd(t.hostCommand(t.FromHost, "lxdops", "snapshot", "-s", t.Snapshot, "--name", t.FromContainer, t.ConfigFile))
+	if t.makeSnapshot {
+		s.RunCmd(t.hostCommand(t.FromHost, "lxdops", "snapshot", "-s", t.Snapshot, "--name", t.FromContainer, t.ConfigFile))
+	}
 	for _, fs := range filesystems {
 		if fs.IsZfs() && !fs.Filesystem.Transient {
 			fromFS, ok := fromFilesystems[fs.Id]
