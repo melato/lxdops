@@ -93,6 +93,7 @@ func RootCommand() *command.SimpleCommand {
 	containerDevices := &lxdutil.InstanceDevicesOp{InstanceOps: containerOps}
 	containerCmd.Command("devices").Flags(containerDevices).RunFunc(containerDevices.Devices)
 	containerCmd.Command("statistics").RunFunc(containerOps.Statistics)
+	containerCmd.Command("hwaddr").RunFunc(containerOps.ListHwaddr)
 
 	templateOps := &lxdutil.TemplateOps{Client: client}
 	cmd.Command("template").Flags(templateOps).RunFunc(templateOps.Apply)

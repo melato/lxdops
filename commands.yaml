@@ -35,7 +35,8 @@ commands:
     commands:
       addresses:
         short: export network addresses for all containers
-        use:
+      hwaddr:
+        short: export hwaddr for all containers
       number:
         short: assign numbers to containers
         use: -first <number> [-a] [-r] [-project <project>] <container>...]

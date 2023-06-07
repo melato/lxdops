@@ -8,7 +8,7 @@ import (
 	lxd "github.com/lxc/lxd/client"
 	"github.com/lxc/lxd/shared/api"
 	"melato.org/lxdops/yaml"
-	"melato.org/table3"
+	table "melato.org/table3"
 )
 
 // InstanceOps - operations on LXD instances (formerly ContainerOps)
@@ -191,4 +191,23 @@ func (t *InstanceOps) Info(instance string) error {
 		return AnnotateLXDError(instance, err)
 	}
 	return yaml.Print(c)
+}
+
+func (t *InstanceOps) ListHwaddr() error {
+	server := t.server
+	instances, err := server.GetInstances(api.InstanceTypeAny)
+	if err != nil {
+		return err
+	}
+	var i api.Instance
+	writer := &table.FixedWriter{Writer: os.Stdout}
+	writer.Columns(
+		table.NewColumn("HWADDR", func() interface{} { return i.Config["volatile.eth0.hwaddr"] }),
+		table.NewColumn("NAME", func() interface{} { return i.Name }),
+	)
+	for _, i = range instances {
+		writer.WriteRow()
+	}
+	writer.End()
+	return nil
 }
