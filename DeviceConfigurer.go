@@ -12,11 +12,12 @@ import (
 )
 
 type DeviceConfigurer struct {
-	Config  *Config
-	Owner   string
+	Config *Config
+	Owner  string
+	// NoRsync - do not rsync devices.  Use when importing.
+	NoRsync bool
 	Trace   bool
 	DryRun  bool
-	FuncMap map[string]func() (string, error)
 }
 
 func NewDeviceConfigurer(instance *Instance) (*DeviceConfigurer, error) {
@@ -161,7 +162,7 @@ func (t *DeviceConfigurer) ConfigureDevices(instance *Instance) error {
 		if err != nil {
 			return err
 		}
-		if !fs.Filesystem.Transient && source.IsDefined() && !source.Clone {
+		if !t.NoRsync && !fs.Filesystem.Transient && source.IsDefined() && !source.Clone {
 			templateDir, err := source.Instance.DeviceDir(d.Name, d.Device)
 			if err != nil {
 				return err
