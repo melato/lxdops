@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	lxd "github.com/lxc/lxd/client"
-	"github.com/lxc/lxd/shared/api"
+	lxd "github.com/canonical/lxd/client"
+	"github.com/canonical/lxd/shared/api"
 	"melato.org/lxdops/lxdutil"
 )
 

@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	lxd "github.com/lxc/lxd/client"
-	"github.com/lxc/lxd/lxc/config"
+	lxd "github.com/canonical/lxd/client"
+	"github.com/canonical/lxd/lxc/config"
 	"melato.org/lxdops/yaml"
 )
 

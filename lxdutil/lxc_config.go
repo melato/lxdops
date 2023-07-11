@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/lxc/lxd/lxc/config"
+	"github.com/canonical/lxd/lxc/config"
 	"melato.org/lxdops/yaml"
 )
 

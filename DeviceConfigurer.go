@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/lxc/lxd/shared/api"
+	"github.com/canonical/lxd/shared/api"
 	"melato.org/lxdops/lxdutil"
 	"melato.org/lxdops/util"
 	"melato.org/script"
