@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	lxd "github.com/canonical/lxd/client"
 	"github.com/canonical/lxd/shared/api"
@@ -203,6 +204,44 @@ func (t *InstanceOps) ListHwaddr() error {
 	writer := &table.FixedWriter{Writer: os.Stdout}
 	writer.Columns(
 		table.NewColumn("HWADDR", func() interface{} { return i.Config["volatile.eth0.hwaddr"] }),
+		table.NewColumn("NAME", func() interface{} { return i.Name }),
+	)
+	for _, i = range instances {
+		writer.WriteRow()
+	}
+	writer.End()
+	return nil
+}
+
+func (t *InstanceOps) ListImages() error {
+	server := t.server
+	images, err := server.GetImages()
+	if err != nil {
+		return err
+	}
+	fingerprints := make(map[string]string)
+	for _, image := range images {
+		names := make([]string, len(image.Aliases))
+		for i, a := range image.Aliases {
+			names[i] = a.Name
+		}
+		fingerprints[image.Fingerprint] = strings.Join(names, ",")
+	}
+	instances, err := server.GetInstances(api.InstanceTypeAny)
+	if err != nil {
+		return err
+	}
+	var i api.Instance
+	writer := &table.FixedWriter{Writer: os.Stdout}
+	writer.Columns(
+		table.NewColumn("IMAGE", func() interface{} {
+			fg := i.Config["volatile.base_image"]
+			image := fingerprints[fg]
+			if image == "" {
+				image = fg
+			}
+			return image
+		}),
 		table.NewColumn("NAME", func() interface{} { return i.Name }),
 	)
 	for _, i = range instances {
