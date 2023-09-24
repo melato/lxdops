@@ -2,6 +2,7 @@ package lxdutil
 
 import (
 	"fmt"
+	"strings"
 )
 
 type ImageOps struct {
@@ -18,10 +19,11 @@ func (t *ImageOps) List() error {
 		return err
 	}
 	for _, image := range images {
-		fmt.Printf("%s\n", image.Fingerprint)
-		for _, alias := range image.Aliases {
-			fmt.Printf("  %s\n", alias.Name)
+		names := make([]string, len(image.Aliases))
+		for i, alias := range image.Aliases {
+			names[i] = alias.Name
 		}
+		fmt.Printf("%s %s\n", image.Fingerprint, strings.Join(names, " "))
 	}
 
 	return nil
