@@ -118,6 +118,12 @@ func RootCommand() *command.SimpleCommand {
 	var migrate Migrate
 	cmd.Command("copy-filesystems").Flags(&migrate).RunFunc(migrate.CopyFilesystems)
 
+	imageOps := &lxdutil.ImageOps{Client: client}
+	imageCmd := cmd.Command("image")
+	imageCmd.Flags(imageOps)
+	imageCmd.Command("list").RunFunc(imageOps.List)
+	imageCmd.Command("fingerprints").RunFunc(imageOps.ListFingerprints)
+
 	usage.Apply(&cmd, usageData)
 
 	return &cmd
