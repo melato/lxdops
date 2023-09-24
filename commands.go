@@ -123,6 +123,7 @@ func RootCommand() *command.SimpleCommand {
 	imageCmd.Flags(imageOps)
 	imageCmd.Command("list").RunFunc(imageOps.List)
 	imageCmd.Command("fingerprints").RunFunc(imageOps.ListFingerprints)
+	imageCmd.Command("containers").RunFunc(imageOps.Containers)
 
 	usage.Apply(&cmd, usageData)
 
