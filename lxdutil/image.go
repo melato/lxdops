@@ -76,16 +76,7 @@ func (t *ImageOps) imageFilesystem(server lxd.InstanceServer, image *api.Image) 
 	return "", fmt.Errorf("cannot find image filesystem")
 }
 
-func (t *ImageOps) Containers(fingerprint string) error {
-	server, err := t.Client.CurrentServer()
-	if err != nil {
-		return err
-	}
-	image, _, err := server.GetImage(fingerprint)
-	if err != nil {
-		return err
-	}
-
+func (t *ImageOps) imageContainers(server lxd.InstanceServer, image *api.Image) error {
 	poolFS, err := t.imageFilesystem(server, image)
 	if err != nil {
 		return err
@@ -102,4 +93,34 @@ func (t *ImageOps) Containers(fingerprint string) error {
 		fmt.Printf("%s\n", line)
 	}
 	return nil
+}
+
+func (t *ImageOps) getImage(server lxd.InstanceServer, name string) (*api.Image, error) {
+	image, _, err := server.GetImage(name)
+	if err == nil {
+		return image, nil
+	}
+	aliases, err := server.GetImageAliases()
+	if err != nil {
+		return nil, err
+	}
+	for _, alias := range aliases {
+		if alias.Name == name {
+			image, _, err := server.GetImage(alias.Target)
+			return image, err
+		}
+	}
+	return nil, fmt.Errorf("image not found: %s", name)
+}
+
+func (t *ImageOps) Containers(name string) error {
+	server, err := t.Client.CurrentServer()
+	if err != nil {
+		return err
+	}
+	image, err := t.getImage(server, name)
+	if err != nil {
+		return err
+	}
+	return t.imageContainers(server, image)
 }
