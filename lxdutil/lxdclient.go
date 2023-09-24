@@ -22,7 +22,17 @@ type LxdClient struct {
 }
 
 func (t *LxdClient) Init() error {
-	t.Socket = "/var/snap/lxd/common/lxd/unix.socket"
+	sockets := []string{
+		"/var/snap/lxd/common/lxd/unix.socket",
+		"/var/lib/incus/unix.socket",
+	}
+	for _, socket := range sockets {
+		_, err := os.Stat(socket)
+		if err == nil {
+			t.Socket = socket
+			break
+		}
+	}
 	return nil
 }
 
