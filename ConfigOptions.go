@@ -2,6 +2,7 @@ package lxdops
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -79,7 +80,7 @@ func BaseName(file string) string {
 	return name[0 : len(name)-len(ext)]
 }
 
-func (t *ConfigOptions) Instance(file string) (*Instance, error) {
+func (t *ConfigOptions) instance2(file string, includeSource bool) (*Instance, error) {
 	var name string
 	if t.Name != "" {
 		name = t.Name
@@ -90,28 +91,36 @@ func (t *ConfigOptions) Instance(file string) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewInstance(t.GlobalProperties, config, name)
+	return newInstance(t.GlobalProperties, config, name, includeSource)
 }
 
-func (t *ConfigOptions) RunInstances(f func(*Instance) error, args ...string) error {
+func (t *ConfigOptions) Instance(file string) (*Instance, error) {
+	return t.instance2(file, false)
+}
+
+func (t *ConfigOptions) Instance2(file string, includeSource bool) (*Instance, error) {
+	return t.instance2(file, includeSource)
+}
+
+func (t *ConfigOptions) RunInstances(f func(*Instance) error, includeSource bool, args ...string) error {
 	if t.Name != "" && len(args) != 1 {
 		return errors.New("--name can be used with only one config file")
 	}
 	for _, arg := range args {
-		instance, err := t.Instance(arg)
+		instance, err := t.Instance2(arg, includeSource)
 		if err != nil {
 			return err
 		}
 		err = f(instance)
 		if err != nil {
-			return errors.New(arg + ": " + err.Error())
+			return fmt.Errorf("%s: %w", arg, err)
 		}
 	}
 	return nil
 }
 
-func (t *ConfigOptions) InstanceFunc(f func(*Instance) error, multiple bool) func(configs []string) error {
+func (t *ConfigOptions) InstanceFunc(f func(*Instance) error, includeSource bool) func(configs []string) error {
 	return func(configs []string) error {
-		return t.RunInstances(f, configs...)
+		return t.RunInstances(f, includeSource, configs...)
 	}
 }

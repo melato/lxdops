@@ -1,7 +1,6 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +10,8 @@ import (
 	"melato.org/table3"
 )
 
-/** Implements a simple pattern substitution on strings, using properties and functions
+/*
+* Implements a simple pattern substitution on strings, using properties and functions
 Replaces parenthesized expressions as follows:
 (.key) -> Properties[key]
 (name) -> Functions[name]()
@@ -76,10 +76,10 @@ func (t *PatternProperties) Get(key string) (string, error) {
 		return value, nil
 	}
 	if !t.didHelp {
-		t.ShowHelp(os.Stderr)
+		//t.ShowHelp(os.Stderr)
 		t.didHelp = true
 	}
-	return "", errors.New("no such key: " + key)
+	return "", fmt.Errorf("no such key: %s", key)
 }
 
 func (t *PatternProperties) Substitute(pattern string) (string, error) {
