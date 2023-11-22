@@ -1,3 +1,5 @@
+**Notice**:  This project is superceded by [lxops](/melato/lxops).
+
 lxdops is a go program that launches and configures LXD containers
 and manages ZFS filesystems attached to these containers as disk devices.
 When you launch a container with lxdops, you also create additional zfs filesystems for this container,
